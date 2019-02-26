@@ -6,6 +6,13 @@ if not errorlevel 1 goto RUN
 echo You must elevate to administrator mode, because continue setup.
 powershell -Command Start-Process -Verb runas "%~0"
 exit /b %ERRORLEVEL%
+
+rem run scripts
 :RUN
 
-powershell -NoProfile -ExecutionPolicy Unrestricted setup.files\index.ps1 %1
+rem move to script directory
+cd setup.files
+powershell -NoProfile -ExecutionPolicy RemoteSigned .\index.ps1 %1
+
+rem move to batch place
+cd %~dp0
