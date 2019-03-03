@@ -60,7 +60,6 @@ Vagrant.configure('2') do |config|
     vb.linked_clone = true
     vb.customize [
       'modifyvm', :id,
-      # '--accelerate2dvideo', 'on', #
       '--accelerate3d', 'on',
       '--acpi', 'on',
       '--apic', 'on',
@@ -69,9 +68,6 @@ Vagrant.configure('2') do |config|
       '--biosapic', 'apic',
       '--bioslogofadeout', 'on',
       '--chipset', 'ich9',
-      # '--clipboard', 'bidirectional', #
-      # '--draganddrop', 'bidirectional', #
-      # '--graphicscontroller', 'vboxsvga', #
       '--hpet', 'on',
       '--hwvirtex', 'on',
       '--ioapic', 'on',
@@ -97,10 +93,7 @@ Vagrant.configure('2') do |config|
       '--medium', guest_iso
     ]
   end
-  config.vm.provision 'Install chocolatey', type: 'shell', path: 'setup.files/01.choco.ps1'
-  config.vm.provision 'Install WMF5.1', type: 'shell', path: 'setup.files/02.wmf51.ps1'
+  config.vm.provision 'Enable...Auto logon', type: 'shell', path: 'setup.files/01.pre-setup/_auto-logon.ps1'
+  config.vm.provision 'Install...Virtualbox guest additions', type: 'shell', path: 'setup.files/01.pre-setup/_virtualbox.ps1'
   config.vm.provision :reload
-  config.vm.provision 'windows-update'
-  config.vm.provision :reload
-  config.vm.provision 'Runtimes', type: 'shell', path: 'setup.files/04.runtimes.ps1'
 end

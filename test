@@ -32,7 +32,6 @@ fi
 app_install virtualbox virtualbox virtualbox-extension-pack
 app_install vagrant vagrant
 plugin_install vagrant-reload
-plugin_install vagrant-windows-update
 
 ### Skip when exists
 # vagrant box add designerror/windows-7
