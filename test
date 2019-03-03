@@ -2,12 +2,8 @@
 
 # Validation
 if [ $# -eq 0 ]; then
-    echo "Usage: ./test {7|81|10}"
+    echo "Usage: ./test win{7|8.1|10}"
     exit 255
-fi
-if [ ! -d $1 ]; then
-    echo "Unknown guest: ${1}"
-    exit 1
 fi
 
 # Install some dependencies
@@ -15,7 +11,7 @@ if [ "$(uname)" == 'Darwin' ] && [ `which brew | wc -l` -eq 0 ]; then
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     xcode-select --install
 fi
-function brew_install() {
+function app_install() {
     if [ `which ${1} | wc -l` -eq 0 ]; then
         if [ "$(uname)" != 'Darwin' ]; then
             echo "Unknown platform: $(uname)"
@@ -33,11 +29,13 @@ if [ `echo ${PLUGINS} | grep ${1} | wc -l` -eq 0 ]; then
 fi
 }
 
-brew_install virtualbox virtualbox virtualbox-extension-pack
-brew_install vagrant vagrant
+app_install virtualbox virtualbox virtualbox-extension-pack
+app_install vagrant vagrant
 plugin_install vagrant-reload
-plugin_install vagrant-vbguest
-plugin_install vagrant-windows-update
 
-cd $1
-vagrant up --provision
+### Skip when exists
+# vagrant box add designerror/windows-7
+# vagrant box add opentable/win-8.1-enterprise-amd64-nocm
+# vagrant box add Microsoft/EdgeOnWindows10
+
+vagrant up --provision $1

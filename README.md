@@ -1,29 +1,47 @@
 # Windows auto setup for develop environment
 
-Desktop environment preference for Windows (7, 8.1, 10)
+Desktop environment preference for Windows (7, 8.1, 10)  
+Windows 7, 8.1, 10 向けの作業環境セットアップスクリプト
+
+## Overview
+
+Windows が不安定な時、OS をより手軽に再インストールするために、アプリのインストールを全自動化します。  
+In order to reinstall OS more easily when Windows is unstable, we fully automated the installation of some apps.
+
+このプロジェクトの開発には、[Chocolatey](https://chocolatey.org) と [BoxStarter](https://boxstarter.org) の二つのツールが役立ちました。  
+Two tools: [Chocolatey](https://chocolatey.org) and [BoxStarter](https://boxstarter.org), were very helpful in developing this project.
 
 ## Usage
 
-```
-./setup
+```PowerShell
+PS Admin> .\setup
 ```
 
 ## Test on Virtualbox
 
 Test require a desktop OS that bash can use. e.g. macOS, Ubuntu desktop.
+テストには bash が使えるデスクトップ OS、例えば、、macOS や Ubuntu などが必要です。
 
-### Dependenciea
+### 1. Dependenciea
 
-- Virtualbox
-- Vagrant
+- [Virtualbox](https://www.virtualbox.org)
+- [Vagrant](https://www.vagrantup.com)
+  - vagrant-reload plugin
 
 Dependencies auto installation has available on only Mac yet.
 In other platform, you should install manually theirs before testing.
 
-### Usage of testing
+### 2. Start to testing environment
 
-```
-./test {7|81|10}
+```sh
+$ ./test win{7|8.1|10}
 ```
 
 Specify the version of Windows.
+
+### 3. Start to test
+
+```bat
+Admin> cd \vagrant
+Admin> .\setup
+```
