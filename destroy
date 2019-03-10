@@ -1,9 +1,0 @@
-#!/bin/sh
-
-cd 7
-vagrant destroy -f
-cd ../81
-vagrant destroy -f
-cd ../10
-vagrant destroy -f
-cd ..
