@@ -11,6 +11,6 @@ exit /b %ERRORLEVEL%
 rem run scripts
 :RUN
 
-pushd setup.files
+pushd %~dp0setup.files
 powershell -NoProfile -ExecutionPolicy RemoteSigned .\index.ps1
 popd
