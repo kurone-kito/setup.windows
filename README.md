@@ -34,7 +34,7 @@ In other platform, you should install manually theirs before testing.
 ### 2. Start to testing environment
 
 ```sh
-$ ./test win{7|8.1|10}
+./test win{7|8.1|10}
 ```
 
 Specify the version of Windows.
@@ -44,4 +44,12 @@ Specify the version of Windows.
 ```bat
 Admin> cd \vagrant
 Admin> .\setup
+```
+
+### 4. Destroy
+
+Use vagrant.
+
+```SH
+vagrant destory -f
 ```

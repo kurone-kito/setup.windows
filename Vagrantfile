@@ -43,7 +43,7 @@ Vagrant.configure('2') do |config|
     end
   end
   config.vm.define 'win10' do |atomic|
-    atomic.vm.box = 'Microsoft/EdgeOnWindows10'
+    atomic.vm.box = 'senglin/win-10-enterprise-vs2015community'
     atomic.vm.provider 'virtualbox' do |vb|
       vb.name = 'setup-windows-10'
       vb.memory = '3072'
