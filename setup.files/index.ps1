@@ -1,7 +1,16 @@
 Set-StrictMode -Version Latest
 
-[string]$User = Read-Host '[Auto Login] username:'
-[string]$Password = Read-Host '[Auto Login] password:'
+$cred = Get-Credential $env:username
 
-.\01.pre-setup.ps1 -User $User -Password $Password
-.\02.boxstarter.ps1
+if ($null -eq $cred) {
+    Write-Warning 'Abort.'
+}
+else {
+    Push-Location .\01.pre-setup
+    .\index.ps1
+    Pop-Location
+
+    Push-Location .\02.boxstarter
+    .\index.ps1 $cred
+    Pop-Location
+}
