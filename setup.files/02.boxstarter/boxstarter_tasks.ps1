@@ -137,8 +137,9 @@ if ($win8 -or $win10) {
         'visualstudioexptteam.vscodeintellicode',
         'vscoss.vscode-ansible'
     )
+    $env:Path += ";$($env:ProgramFiles)\Microsoft VS Code\bin"
     $VSCodeExtensions | ForEach-Object {
-        code --install-extension $_
+        C:\Program Files\Microsoft VS Code\bin\code.cmd --install-extension $_
     }
 }
 
