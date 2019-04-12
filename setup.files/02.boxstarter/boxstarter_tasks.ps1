@@ -139,7 +139,7 @@ if ($win8 -or $win10) {
     )
     $env:Path += ";$($env:ProgramFiles)\Microsoft VS Code\bin"
     $VSCodeExtensions | ForEach-Object {
-        C:\Program Files\Microsoft VS Code\bin\code.cmd --install-extension $_
+        code --install-extension $_
     }
 }
 
