@@ -53,7 +53,7 @@ preinstall() {
     esac
 }
 
-iapp_install() {
+app_install() {
     for app in ${@}
     do
         echo "check $app"
