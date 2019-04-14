@@ -1,59 +1,58 @@
 Set-StrictMode -Version Latest
 Disable-UAC
 
-# Managing on Chocolatey
-cinst boxstarter
+$cache = Join-Path $env:TMP 'choco'
 
 $winver = (Get-WmiObject win32_OperatingSystem).Version
+$wincap = (Get-WmiObject win32_OperatingSystem).Caption
 $win7 = $winver -match '^6\.1'
-$win8 = ($winver -match '^6\.(2|3)')
+$win8 = $winver -match '^6\.(2|3)'
 $win10 = $winver -match '^10\.'
+$win10pro = $win10 -and ($wincap -match '(Pro|Enterprise)')
+
+# Managing on Chocolatey
+cinst --cacheLocation="$cache" boxstarter
 
 if ($win7) {
-    # Prepare of SP1
-    cinst kb2533552
-    cinst kb2534366
-    cinst kb2454826
-
-    cinst kb976932 # Winows 7 SP1
+    cinst --cacheLocation="$cache" kb976932 # Winows 7 SP1
 }
 
 if ($win7 -or $win8) {
-    cinst ie11
+    cinst --cacheLocation="$cache" ie11
 }
 
 if ($win7) {
-    cinst dotnet4.5
+    cinst --cacheLocation="$cache" dotnet4.5
 }
 
 & { # Powershell 5.1
-    cinst dotnetfx
-    cinst powershell
+    cinst --cacheLocation="$cache" dotnetfx
+    cinst --cacheLocation="$cache" powershell
 }
 
 ### Winows 8.1 or 10 features
 if ($win8 -or $win10) {
     # Without vagrant
-    if (!(Test-Path -Path C:\vagrant)) {
-        cinst Microsoft-Hyper-V-All --source windowsfeatures
+    if ($win10pro -and !(Test-Path -Path C:\vagrant)) {
+        cinst --cacheLocation="$cache" Microsoft-Hyper-V-All --source windowsfeatures
     }
 
     # NFS
-    cinst ServicesForNFS-ClientOnly --source windowsfeatures
-    cinst ClientForNFS-Infrastructure --source windowsfeatures
-    cinst NFS-administration --source windowsfeatures
+    cinst --cacheLocation="$cache" ServicesForNFS-ClientOnly --source windowsfeatures
+    cinst --cacheLocation="$cache" ClientForNFS-Infrastructure --source windowsfeatures
+    cinst --cacheLocation="$cache" NFS-administration --source windowsfeatures
 
     # Others
-    cinst NetFx3 --source windowsfeatures
+    cinst --cacheLocation="$cache" NetFx3 --source windowsfeatures
 }
 
 & { ### Common Windows features
     # Connection
-    cinst TelnetClient --source windowsfeatures
-    cinst TFTP --source windowsfeatures
+    cinst --cacheLocation="$cache" TelnetClient --source windowsfeatures
+    cinst --cacheLocation="$cache" TFTP --source windowsfeatures
 
     # Others
-    cinst TIFFIFilter --source windowsfeatures
+    cinst --cacheLocation="$cache" TIFFIFilter --source windowsfeatures
 }
 
 & { ### Windows features configure
@@ -65,43 +64,53 @@ if ($win8 -or $win10) {
 
 & { ### Runtimes
     # Microsoft
-    cinst vcredist-all
-    cinst directx
-    cinst silverlight
+    # cinst --cacheLocation="$cache" vcredist-all # <- vcredist2005: Fail on Win10
+    if ($win7 -or $win8) {
+        cinst --cacheLocation="$cache" vcredist2005
+    }
+    cinst --cacheLocation="$cache" vcredist2008 vcredist2010 vcredist2012 vcredist2013 vcredist140 vcredist2015 vcredist2017
+    cinst --cacheLocation="$cache" directx
+    cinst --cacheLocation="$cache" silverlight
 
     # Adobe
-    cinst flashplayeractivex
-    cinst flashplayerplugin
-    cinst flashplayerppapi
-    cinst adobeshockwaveplayer
-    cinst adobeair
+    cinst --cacheLocation="$cache" flashplayeractivex
+    cinst --cacheLocation="$cache" flashplayerplugin
+    cinst --cacheLocation="$cache" flashplayerppapi
+}
+
+### Security
+if ($win7) {
+    cinst --cacheLocation="$cache" microsoftsecurityessentials
 }
 
 & { ### Cloud storage
-    cinst adobe-creative-cloud
-    cinst dropbox
+    cinst --cacheLocation="$cache" adobe-creative-cloud
+    cinst --cacheLocation="$cache" dropbox
+    if ($win7) {
+        cinst --cacheLocation="$cache" onedrive
+    }
 }
 
 & { # Browsers
-    cinst firefox -params "l=ja-JP"
-    cinst googlechrome
+    cinst --cacheLocation="$cache" firefox -params "l=ja-JP"
+    cinst --cacheLocation="$cache" googlechrome
 }
 
 & { ### Basic dev
     # SDKs
-    cinst netfx-4.7.2-devpack
-    cinst dotnetcore-sdk
+    cinst --cacheLocation="$cache" netfx-4.7.2-devpack
+    cinst --cacheLocation="$cache" dotnetcore-sdk
 
-    cinst powershell-core
-    cinst git.install -params '"/GitAndUnixToolsOnPath /NoAutoCrlf /WindowsTerminal /NoShellIntegration /SChannel"'
-    cinst git-lfs
-    cinst visualstudio2017community --package-parameters "--includeRecommended --includeOptional --passive --locale ja-JP"
+    cinst --cacheLocation="$cache" powershell-core
+    cinst --cacheLocation="$cache" git.install -params '"/GitAndUnixToolsOnPath /NoAutoCrlf /WindowsTerminal /NoShellIntegration /SChannel"'
+    cinst --cacheLocation="$cache" git-lfs
+    cinst --cacheLocation="$cache" visualstudio2017community --package-parameters "--includeRecommended --includeOptional --passive --locale ja-JP"
 }
 
 & { ### Editor
-    cinst grammarly
-    cinst notion
-    cinst vscode -params '"/NoDesktopIcon"'
+    cinst --cacheLocation="$cache" grammarly
+    cinst --cacheLocation="$cache" notion
+    cinst --cacheLocation="$cache" vscode -params '"/NoDesktopIcon"'
 }
 
 & { ### VSCode Extensions
@@ -123,7 +132,6 @@ if ($win8 -or $win10) {
         'mikestead.dotenv',
         'ms-ceintl.vscode-language-pack-ja',
         'ms-vscode.csharp',
-        'ms-vscode.powershell',
         'msjsdiag.debugger-for-chrome',
         'orta.vscode-jest',
         'peterjausovec.vscode-docker',
@@ -138,57 +146,59 @@ if ($win8 -or $win10) {
     }
 }
 
-& { ### Game dev
-    cinst androidstudio
-    cinst unity
+### Office tools
+if ($win7) {
+    cinst --cacheLocation="$cache" adobereader -params '"/EnableUpdateService /UpdateMode:3"'
+    cinst --cacheLocation="$cache" thunderbird -params "l=ja-JP"
 }
 
 & { ### JS dev
-    cinst nodejs.install
+    cinst --cacheLocation="$cache" nodejs.install
+    $env:Path += ";$($env:ProgramFiles)\nodejs"
     npm install -g yarn
-    yarn global add windows-build-tools exp serverless
+    # npm install -g windows-build-tools # !! Freeze !!
+    npm install -g exp
+    npm install -g serverless
 }
 
-### Tools for Winows 7
-if ($win7) {
-    cinst microsoftsecurityessentials
-    cinst adobereader -params '"/EnableUpdateService /UpdateMode:3"'
-    cinst thunderbird -params "l=ja-JP"
-    
-    cinst onedrive
-    cinst skype
-    cinst slack
+& { ### Game dev
+    cinst --cacheLocation="$cache" androidstudio
+    cinst --cacheLocation="$cache" unity
 }
 
 & { ### SNS, IM
-    cinst discord.install
-    cinst keybase
+    cinst --cacheLocation="$cache" discord.install
+    cinst --cacheLocation="$cache" keybase
+    if ($win7) {
+        cinst --cacheLocation="$cache" skype
+        cinst --cacheLocation="$cache" slack
+    }
 }
 
 & { ### Virtualization
-    cinst virtualbox -params '"/NoDesktopShortcut"'
-    cinst vagrant
+    cinst --cacheLocation="$cache" virtualbox -params '"/NoDesktopShortcut"'
+    cinst --cacheLocation="$cache" vagrant
 
     # Docker
-    if ($win10) {
-        cinst docker-desktop
+    if ($win10pro) {
+        cinst --cacheLocation="$cache" docker-desktop
     }
     else {
-        cinst docker-toolbox
+        cinst --cacheLocation="$cache" docker-toolbox
     }
 }
 
 & { ### Miscs
     # Utils
-    cinst sudo
-    cinst crystaldiskmark
+    cinst --cacheLocation="$cache" sudo
+    cinst --cacheLocation="$cache" crystaldiskmark
 
     # Multimedia
-    cinst obs
+    cinst --cacheLocation="$cache" obs
 
     # Games
-    cinst minecraft
-    cinst steam
+    cinst --cacheLocation="$cache" minecraft
+    cinst --cacheLocation="$cache" steam
 }
 
 & { ### Windows Update
