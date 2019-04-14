@@ -1,4 +1,4 @@
-Param($cred);
+Param([System.Management.Automation.PSCredential]$cred);
 # [PSCredential] cannot detect on PS2.0 ??
 Set-StrictMode -Version Latest
 
