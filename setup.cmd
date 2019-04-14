@@ -12,5 +12,5 @@ rem run scripts
 :RUN
 
 pushd %~dp0setup.files
-powershell -NoProfile -ExecutionPolicy RemoteSigned .\index.ps1
+powershell -NoProfile -ExecutionPolicy Bypass .\index.ps1
 popd
