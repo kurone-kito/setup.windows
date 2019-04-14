@@ -1,4 +1,5 @@
 Set-StrictMode -Version Latest
+Write-Output (Get-WmiObject win32_OperatingSystem).Caption
 
 $cred = Get-Credential $env:username
 
