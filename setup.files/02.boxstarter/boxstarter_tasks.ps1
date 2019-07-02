@@ -62,6 +62,34 @@ if ($win8 -or $win10) {
   Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowFileExtensions -EnableExpandToOpenFolder -EnableShowRecentFilesInQuickAccess -EnableShowFrequentFoldersInQuickAccess -DisableShowRibbon
 }
 
+& { ### VST Settings
+  function Add-VST-Links {
+    param(
+      [Parameter(Mandatory = $true)]
+      [System.IO.FileInfo]
+      $ProgramFiles,
+
+      [Parameter(Mandatory = $true)]
+      [string]
+      $CommonProgramFiles
+    )
+
+    $VSTMasterSrc = Join-Path "${CommonProgramFiles}" -ChildPath 'VST2'
+    $CPFSteinberg = Join-Path "${CommonProgramFiles}" -ChildPath 'Steinberg'
+    $PFSteinberg = Join-Path "${ProgramFiles}" -ChildPath 'Steinberg'
+    New-Item -Path "${VSTMasterSrc}" -ItemType Directory -Force
+    New-Item -Path "${CPFSteinberg}" -ItemType Directory -Force
+    New-Item -Path "${PFSteinberg}" -ItemType Directory -Force
+
+    New-Item -Path "${CPFSteinberg}" -ItemType SymbolicLink -Name 'VST2' -Value "${VSTMasterSrc}" -Force
+    New-Item -Path "${ProgramFiles}" -ItemType SymbolicLink -Name 'VSTPlugins' -Value "${VSTMasterSrc}" -Force
+    New-Item -Path "${PFSteinberg}" -ItemType SymbolicLink -Name 'VSTPlugins' -Value "${VSTMasterSrc}" -Force
+  }
+
+  Add-VST-Links -ProgramFiles "${env:ProgramFiles}" -CommonProgramFiles "${env:CommonProgramFiles}"
+  Add-VST-Links -ProgramFiles "${env:ProgramFiles(x86)}" -CommonProgramFiles "${env:CommonProgramFiles(x86)}"
+}
+
 & { ### Runtimes
   # Microsoft
   # cinst --cacheLocation="$cache" vcredist-all # <- vcredist2005: Fail on Win10
