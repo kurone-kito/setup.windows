@@ -128,6 +128,7 @@ if ($win7) {
 & { ### CLI tools
   cinst --cacheLocation="$cache" awscli
   cinst --cacheLocation="$cache" git.install -params '"/GitOnlyOnPath /NoAutoCrlf /WindowsTerminal /NoShellIntegration /SChannel"'
+  cinst --cacheLocation="$cache" poshgit
   cinst --cacheLocation="$cache" gpg4win
   cinst --cacheLocation="$cache" openssh -params '"/SSHServerFeature"'
   cinst --cacheLocation="$cache" sudo
@@ -139,18 +140,16 @@ if ($win7) {
   cinst --cacheLocation="$cache" dotnetcore-sdk
 
   cinst --cacheLocation="$cache" powershell-core
-  cinst --cacheLocation="$cache" visualstudio2017community --package-parameters "--includeRecommended --includeOptional --passive --locale ja-JP"
 }
 
 & { ### Editor
   cinst --cacheLocation="$cache" grammarly
   cinst --cacheLocation="$cache" notion
   cinst --cacheLocation="$cache" vscode -params '"/NoDesktopIcon"'
-}
 
-& { ### VSCode Extensions
   $VSCodeExtensions = @(
     'asvetliakov.snapshot-tools',
+    'chrislajoie.vscode-modelines',
     'davidanson.vscode-markdownlint',
     'dbaeumer.vscode-eslint',
     'denco.confluence-markup',
@@ -165,11 +164,14 @@ if ($win7) {
     'kelvin.vscode-sshfs',
     'marcostazi.vs-code-vagrantfile',
     'mikestead.dotenv',
+    'ms-azuretools.vscode-docker',
     'ms-ceintl.vscode-language-pack-ja',
     'ms-vscode.csharp',
+    'ms-vscode.powershell',
+    'ms-vscode.vscode-typescript-next',
+    'ms-vscode-remote.vscode-remote-extensionpack',
     'msjsdiag.debugger-for-chrome',
     'orta.vscode-jest',
-    'peterjausovec.vscode-docker',
     'satokaz.vscode-bs-ctrlchar-remover',
     'sidneys1.gitconfig',
     'visualstudioexptteam.vscodeintellicode',
@@ -190,6 +192,7 @@ if ($win7) {
 & { ### JS dev
   cinst --cacheLocation="$cache" nodejs.install
   $env:Path += ";$($env:ProgramFiles)\nodejs"
+  cinst --cacheLocation="$cache" jq
   npm install -g yarn
   # npm install -g windows-build-tools # !! Freeze !!
   npm install -g exp
@@ -198,7 +201,7 @@ if ($win7) {
 
 & { ### Game dev
   cinst --cacheLocation="$cache" androidstudio
-  cinst --cacheLocation="$cache" unity
+  cinst --cacheLocation="$cache" unity-hub
 }
 
 & { ### SNS, IM
