@@ -60,6 +60,15 @@ if ($win8 -or $win10) {
   Set-CornerNavigationOptions -EnableUpperLeftCornerSwitchApps -EnableUsePowerShellOnWinX
   Set-StartScreenOptions -DisableBootToDesktop -EnableShowStartOnActiveScreen -EnableShowAppsViewOnStartScreen -EnableSearchEverywhereInAppsView -DisableListDesktopAppsFirst
   Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowFileExtensions -EnableExpandToOpenFolder -EnableShowRecentFilesInQuickAccess -EnableShowFrequentFoldersInQuickAccess -DisableShowRibbon
+
+  if ($win10) {
+    Get-WindowsCapability -Online `
+    | Where-Object -Property Name -Match OpenSSH `
+    | Where-Object -Property State -ne Installed `
+    | ForEach-Object {
+      Add-WindowsCapability -Online -Name $_.Name
+    }
+  }
 }
 
 & { ### VST Settings
@@ -130,8 +139,19 @@ if ($win7) {
   cinst --cacheLocation="$cache" git.install -params '"/GitOnlyOnPath /NoAutoCrlf /WindowsTerminal /NoShellIntegration /SChannel"'
   cinst --cacheLocation="$cache" poshgit
   cinst --cacheLocation="$cache" gpg4win
-  cinst --cacheLocation="$cache" openssh -params '"/SSHServerFeature"'
   cinst --cacheLocation="$cache" sudo
+
+  $SystemSSH = $false
+  if ($win10) {
+    $Installed = Get-WindowsCapability -Online `
+    | Where-Object -Property Name -match OpenSSH `
+    | Where-Object -Property State -eq Installed `
+    | Measure-Object
+    $SystemSSH = $Installed.Count -gt 0
+  }
+  if (! $SystemSSH) {
+    cinst --cacheLocation="$cache" openssh -params '"/SSHServerFeature"'
+  }
 }
 
 & { ### Basic dev
