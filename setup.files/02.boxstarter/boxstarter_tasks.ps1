@@ -145,6 +145,7 @@ if ($win7) {
 & { ### Editor
   cinst --cacheLocation="$cache" grammarly
   cinst --cacheLocation="$cache" notion
+  cinst --cacheLocation="$cache" vim
   cinst --cacheLocation="$cache" vscode -params '"/NoDesktopIcon"'
 
   $VSCodeExtensions = @(
