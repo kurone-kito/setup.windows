@@ -211,13 +211,19 @@ if ($win7) {
 }
 
 & { ### JS dev
-  cinst --cacheLocation="$cache" nodejs.install
-  $env:Path += ";$($env:ProgramFiles)\nodejs"
-  cinst --cacheLocation="$cache" jq
-  npm install -g yarn
-  # npm install -g windows-build-tools # !! Freeze !!
+  # cinst --cacheLocation="$cache" nodejs.install
+  cinst --cacheLocation="$cache" nodist
+
+  $nodist = [IO.Path]::Combine(${env:ProgramFiles(x86)}, 'Nodist', 'bin')
+  $env:Path += ";$($nodist)"
+  nodist + 8
+  nodist + 10
+  nodist + 12
+  nodist global 12
   npm install -g exp
   npm install -g serverless
+  npm install -g yarn
+  # npm install -g windows-build-tools # !! Freeze !!
 }
 
 & { ### Game dev
