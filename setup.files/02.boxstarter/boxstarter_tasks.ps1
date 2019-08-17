@@ -211,7 +211,7 @@ if ($win7) {
 }
 
 & { ### JS dev
-  # cinst --cacheLocation="$cache" nodejs.install
+  cinst --cacheLocation="$cache" python # Need for aws
   cinst --cacheLocation="$cache" nodist
 
   $nodist = [IO.Path]::Combine(${env:ProgramFiles(x86)}, 'Nodist', 'bin')
@@ -260,6 +260,7 @@ if ($win7) {
   # Utils
   cinst --cacheLocation="$cache" autohotkey
   cinst --cacheLocation="$cache" crystaldiskmark
+  cinst --cacheLocation="$cache" drobo-dashboard
 
   # Multimedia
   cinst --cacheLocation="$cache" obs-studio
