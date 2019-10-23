@@ -68,7 +68,7 @@ if ($win8 -or $win10) {
     | ForEach-Object {
       Add-WindowsCapability -Online -Name $_.Name
     }
-  }
+}
 }
 
 & { ### VST Settings
@@ -147,11 +147,11 @@ if ($win7) {
     | Where-Object -Property Name -match OpenSSH `
     | Where-Object -Property State -eq Installed `
     | Measure-Object
-    $SystemSSH = $Installed.Count -gt 0
-  }
-  if (! $SystemSSH) {
-    cinst --cacheLocation="$cache" openssh -params '"/SSHServerFeature"'
-  }
+  $SystemSSH = $Installed.Count -gt 0
+}
+if (! $SystemSSH) {
+  cinst --cacheLocation="$cache" openssh -params '"/SSHServerFeature"'
+}
 }
 
 & { ### Basic dev
@@ -224,6 +224,10 @@ if ($win7) {
   npm install -g serverless
   npm install -g yarn
   # npm install -g windows-build-tools # !! Freeze !!
+}
+
+& { ### Web dev
+  cinst --cacheLocation="$cache" mkcert
 }
 
 & { ### Game dev
