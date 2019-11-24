@@ -68,7 +68,7 @@ if ($win8 -or $win10) {
     | ForEach-Object {
       Add-WindowsCapability -Online -Name $_.Name
     }
-}
+  }
 }
 
 & { ### VST Settings
@@ -147,11 +147,11 @@ if ($win7) {
     | Where-Object -Property Name -match OpenSSH `
     | Where-Object -Property State -eq Installed `
     | Measure-Object
-  $SystemSSH = $Installed.Count -gt 0
-}
-if (! $SystemSSH) {
-  cinst --cacheLocation="$cache" openssh -params '"/SSHServerFeature"'
-}
+    $SystemSSH = $Installed.Count -gt 0
+  }
+  if (! $SystemSSH) {
+    cinst --cacheLocation="$cache" openssh -params '"/SSHServerFeature"'
+  }
 }
 
 & { ### Basic dev
@@ -265,6 +265,7 @@ if ($win7) {
   cinst --cacheLocation="$cache" autohotkey
   cinst --cacheLocation="$cache" crystaldiskmark
   cinst --cacheLocation="$cache" drobo-dashboard
+  cinst --cacheLocation="$cache" wkhtmltopdf
 
   # Multimedia
   cinst --cacheLocation="$cache" obs-studio
