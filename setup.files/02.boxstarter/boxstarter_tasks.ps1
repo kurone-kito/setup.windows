@@ -216,10 +216,10 @@ if ($win7) {
 
   $nodist = [IO.Path]::Combine(${env:ProgramFiles(x86)}, 'Nodist', 'bin')
   $env:Path += ";$($nodist)"
-  nodist + 8
   nodist + 10
   nodist + 12
-  nodist global 12
+  nodist + 13
+  nodist global 13
   npm install -g exp
   npm install -g serverless
   npm install -g yarn
