@@ -28,13 +28,6 @@ guest_iso = case RUBY_PLATFORM
 
 
 Vagrant.configure('2') do |config|
-  config.vm.define 'win7' do |atomic|
-    atomic.vm.box = 'designerror/windows-7' # Win7 SP1
-    atomic.vm.provider 'virtualbox' do |vb|
-      vb.name = 'setup-windows-7'
-      vb.memory = '2560'
-    end
-  end
   config.vm.define 'win8.1' do |atomic|
     atomic.vm.box = 'opentable/win-8.1-enterprise-amd64-nocm'
     atomic.vm.provider 'virtualbox' do |vb|

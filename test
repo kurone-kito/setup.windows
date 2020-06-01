@@ -2,7 +2,7 @@
 
 # Validation
 if [ $# -eq 0 ]; then
-    echo "Usage: ./test win{7|8.1|10}"
+    echo "Usage: ./test win{8.1|10}"
     exit 255
 fi
 
@@ -87,7 +87,6 @@ app_install vagrant
 plugin_install vagrant-reload
 
 ### Skip when exists
-# vagrant box add designerror/windows-7
 # vagrant box add opentable/win-8.1-enterprise-amd64-nocm
 # vagrant box add Microsoft/EdgeOnWindows10
 

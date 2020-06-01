@@ -5,25 +5,12 @@ $cache = Join-Path $env:TMP 'choco'
 
 $winver = (Get-WmiObject win32_OperatingSystem).Version
 $wincap = (Get-WmiObject win32_OperatingSystem).Caption
-$win7 = $winver -match '^6\.1'
-$win8 = $winver -match '^6\.(2|3)'
+$win8 = $winver -match '^6\.3'
 $win10 = $winver -match '^10\.'
 $win10pro = $win10 -and ($wincap -match '(Pro|Enterprise)')
 
 # Managing on Chocolatey
 cinst --cacheLocation="$cache" boxstarter
-
-if ($win7) {
-  cinst --cacheLocation="$cache" kb976932 # Winows 7 SP1
-}
-
-if ($win7 -or $win8) {
-  cinst --cacheLocation="$cache" ie11
-}
-
-if ($win7) {
-  cinst --cacheLocation="$cache" dotnet4.5
-}
 
 & { # Powershell 5.1
   cinst --cacheLocation="$cache" dotnetfx
@@ -102,7 +89,7 @@ if ($win8 -or $win10) {
 & { ### Runtimes
   # Microsoft
   # cinst --cacheLocation="$cache" vcredist-all # <- vcredist2005: Fail on Win10
-  if ($win7 -or $win8) {
+  if ($win8) {
     cinst --cacheLocation="$cache" vcredist2005
   }
   cinst --cacheLocation="$cache" vcredist2008 vcredist2010 vcredist2012 vcredist2013 vcredist140 vcredist2015 vcredist2017
@@ -115,18 +102,10 @@ if ($win8 -or $win10) {
   cinst --cacheLocation="$cache" flashplayerppapi
 }
 
-### Security
-if ($win7) {
-  cinst --cacheLocation="$cache" microsoftsecurityessentials
-}
-
 & { ### Cloud storage
   cinst --cacheLocation="$cache" adobe-creative-cloud
   cinst --cacheLocation="$cache" dropbox
   cinst --cacheLocation="$cache" icloud
-  if ($win7) {
-    cinst --cacheLocation="$cache" onedrive
-  }
 }
 
 & { # Browsers
@@ -204,12 +183,6 @@ if ($win7) {
   }
 }
 
-### Office tools
-if ($win7) {
-  cinst --cacheLocation="$cache" adobereader -params '"/EnableUpdateService /UpdateMode:3"'
-  cinst --cacheLocation="$cache" thunderbird -params "l=ja-JP"
-}
-
 & { ### JS dev
   cinst --cacheLocation="$cache" python # Need for aws
   cinst --cacheLocation="$cache" nodist
@@ -238,10 +211,7 @@ if ($win7) {
 & { ### SNS, IM
   cinst --cacheLocation="$cache" discord.install
   cinst --cacheLocation="$cache" keybase
-  if ($win7) {
-    cinst --cacheLocation="$cache" skype
-    cinst --cacheLocation="$cache" slack
-  }
+  # Slack install by store.
 }
 
 & { ### Virtualization
