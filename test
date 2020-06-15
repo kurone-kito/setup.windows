@@ -88,6 +88,6 @@ plugin_install vagrant-reload
 
 ### Skip when exists
 # vagrant box add opentable/win-8.1-enterprise-amd64-nocm
-# vagrant box add Microsoft/EdgeOnWindows10
+# vagrant box add senglin/win-10-enterprise-vs2015community
 
 vagrant up --provision $1
