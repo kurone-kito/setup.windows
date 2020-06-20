@@ -5,6 +5,6 @@ if (Test-Path -Path C:\ProgramData\Boxstarter) {
   choco upgrade -y boxstarter
 }
 else {
-  Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://boxstarter.org/bootstrapper.ps1'))
+  . { Invoke-WebRequest -useb https://boxstarter.org/bootstrapper.ps1 } | Invoke-Expression
   Get-Boxstarter -Force
 }
