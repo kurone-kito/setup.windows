@@ -1,13 +1,14 @@
 Set-StrictMode -Version Latest
 Disable-UAC
 
-$cache = Join-Path $env:TMP 'choco'
-
 $winver = (Get-WmiObject win32_OperatingSystem).Version
 $wincap = (Get-WmiObject win32_OperatingSystem).Caption
 $win8 = $winver -match '^6\.3'
 $win10 = $winver -match '^10\.'
 $win10pro = $win10 -and ($wincap -match '(Pro|Enterprise)')
+
+$cache = Join-Path $env:TMP 'choco'
+New-Item -Path $cache -ItemType directory -Force
 
 # Managing on Chocolatey
 cinst --cacheLocation="$cache" boxstarter
