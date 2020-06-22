@@ -3,9 +3,9 @@ Disable-UAC
 
 $winver = (Get-WmiObject win32_OperatingSystem).Version
 $wincap = (Get-WmiObject win32_OperatingSystem).Caption
-$win8 = $winver -match '^6\.3'
+$win8 = $winver -match '^6\.'
 $win10 = $winver -match '^10\.'
-$win10pro = $win10 -and ($wincap -match '(Pro|Enterprise)')
+$win10pro = $win10 -and ($wincap -match '(Pro|Enterprise|Education)')
 
 $cache = Join-Path $env:TMP 'choco'
 New-Item -Path $cache -ItemType directory -Force
