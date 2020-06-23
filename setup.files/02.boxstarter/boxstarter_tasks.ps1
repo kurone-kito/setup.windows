@@ -247,8 +247,8 @@ if ($win8 -or $win10) {
 }
 
 & { ### Windows Update
-  Install-WindowsUpdate -Full -acceptEula
   Enable-MicrosoftUpdate
+  Install-WindowsUpdate -Full -acceptEula
 }
 
 & { ### Setup home folder
