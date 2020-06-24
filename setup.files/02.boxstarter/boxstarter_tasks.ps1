@@ -95,16 +95,10 @@ if ($win8 -or $win10) {
   }
   cinst --cacheLocation="$cache" vcredist2008 vcredist2010 vcredist2012 vcredist2013 vcredist140 vcredist2015 vcredist2017
   cinst --cacheLocation="$cache" directx
-  cinst --cacheLocation="$cache" silverlight
-
-  # Adobe
-  cinst --cacheLocation="$cache" flashplayeractivex
-  cinst --cacheLocation="$cache" flashplayerplugin
-  cinst --cacheLocation="$cache" flashplayerppapi
 }
 
 & { ### Cloud storage
-  cinst --cacheLocation="$cache" adobe-creative-cloud
+  # cinst --cacheLocation="$cache" adobe-creative-cloud # <- Error?
   cinst --cacheLocation="$cache" dropbox
   cinst --cacheLocation="$cache" icloud
 }
@@ -167,7 +161,6 @@ if ($win8 -or $win10) {
     'mikestead.dotenv',
     'ms-azuretools.vscode-docker',
     'ms-ceintl.vscode-language-pack-ja',
-    'ms-vscode.csharp',
     'ms-vscode.powershell',
     'ms-vscode.vscode-typescript-next',
     'ms-vscode-remote.vscode-remote-extensionpack',
@@ -194,7 +187,6 @@ if ($win8 -or $win10) {
   nodist + 12
   nodist + 13
   nodist global 13
-  npm install -g exp
   npm install -g serverless
   npm install -g yarn
   # npm install -g windows-build-tools # !! Freeze !!
@@ -212,7 +204,7 @@ if ($win8 -or $win10) {
 & { ### SNS, IM
   cinst --cacheLocation="$cache" discord.install
   cinst --cacheLocation="$cache" keybase
-  # Slack install by store.
+  # You should install FB-Messenger, Skype and Slack from store.
 }
 
 & { ### Virtualization
