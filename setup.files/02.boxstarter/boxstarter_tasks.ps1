@@ -23,15 +23,15 @@ if ($win8 -or $win10) {
   # Without vagrant
   if ($win10pro -and !(Test-Path -Path C:\vagrant)) {
     cinst --cacheLocation="$cache" Microsoft-Hyper-V-All --source windowsfeatures
+    cinst --cacheLocation="$cache" VirtualMachinePlatform --source windowsfeatures
+    cinst --cacheLocation="$cache" HypervisorPlatform --source windowsfeatures
+    cinst --cacheLocation="$cache" Containers-DisposableClientVM --source windowsfeatures
   }
 
   # NFS
   cinst --cacheLocation="$cache" ServicesForNFS-ClientOnly --source windowsfeatures
   cinst --cacheLocation="$cache" ClientForNFS-Infrastructure --source windowsfeatures
   cinst --cacheLocation="$cache" NFS-administration --source windowsfeatures
-
-  # Others
-  cinst --cacheLocation="$cache" NetFx3 --source windowsfeatures
 }
 
 & { ### Common Windows features
@@ -40,6 +40,7 @@ if ($win8 -or $win10) {
   cinst --cacheLocation="$cache" TFTP --source windowsfeatures
 
   # Others
+  cinst --cacheLocation="$cache" NetFx3 --source windowsfeatures
   cinst --cacheLocation="$cache" TIFFIFilter --source windowsfeatures
 }
 
