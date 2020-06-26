@@ -90,11 +90,12 @@ if ($win8 -or $win10) {
 
 & { ### Runtimes
   # Microsoft
-  # cinst --cacheLocation="$cache" vcredist-all # <- vcredist2005: Fail on Win10
-  if ($win8) {
-    cinst --cacheLocation="$cache" vcredist2005
+  if ($win10) {
+    cinst --cacheLocation="$cache" vcredist2008 vcredist2010 vcredist2012 vcredist2013 vcredist140 vcredist2015 vcredist2017
   }
-  cinst --cacheLocation="$cache" vcredist2008 vcredist2010 vcredist2012 vcredist2013 vcredist140 vcredist2015 vcredist2017
+  else {
+    cinst --cacheLocation="$cache" vcredist-all
+  }
   cinst --cacheLocation="$cache" directx
 }
 
