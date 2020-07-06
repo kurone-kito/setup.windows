@@ -106,8 +106,11 @@ if ($win8 -or $win10) {
 }
 
 & { # Browsers
-  cinst --cacheLocation="$cache" firefox -params "l=ja-JP"
+  cinst --cacheLocation="$cache" microsoft-edge
+  cinst --cacheLocation="$cache" chromium --pre
+  cinst --cacheLocation="$cache" firefox -params "'/l:ja-JP /NoDesktopShortcut /RemoveDistributionDir'"
   cinst --cacheLocation="$cache" googlechrome
+  cinst --cacheLocation="$cache" kindle
 }
 
 & { ### CLI tools
