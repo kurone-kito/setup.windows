@@ -114,11 +114,14 @@ if ($win8 -or $win10) {
 }
 
 & { ### CLI tools
-  cinst --cacheLocation="$cache" awscli
-  cinst --cacheLocation="$cache" git.install -params '"/GitOnlyOnPath /NoAutoCrlf /WindowsTerminal /NoShellIntegration /SChannel"'
+  cinst --cacheLocation="$cache" git -params "'/GitOnlyOnPath /NoAutoCrlf /WindowsTerminal /NoShellIntegration /SChannel'"
+  # Invoke-WebRequest -useb get.scoop.sh | Invoke-Expression # <- Error?
   cinst --cacheLocation="$cache" poshgit
   cinst --cacheLocation="$cache" gpg4win
+  cinst --cacheLocation="$cache" hub
+  cinst --cacheLocation="$cache" jq
   cinst --cacheLocation="$cache" sudo
+  cinst --cacheLocation="$cache" svn
 
   $SystemSSH = $false
   if ($win10) {
