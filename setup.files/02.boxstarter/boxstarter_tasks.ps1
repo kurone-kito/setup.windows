@@ -132,7 +132,7 @@ if ($win8 -or $win10) {
     $SystemSSH = $Installed.Count -gt 0
   }
   if (! $SystemSSH) {
-    cinst --cacheLocation="$cache" openssh -params '"/SSHServerFeature"'
+    cinst --cacheLocation="$cache" openssh -params "'/SSHServerFeature'"
   }
 }
 
