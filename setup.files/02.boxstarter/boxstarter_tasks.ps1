@@ -138,10 +138,11 @@ if ($win8 -or $win10) {
 
 & { ### Basic dev
   # SDKs
+  cinst --cacheLocation="$cache" openjdk
   cinst --cacheLocation="$cache" netfx-4.7.2-devpack
   cinst --cacheLocation="$cache" dotnetcore-sdk
 
-  cinst --cacheLocation="$cache" powershell-core
+  cinst --cacheLocation="$cache" powershell-core --install-arguments='"ADD_EXPLORER_CONTEXT_MENU_OPENPOWERSHELL=1 REGISTER_MANIFEST=1 ENABLE_PSREMOTING=1"' --packageparameters '"/CleanUpPath"'
 }
 
 & { ### Editor
@@ -207,6 +208,7 @@ if ($win8 -or $win10) {
 & { ### Game dev
   cinst --cacheLocation="$cache" androidstudio
   cinst --cacheLocation="$cache" unity-hub
+  cinst --cacheLocation="$cache" visualstudio2019community --package-parameters "--allWorkloads --includeRecommended --includeOptional --passive --locale ja-JP"
 }
 
 & { ### SNS, IM
