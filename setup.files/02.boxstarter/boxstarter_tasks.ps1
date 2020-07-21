@@ -148,28 +148,33 @@ if ($win8 -or $win10) {
 & { ### Editor
   cinst --cacheLocation="$cache" grammarly
   cinst --cacheLocation="$cache" notion
-  cinst --cacheLocation="$cache" vim
+  cinst --cacheLocation="$cache" vim --params "'/NoDesktopShortcuts /RestartExplorer'"
   cinst --cacheLocation="$cache" vscode -params '"/NoDesktopIcon"'
 
   $VSCodeExtensions = @(
+    'aaron-bond.better-comments',
+    'alefragnani.Bookmarks',
     'asvetliakov.snapshot-tools',
+    'britesnow.vscode-toggle-quotes',
     'chrislajoie.vscode-modelines',
-    'davidanson.vscode-markdownlint',
+    'coenraads.bracket-pair-colorizer-2',
+    'DavidAnson.vscode-markdownlint',
     'dbaeumer.vscode-eslint',
     'denco.confluence-markup',
     'donjayamanne.githistory',
     'eamodio.gitlens',
-    'editorconfig.editorconfig',
+    'EditorConfig.EditorConfig',
     'eg2.vscode-npm-script',
     'esbenp.prettier-vscode',
-    'fallenwood.viml',
+    'fallenwood.vimL',
+    'GrapeCity.gc-excelviewer',
     'jebbs.plantuml',
-    'jpoissonnier.vscode-styled-components',
-    'kelvin.vscode-sshfs',
-    'marcostazi.vs-code-vagrantfile',
+    'kumar-harsh.graphql-for-vscode',
+    'marcostazi.VS-code-vagrantfile',
     'mikestead.dotenv',
     'ms-azuretools.vscode-docker',
-    'ms-ceintl.vscode-language-pack-ja',
+    'MS-CEINTL.vscode-language-pack-ja',
+    'ms-vscode.js-debug-nightly',
     'ms-vscode.powershell',
     'ms-vscode.vscode-typescript-next',
     'ms-vscode-remote.vscode-remote-extensionpack',
@@ -177,7 +182,7 @@ if ($win8 -or $win10) {
     'orta.vscode-jest',
     'satokaz.vscode-bs-ctrlchar-remover',
     'sidneys1.gitconfig',
-    'visualstudioexptteam.vscodeintellicode',
+    'VisualStudioExptTeam.vscodeintellicode',
     'vscoss.vscode-ansible'
   )
   $env:Path += ";$($env:ProgramFiles)\Microsoft VS Code\bin"
