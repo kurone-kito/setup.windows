@@ -138,9 +138,10 @@ if ($win8 -or $win10) {
 
 & { ### Basic dev
   # SDKs
-  cinst --cacheLocation="$cache" openjdk
   cinst --cacheLocation="$cache" netfx-4.7.2-devpack
   cinst --cacheLocation="$cache" dotnetcore-sdk
+  cinst --cacheLocation="$cache" openjdk
+  cinst --cacheLocation="$cache" python # Need for aws
 
   cinst --cacheLocation="$cache" powershell-core --install-arguments='"ADD_EXPLORER_CONTEXT_MENU_OPENPOWERSHELL=1 REGISTER_MANIFEST=1 ENABLE_PSREMOTING=1"' --packageparameters '"/CleanUpPath"'
 }
@@ -192,7 +193,6 @@ if ($win8 -or $win10) {
 }
 
 & { ### JS dev
-  cinst --cacheLocation="$cache" python # Need for aws
   cinst --cacheLocation="$cache" nodist
 
   $nodist = [IO.Path]::Combine(${env:ProgramFiles(x86)}, 'Nodist', 'bin')
@@ -207,7 +207,9 @@ if ($win8 -or $win10) {
 }
 
 & { ### Web dev
+  cinst --cacheLocation="$cache" python # Need for aws
   cinst --cacheLocation="$cache" mkcert
+  cinst --cacheLocation="$cache" awscli
 }
 
 & { ### Game dev
