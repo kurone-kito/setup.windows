@@ -199,8 +199,9 @@ if ($win8 -or $win10) {
   $env:Path += ";$($nodist)"
   nodist + 10
   nodist + 12
-  nodist + 13
-  nodist global 13
+  nodist + 14
+  nodist global 14
+  nodist npm global match
   npm install -g serverless
   npm install -g yarn
   # npm install -g windows-build-tools # !! Freeze !!
