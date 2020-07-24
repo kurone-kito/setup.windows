@@ -99,6 +99,19 @@ if ($win8 -or $win10) {
   cinst --cacheLocation="$cache" directx
 }
 
+& { # Devices
+  cinst --cacheLocation="$cache" autohotkey
+  cinst --cacheLocation="$cache" drobo-dashboard
+  cinst --cacheLocation="$cache" logicoolgaming
+  # cinst --cacheLocation="$cache" xbox360-controller # <- depended to GUI interactive
+}
+
+& { # Audio
+  cinst --cacheLocation="$cache" voicemeeter
+  cinst --cacheLocation="$cache" mrswatson
+  # You should install iTunes from store.
+}
+
 & { ### Cloud storage
   # cinst --cacheLocation="$cache" adobe-creative-cloud # <- Error?
   cinst --cacheLocation="$cache" dropbox
@@ -216,6 +229,7 @@ if ($win8 -or $win10) {
 & { ### Game dev
   cinst --cacheLocation="$cache" androidstudio
   cinst --cacheLocation="$cache" unity-hub
+  cinst --cacheLocation="$cache" sidequest
   cinst --cacheLocation="$cache" visualstudio2019community --package-parameters "--allWorkloads --includeRecommended --includeOptional --passive --locale ja-JP"
 }
 
@@ -226,7 +240,7 @@ if ($win8 -or $win10) {
 }
 
 & { ### Virtualization
-  cinst --cacheLocation="$cache" virtualbox -params '"/NoDesktopShortcut"'
+  cinst --cacheLocation="$cache" virtualbox -params "'/ExtensionPack /NoDesktopShortcut'"
   cinst --cacheLocation="$cache" vagrant
 
   # Docker
@@ -239,13 +253,15 @@ if ($win8 -or $win10) {
 }
 
 & { ### Miscs
+  # Benchmark
+  cinst --cacheLocation="$cache" cinebench
+  cinst --cacheLocation="$cache" crystaldiskmark
+
   # Fonts
   cinst --cacheLocation="$cache" noto
 
   # Utils
-  cinst --cacheLocation="$cache" autohotkey
-  cinst --cacheLocation="$cache" crystaldiskmark
-  cinst --cacheLocation="$cache" drobo-dashboard
+  cinst --cacheLocation="$cache" authy-desktop
   cinst --cacheLocation="$cache" wkhtmltopdf
 
   # Multimedia
