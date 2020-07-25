@@ -250,6 +250,9 @@ if ($win8 -or $win10) {
   else {
     cinst --cacheLocation="$cache" docker-toolbox
   }
+
+  # WSL
+  cinst --cacheLocation="$cache" wsl-ubuntu-1804
 }
 
 & { ### Miscs
