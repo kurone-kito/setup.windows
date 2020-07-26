@@ -234,8 +234,9 @@ if ($win8 -or $win10) {
 }
 
 & { ### SNS, IM
-  cinst --cacheLocation="$cache" discord.install
+  cinst --cacheLocation="$cache" discord
   cinst --cacheLocation="$cache" keybase
+  cinst --cacheLocation="$cache" zoom
   # You should install FB-Messenger, Skype and Slack from store.
 }
 
