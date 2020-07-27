@@ -272,7 +272,9 @@ if ($win8 -or $win10) {
   cinst --cacheLocation="$cache" obs-studio
 
   # Games
+  cinst --cacheLocation="$cache" epicgameslauncher
   cinst --cacheLocation="$cache" minecraft
+  cinst --cacheLocation="$cache" origin
   cinst --cacheLocation="$cache" steam
 }
 
