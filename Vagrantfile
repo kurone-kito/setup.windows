@@ -32,14 +32,14 @@ Vagrant.configure('2') do |config|
     atomic.vm.box = 'opentable/win-8.1-enterprise-amd64-nocm'
     atomic.vm.provider 'virtualbox' do |vb|
       vb.name = 'setup-windows-8.1'
-      vb.memory = '2560'
+      vb.memory = '3072'
     end
   end
   config.vm.define 'win10' do |atomic|
     atomic.vm.box = 'senglin/win-10-enterprise-vs2015community'
     atomic.vm.provider 'virtualbox' do |vb|
       vb.name = 'setup-windows-10'
-      vb.memory = '3072'
+      vb.memory = '4096'
     end
   end
   config.vm.box_check_update = true
@@ -49,7 +49,7 @@ Vagrant.configure('2') do |config|
   config.winrm.password = 'vagrant'
   config.vm.provider 'virtualbox' do |vb|
     vb.gui = true
-    vb.cpus = 2
+    vb.cpus = 4
     vb.linked_clone = true
     vb.customize [
       'modifyvm', :id,
@@ -61,6 +61,7 @@ Vagrant.configure('2') do |config|
       '--biosapic', 'apic',
       '--bioslogofadeout', 'on',
       '--chipset', 'ich9',
+      # '--graphicscontroller', 'vboxsvga',
       '--hpet', 'on',
       '--hwvirtex', 'on',
       '--ioapic', 'on',
@@ -69,6 +70,7 @@ Vagrant.configure('2') do |config|
       '--longmode', 'on',
       '--mouse', 'usb',
       '--nestedpaging', 'on',
+      '--nested-hw-virt', 'on',
       '--pae', 'on',
       '--paravirtprovider', 'default',
       '--usb', 'on',
