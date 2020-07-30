@@ -132,8 +132,11 @@ if ($win8 -or $win10) {
 }
 
 & { ### Editor
+  cinst --cacheLocation="$cache" atom
+  cinst --cacheLocation="$cache" boostnote
   cinst --cacheLocation="$cache" grammarly
   cinst --cacheLocation="$cache" notion
+  cinst --cacheLocation="$cache" sublimetext3.app
   cinst --cacheLocation="$cache" vim --params "'/NoDesktopShortcuts /RestartExplorer'"
   cinst --cacheLocation="$cache" vscode -params '"/NoDesktopIcon"'
 
