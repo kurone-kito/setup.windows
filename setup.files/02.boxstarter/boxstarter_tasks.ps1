@@ -87,7 +87,7 @@ if ($win8 -or $win10) {
 & { ### Cloud storage
   # cinst --cacheLocation="$cache" adobe-creative-cloud # <- Error?
   cinst --cacheLocation="$cache" dropbox
-  cinst --cacheLocation="$cache" icloud
+  # You should install iCloud from store.
 }
 
 & { # Browsers
