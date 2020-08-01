@@ -232,8 +232,7 @@ if ($win8 -or $win10) {
 
 & { ### Miscs
   # Benchmark
-  cinst --cacheLocation="$cache" cinebench
-  cinst --cacheLocation="$cache" crystaldiskmark
+  # You should install CineBench and Crystal from store.
 
   # Fonts
   cinst --cacheLocation="$cache" noto
@@ -255,14 +254,6 @@ if ($win8 -or $win10) {
 & { ### Windows Update
   Enable-MicrosoftUpdate
   Install-WindowsUpdate -Full -acceptEula
-}
-
-& { ### Setup home folder
-  Push-Location $env:home
-  mkdir .ssh
-  mkdir src\my
-
-  Pop-Location
 }
 
 Enable-UAC
