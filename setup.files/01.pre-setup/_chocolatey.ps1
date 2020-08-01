@@ -6,6 +6,7 @@ if (Get-Command choco -ea SilentlyContinue) {
 else {
   New-Item -Path (Split-Path -Parent $profile) -ItemType directory -Force
   New-Item -ErrorAction Ignore -Path $profile -ItemType file
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
   [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
   Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
