@@ -69,6 +69,7 @@ if ($win8 -or $win10) {
     cinst --cacheLocation="$cache" vcredist-all
   }
   cinst --cacheLocation="$cache" directx
+  cinst --cacheLocation="$cache" dotnet
 }
 
 & { # Devices
