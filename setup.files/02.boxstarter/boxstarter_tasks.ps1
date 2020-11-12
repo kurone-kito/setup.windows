@@ -102,6 +102,7 @@ if ($win8 -or $win10) {
 & { ### CLI tools
   cinst --cacheLocation="$cache" git -params "'/GitOnlyOnPath /NoAutoCrlf /WindowsTerminal /NoShellIntegration /SChannel'"
   # Invoke-WebRequest -useb get.scoop.sh | Invoke-Expression # <- Error?
+  cinst --cacheLocation="$cache" powershell-packagemanagement
   cinst --cacheLocation="$cache" poshgit
   cinst --cacheLocation="$cache" gpg4win
   cinst --cacheLocation="$cache" hub
