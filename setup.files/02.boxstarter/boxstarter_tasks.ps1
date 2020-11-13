@@ -190,9 +190,10 @@ if ($win8 -or $win10) {
   nodist + 10
   nodist + 12
   nodist + 14
-  nodist global 14
+  nodist + 15
+  nodist global 15
   nodist npm global match
-  npm install -g npx serverless yarn
+  npm install -g npx yarn
   # npm install -g windows-build-tools # !! Freeze !!
 }
 
