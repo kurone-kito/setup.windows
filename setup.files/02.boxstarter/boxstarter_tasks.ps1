@@ -230,7 +230,7 @@ if ($win8 -or $win10) {
   }
 
   # WSL
-  cinst --cacheLocation="$cache" wsl-ubuntu-1804
+  cinst --cacheLocation="$cache" wsl-ubuntu-2004
 }
 
 & { ### Miscs
