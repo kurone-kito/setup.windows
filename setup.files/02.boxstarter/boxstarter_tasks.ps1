@@ -69,6 +69,7 @@ if ($win8 -or $win10) {
     cinst --cacheLocation="$cache" vcredist-all
   }
   cinst --cacheLocation="$cache" directx
+  cinst --cacheLocation="$cache" dotnet
 }
 
 & { # Devices
@@ -101,6 +102,7 @@ if ($win8 -or $win10) {
 & { ### CLI tools
   cinst --cacheLocation="$cache" git -params "'/GitOnlyOnPath /NoAutoCrlf /WindowsTerminal /NoShellIntegration /SChannel'"
   # Invoke-WebRequest -useb get.scoop.sh | Invoke-Expression # <- Error?
+  cinst --cacheLocation="$cache" powershell-packagemanagement
   cinst --cacheLocation="$cache" poshgit
   cinst --cacheLocation="$cache" gpg4win
   cinst --cacheLocation="$cache" hub
@@ -188,9 +190,10 @@ if ($win8 -or $win10) {
   nodist + 10
   nodist + 12
   nodist + 14
-  nodist global 14
+  nodist + 15
+  nodist global 15
   nodist npm global match
-  npm install -g npx serverless yarn
+  npm install -g npx yarn
   # npm install -g windows-build-tools # !! Freeze !!
 }
 
@@ -227,7 +230,7 @@ if ($win8 -or $win10) {
   }
 
   # WSL
-  cinst --cacheLocation="$cache" wsl-ubuntu-1804
+  cinst --cacheLocation="$cache" wsl-ubuntu-2004
 }
 
 & { ### Miscs
