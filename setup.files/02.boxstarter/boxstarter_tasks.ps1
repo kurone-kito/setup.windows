@@ -73,7 +73,6 @@ if ($win8 -or $win10) {
 }
 
 & { # Devices
-  cinst --cacheLocation="$cache" autohotkey
   cinst --cacheLocation="$cache" drobo-dashboard
   cinst --cacheLocation="$cache" logicoolgaming
   # cinst --cacheLocation="$cache" xbox360-controller # <- depended to GUI interactive
@@ -128,14 +127,11 @@ if ($win8 -or $win10) {
   cinst --cacheLocation="$cache" netfx-4.7.2-devpack
   cinst --cacheLocation="$cache" dotnetcore-sdk
   cinst --cacheLocation="$cache" openjdk
-  cinst --cacheLocation="$cache" python # Need for aws
-
-  cinst --cacheLocation="$cache" powershell-core --install-arguments='"ADD_EXPLORER_CONTEXT_MENU_OPENPOWERSHELL=1 REGISTER_MANIFEST=1 ENABLE_PSREMOTING=1"' --packageparameters '"/CleanUpPath"'
+  # You should install PowerShell Core from store.
 }
 
 & { ### Editor
   cinst --cacheLocation="$cache" atom
-  cinst --cacheLocation="$cache" boostnote
   cinst --cacheLocation="$cache" grammarly
   cinst --cacheLocation="$cache" notion
   cinst --cacheLocation="$cache" sublimetext3.app
@@ -198,15 +194,14 @@ if ($win8 -or $win10) {
 }
 
 & { ### Web dev
-  cinst --cacheLocation="$cache" python # Need for aws
-  cinst --cacheLocation="$cache" mkcert
   cinst --cacheLocation="$cache" awscli
+  cinst --cacheLocation="$cache" mkcert
+  cinst --cacheLocation="$cache" ngrok
 }
 
 & { ### Game dev
   cinst --cacheLocation="$cache" androidstudio
   cinst --cacheLocation="$cache" unity-hub
-  cinst --cacheLocation="$cache" sidequest
   cinst --cacheLocation="$cache" visualstudio2019community --package-parameters "--allWorkloads --includeRecommended --includeOptional --passive --locale ja-JP"
 }
 
@@ -228,9 +223,6 @@ if ($win8 -or $win10) {
   else {
     cinst --cacheLocation="$cache" docker-toolbox
   }
-
-  # WSL
-  cinst --cacheLocation="$cache" wsl-ubuntu-2004
 }
 
 & { ### Miscs
