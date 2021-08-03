@@ -16,8 +16,8 @@ preinstall() {
                 xcode-select --install
             fi
             brew update
-            installer="brew cask install"
-            installed_list="brew cask list"
+            installer="brew install --cask"
+            installed_list="brew list --cask"
             ;;
         'Linux')
             echo "switch by distributions"
