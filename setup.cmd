@@ -11,6 +11,5 @@ exit /b %ERRORLEVEL%
 rem run scripts
 :RUN
 
-pushd %~dp0setup.files
+cd %~dp0setup.files
 powershell -NoProfile -ExecutionPolicy Bypass .\index.ps1
-popd
