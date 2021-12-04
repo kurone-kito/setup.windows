@@ -1,11 +1,14 @@
 Set-StrictMode -Version Latest
 
+# If the profile does not exist, it will be generated.
+$profDir = Split-Path -Parent $profile
+New-Item -ErrorAction SilentlyContinue -Path $profDir -ItemType directory
+New-Item -ErrorAction SilentlyContinue -Path $profile -ItemType file
+
 if (Get-Command choco -ea SilentlyContinue) {
   choco upgrade -y chocolatey
 }
 else {
-  New-Item -Path (Split-Path -Parent $profile) -ItemType directory -Force
-  New-Item -ErrorAction Ignore -Path $profile -ItemType file
   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
