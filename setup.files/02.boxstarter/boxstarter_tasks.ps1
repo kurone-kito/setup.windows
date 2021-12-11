@@ -1,8 +1,8 @@
 Set-StrictMode -Version Latest
 Disable-UAC
 
-$winver = (Get-WmiObject win32_OperatingSystem).Version
-$wincap = (Get-WmiObject win32_OperatingSystem).Caption
+$winver = (Get-CimInstance win32_OperatingSystem).Version
+$wincap = (Get-CimInstance win32_OperatingSystem).Caption
 $win8 = $winver -match '^6\.'
 $win10 = $winver -match '^10\.'
 $win10pro = $win10 -and ($wincap -match '(Pro|Enterprise|Education)')
@@ -49,6 +49,7 @@ if ($win8 -or $win10) {
   Set-CornerNavigationOptions -EnableUpperLeftCornerSwitchApps -EnableUsePowerShellOnWinX
   Set-StartScreenOptions -DisableBootToDesktop -EnableShowStartOnActiveScreen -EnableShowAppsViewOnStartScreen -EnableSearchEverywhereInAppsView -DisableListDesktopAppsFirst
   Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowFileExtensions -EnableExpandToOpenFolder -EnableShowRecentFilesInQuickAccess -EnableShowFrequentFoldersInQuickAccess -DisableShowRibbon
+  Set-PageFile -InitialSize 9067 -MaximumSize 9067
 
   if ($win10) {
     Get-WindowsCapability -Online `

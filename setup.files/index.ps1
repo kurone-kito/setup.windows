@@ -1,5 +1,5 @@
 Set-StrictMode -Version Latest
-Write-Output (Get-WmiObject win32_OperatingSystem).Caption
+Write-Output (Get-CimInstance win32_OperatingSystem).Caption
 
 $cred = Get-Credential $env:username -Message `
   'Enter your password. It''s used for automatic login when the system reboots during the setup process.'
