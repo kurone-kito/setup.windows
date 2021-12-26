@@ -3,7 +3,6 @@ Disable-UAC
 
 $winver = (Get-CimInstance win32_OperatingSystem).Version
 $wincap = (Get-CimInstance win32_OperatingSystem).Caption
-$win8 = $winver -match '^6\.'
 $win10 = $winver -match '^10\.'
 $win10pro = $win10 -and ($wincap -match '(Pro|Enterprise|Education)')
 
@@ -18,9 +17,8 @@ cinst --cacheLocation="$cache" boxstarter
   cinst --cacheLocation="$cache" powershell
 }
 
-### Winows 8.1 or 10 features
-if ($win8 -or $win10) {
-  # Without vagrant
+& { ### Winows features
+  # Hyper-V (Without vagrant)
   if ($win10pro -and !(Test-Path -Path C:\vagrant)) {
     cinst --cacheLocation="$cache" Microsoft-Hyper-V-All --source windowsfeatures
     cinst --cacheLocation="$cache" VirtualMachinePlatform --source windowsfeatures
@@ -32,9 +30,7 @@ if ($win8 -or $win10) {
   cinst --cacheLocation="$cache" ServicesForNFS-ClientOnly --source windowsfeatures
   cinst --cacheLocation="$cache" ClientForNFS-Infrastructure --source windowsfeatures
   cinst --cacheLocation="$cache" NFS-administration --source windowsfeatures
-}
 
-& { ### Common Windows features
   # Connection
   cinst --cacheLocation="$cache" TelnetClient --source windowsfeatures
   cinst --cacheLocation="$cache" TFTP --source windowsfeatures
