@@ -77,7 +77,7 @@ cinst --cacheLocation="$cache" boxstarter
 
 & { # Audio
   cinst --cacheLocation="$cache" voicemeeter
-  cinst --cacheLocation="$cache" mrswatson
+  # cinst --cacheLocation="$cache" mrswatson
   # You should install iTunes from store.
 }
 
