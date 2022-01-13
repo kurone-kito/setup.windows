@@ -1,10 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-unless Vagrant.has_plugin?('vagrant-reload')
-  raise 'vagrant-reload is not installed!'
-end
-
 audio_driver = case RUBY_PLATFORM
   when /linux/
     'alsa'
@@ -26,8 +22,11 @@ guest_iso = case RUBY_PLATFORM
     raise 'Unknown RUBY_PLATFORM=#{RUBY_PLATFORM}'
   end
 
+# https://az792536.vo.msecnd.net/vms/VMBuild_20150916/Vagrant/IE11/IE11.Win81.Vagrant.zip
+# https://az792536.vo.msecnd.net/vms/VMBuild_20190311/Vagrant/MSEdge/MSEdge.Win10.Vagrant.zip
 
 Vagrant.configure('2') do |config|
+  config.vagrant.plugins = 'vagrant-reload'
   config.vm.define 'win8.1' do |atomic|
     atomic.vm.box = 'opentable/win-8.1-enterprise-amd64-nocm'
     atomic.vm.provider 'virtualbox' do |vb|

@@ -1,9 +1,8 @@
 Set-StrictMode -Version Latest
 Disable-UAC
 
-$winver = (Get-WmiObject win32_OperatingSystem).Version
-$wincap = (Get-WmiObject win32_OperatingSystem).Caption
-$win8 = $winver -match '^6\.'
+$winver = (Get-CimInstance win32_OperatingSystem).Version
+$wincap = (Get-CimInstance win32_OperatingSystem).Caption
 $win10 = $winver -match '^10\.'
 $win10pro = $win10 -and ($wincap -match '(Pro|Enterprise|Education)')
 
@@ -18,9 +17,8 @@ cinst --cacheLocation="$cache" boxstarter
   cinst --cacheLocation="$cache" powershell
 }
 
-### Winows 8.1 or 10 features
-if ($win8 -or $win10) {
-  # Without vagrant
+& { ### Winows features
+  # Hyper-V (Without vagrant)
   if ($win10pro -and !(Test-Path -Path C:\vagrant)) {
     cinst --cacheLocation="$cache" Microsoft-Hyper-V-All --source windowsfeatures
     cinst --cacheLocation="$cache" VirtualMachinePlatform --source windowsfeatures
@@ -32,9 +30,7 @@ if ($win8 -or $win10) {
   cinst --cacheLocation="$cache" ServicesForNFS-ClientOnly --source windowsfeatures
   cinst --cacheLocation="$cache" ClientForNFS-Infrastructure --source windowsfeatures
   cinst --cacheLocation="$cache" NFS-administration --source windowsfeatures
-}
 
-& { ### Common Windows features
   # Connection
   cinst --cacheLocation="$cache" TelnetClient --source windowsfeatures
   cinst --cacheLocation="$cache" TFTP --source windowsfeatures
@@ -49,6 +45,7 @@ if ($win8 -or $win10) {
   Set-CornerNavigationOptions -EnableUpperLeftCornerSwitchApps -EnableUsePowerShellOnWinX
   Set-StartScreenOptions -DisableBootToDesktop -EnableShowStartOnActiveScreen -EnableShowAppsViewOnStartScreen -EnableSearchEverywhereInAppsView -DisableListDesktopAppsFirst
   Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowFileExtensions -EnableExpandToOpenFolder -EnableShowRecentFilesInQuickAccess -EnableShowFrequentFoldersInQuickAccess -DisableShowRibbon
+  Set-PageFile -InitialSize 9067 -MaximumSize 9067
 
   if ($win10) {
     Get-WindowsCapability -Online `
@@ -80,7 +77,7 @@ if ($win8 -or $win10) {
 
 & { # Audio
   cinst --cacheLocation="$cache" voicemeeter
-  cinst --cacheLocation="$cache" mrswatson
+  # cinst --cacheLocation="$cache" mrswatson
   # You should install iTunes from store.
 }
 
@@ -186,8 +183,8 @@ if ($win8 -or $win10) {
   nodist + 10
   nodist + 12
   nodist + 14
-  nodist + 15
-  nodist global 15
+  nodist + 16
+  nodist global 16
   nodist npm global match
   npm install -g npx yarn
   # npm install -g windows-build-tools # !! Freeze !!
