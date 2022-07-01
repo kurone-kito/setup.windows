@@ -1,1 +1,27 @@
-{}
+{
+  "cSpell.ignorePaths": [
+    ".git/objects",
+    ".github/CODE_OF_CONDUCT.*",
+    ".vscode"
+  ],
+  "cSpell.words": [
+    "antlr",
+    "authy",
+    "awscli",
+    "choco",
+    "drobo",
+    "imager",
+    "kito",
+    "kurone",
+    "lato",
+    "logicool",
+    "meslo",
+    "mkcert",
+    "redistributable",
+    "scrcpy",
+    "tkool",
+    "tldr",
+    "vhdx",
+    "wkhtmltopdf"
+  ]
+}
