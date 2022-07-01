@@ -1,6 +1,6 @@
 # コントリビューター行動規範
 
-Language: [🇬🇧](./CODE_OF_CONDUCT.md) | [🇯🇵](./CODE_OF_CONDUCT.ja.md) | [🇨🇳](./CODE_OF_CONDUCT.zh.md)
+Language: [🇬🇧](./CODE_OF_CONDUCT.md) | **🇯🇵** | [🇨🇳](./CODE_OF_CONDUCT.zh.md)
 
 ## 私たちの約束
 
