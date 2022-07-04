@@ -317,6 +317,24 @@ NOTICE: In the Home edition, some features are excluded and installed.
 </details>
 <!-- markdownlint-enable MD033 -->
 
+## Additional setup
+
+Boxstarter, used in our main setup, is not good at setups requiring keystrokes or other operations. For example, it automatically skips after 30 seconds if it accepts keyboard input on any display. To work around this, we have provided an additional setup batch script that does not use Boxstarter.  
+メインのセットアップで使用している Boxstarter はキー入力などの操作を要求するセットアップを不得意としており、例えば何らかの表示をした上でキーボード入力を受け付けると、30 秒で自動的にスキップしてしまう特性があります。これを回避するために、Boxstarter を用いない、追加のセットアップ バッチ スクリプトを用意しました。
+
+Setup will provide voice notification whenever possible if your action is required, so please follow the guidance.  
+ユーザーの行動が必要な場合、セットアップはできる限り音声で通知していますので、ガイダンスに従ってください。
+
+### Usage
+
+```PowerShell
+PS> .\additional-setup
+```
+
+### Apps install
+
+- Unity version 2019.4.31f1 (via Unity Hub)
+
 ## Test on Virtualbox
 
 Test require a desktop OS that bash can use. e.g. macOS, Ubuntu desktop.  
