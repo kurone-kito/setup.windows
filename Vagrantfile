@@ -87,7 +87,7 @@ Vagrant.configure('2') do |config|
       '--medium', guest_iso
     ]
   end
-  config.vm.provision 'Install...Virtualbox guest additions', type: 'shell', path: 'setup.files/01.pre-setup/_virtualbox.ps1'
+  config.vm.provision 'Install...Virtualbox guest additions', type: 'shell', path: 'libs/virtualbox.ps1'
   config.vm.provision :reload
   # config.vm.provision 'setup', type: 'shell', path: 'setup.cmd'
 end
