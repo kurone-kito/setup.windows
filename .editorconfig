@@ -9,10 +9,6 @@ trim_trailing_whitespace = true
 
 [*.cmd]
 charset = latin1
-end_of_line = crlf
 
 [*.md]
 trim_trailing_whitespace = false
-
-[*.ps1]
-end_of_line = crlf
