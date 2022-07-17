@@ -17,6 +17,15 @@ Windows が不安定な時、OS をより手軽に再インストールするた
 [Chocolatey](https://chocolatey.org) と
 [BoxStarter](https://boxstarter.org) との、2 つのツールが役立ちました。
 
+## System requirements
+
+- x86, x64, or ARM64 computer
+- Windows 8.1, 10 20H2 or later, or 11
+  - Windows 8.1 not supported on ARM64 architecture
+- At least 2 GB of physical RAM.
+- At least 150 GB of free space is required as a system storage.
+- Internet connection
+
 ## Usage
 
 ```PowerShell
@@ -94,8 +103,8 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Packages manager
 
-- [BoxStarter](https://boxstarter.org)
-- [Chocolatey](https://chocolatey.org) (directly install)
+- **`!`** [BoxStarter](https://boxstarter.org)
+- **`!`** [Chocolatey](https://chocolatey.org) (directly install)
 - [Chocolatey `choco://` Protocol support](https://github.com/bcurran3/ChocolateyPackages/tree/master/choco-protocol-support)
 - `(-X)` [PowerShell Package Manager](https://www.powershellgallery.com)
 - [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
@@ -336,6 +345,14 @@ PS> .\additional-setup
 - Unity version 2019.4.31f1 (via Unity Hub)
 
 ## Test on Virtualbox
+
+Notice: The test environment provided by this repository has been out of
+maintenance for some time and may not work. Therefore, it may be more
+reliable to build your virtual environment and run it instead of using
+this one.  
+注意: このリポジトリはテスト用の仮想環境を提供していますが、
+長らくメンテナンスをサボっていたため、動作しない可能性が高いです。
+各々で独自の仮想環境を構築し、その上で動作検証をした方がより確実でしょう。
 
 Test require a desktop OS that bash can use. e.g. macOS, Ubuntu desktop.  
 テストには bash が使えるデスクトップ OS、例えば、、macOS や Ubuntu などが必要です。
