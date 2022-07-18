@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-installation script of the Boxstarter
+Setup the Unity Editor
 #>
 Set-StrictMode -Version Latest
 Set-Location $PSScriptRoot
@@ -15,12 +15,12 @@ if (-not $args.Count) {
   exit
 }
 
-function Write-SkippedMessage {
+function Write-UnityHubSkippedLog {
   param (
     [Parameter(Mandatory)][string]
     $due
   )
-  Write-Host "Skip installation of Unity Editor: ${due}"
+  Write-SkippedMessage -app 'Unity Editor' $due
   <#
   .SYNOPSIS
   write a log message to the console
@@ -29,30 +29,29 @@ function Write-SkippedMessage {
   #>
 }
 
-
 $UnityHub = [IO.Path]::Combine($env:ProgramFiles, 'Unity Hub', 'Unity Hub.exe')
 if (-not (Test-Path $UnityHub)) {
-  Write-SkippedMessage 'Unity Hub is not installed.'
+  Write-UnityHubSkippedLog 'Unity Hub is not installed.'
   exit
 }
 
 $version = '2019.4.31f1'
 $changeset = 'bd5abf232a62'
 $versions = & $UnityHub -- --headless editors --installed | Out-String
-if (-not ($versions | Select-String -Pattern $version)) {
-  Write-SkippedMessage "Unity Editor version ${version} is already installed."
+if ($versions | Select-String -Pattern $version) {
+  Write-UnityHubSkippedLog ('Unity Editor version {0} is already installed.' -f $version)
   exit
 }
 
-Start-Process $UnityHub
+Start-Process $UnityHub -NoNewWindow -RedirectStandardOutput 'NUL'
 
-$isSetupUnity = Out-Confirm 'To continue with the Unity setup, you will need to log in. Please login to your account in the running Unity Hub. If you are already logged in, press Y to install Unity. Otherwise, enter N to skip the Unity installation.'
+$isSetupUnity = Read-Confirm 'To continue with the Unity setup, you will need to log in. Please login to your account in the running Unity Hub. If you are already logged in, press Y to install Unity. Otherwise, enter N to skip the Unity installation.'
 
 if ($isSetupUnity -ne $True) {
-  Write-SkippedMessage "canceled by user"
+  Write-UnityHubSkippedLog 'canceled by user'
   exit
 }
 
-(& $UnityHub -- --headless install --version $version `
-  --changeset $changeset --childModules --module android `
-  --module documentation --module language-ja) -or $true
+$opts = '-- --headless install -v {0} -c {1} -m android -m documentation -m language-ja --cm' `
+  -f $version, $changeset
+Start-Process $UnityHub -ArgumentList $opts -NoNewWindow -Wait

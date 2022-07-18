@@ -112,6 +112,24 @@ function Request-Credential {
   #>
 }
 
+function Write-SkippedMessage {
+  param (
+    [Parameter(Mandatory)][string]
+    $app,
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true)][string]
+    $due
+  )
+  'Skip installation of {0}: {1}' -f $app, $due | Write-Host
+  <#
+  .SYNOPSIS
+  write a log message to the console
+  .PARAMETER app
+  the name of the app
+  .PARAMETER due
+  the reason why the installation is skipped
+  #>
+}
+
 function Write-Speech {
   param (
     [Parameter(Mandatory)][string]
@@ -138,9 +156,4 @@ function Write-Speech {
   #>
 }
 
-Export-ModuleMember -Function Get-IsAdmin
-Export-ModuleMember -Function Invoke-Self
-Export-ModuleMember -Function Invoke-SelfWithPrivileges
-Export-ModuleMember -Function Read-Confirm
-Export-ModuleMember -Function Request-Credential
-Export-ModuleMember -Function Write-Speech
+Export-ModuleMember -Function *

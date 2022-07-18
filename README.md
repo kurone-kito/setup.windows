@@ -342,7 +342,10 @@ PS> .\additional-setup
 
 ### Apps install
 
-- Unity version 2019.4.31f1 (via Unity Hub)
+- [Unity version 2019.4.31f1](https://unity3d.com/) (via Unity Hub)
+  - Module: Android Build Support
+  - Module: Documentation
+  - Module: Language Pack (Japanese)
 
 ## Test on Virtualbox
 
