@@ -347,6 +347,14 @@ PS> .\additional-setup
   - Module: Documentation
   - Module: Language Pack (Japanese)
 
+### Initialize for web-frontend development environment
+
+The script creates and installs a local CA in the system root store, and generates locally-trusted certificates using the mkcert.  
+セットアップ スクリプトは mkcert を使用して、システムルートストアにローカル CA を作成してインストールし、ローカルで信頼できる証明書を生成します。
+
+Also, by starting Firefox in this process, if the root store does not exist, it will be initialized.  
+また、この工程で Firefox を起動することにより、ルートストアが存在しない場合、初期化します。
+
 ## Test on Virtualbox
 
 Notice: The test environment provided by this repository has been out of
