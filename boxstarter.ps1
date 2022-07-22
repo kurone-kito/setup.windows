@@ -248,7 +248,6 @@ cinst --cacheLocation="$cacheDir" ngrok
 cinst --cacheLocation="$cacheDir" insomnia-rest-api-client # * with desktop shortcut
 
 ### Devices
-# cinst --cacheLocation="$cacheDir" drobo-dashboard # Cannot automation
 if (-not $arm64) {
   cinst --cacheLocation="$cacheDir" logicoolgaming # ! ignored the cacheDir
 }
