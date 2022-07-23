@@ -356,6 +356,26 @@ The script creates and installs a local CA in the system root store, and generat
 Also, by starting Firefox in this process, if the root store does not exist, it will be initialized.  
 また、この工程で Firefox を起動することにより、ルートストアが存在しない場合、初期化します。
 
+### Pulls some docker images
+
+<!-- markdownlint-disable MD033 -->
+<details><summary>list</summary>
+
+| Image                         | Tag                                                                                                       |
+| :---------------------------- | :-------------------------------------------------------------------------------------------------------- |
+| `hello-world`                 | _`latest`_                                                                                                |
+| `alpine`                      | _`latest`_                                                                                                |
+| `busybox`                     | _`latest`_                                                                                                |
+| `debian`                      | _`latest`_                                                                                                |
+| `ubuntu`                      | _`latest`_                                                                                                |
+| `docker`                      | `dind`, `git`, _`latest`_                                                                                 |
+| `node`                        | `14`, `14-alpine`, `14-bullseye-slim`, `16`, `16-alpine` `16-bullseye-slim`, `18`, `18-alpine`, `18-slim` |
+| `gitlab/gitlab-runner`        | _`latest`_                                                                                                |
+| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                              |
+
+</details>
+<!-- markdownlint-enable MD033 -->
+
 ## Test on Virtualbox
 
 Notice: The test environment provided by this repository has been out of
