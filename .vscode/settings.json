@@ -8,9 +8,11 @@
     "antlr",
     "authy",
     "awscli",
+    "cascadia",
     "choco",
     "dind",
     "drobo",
+    "fira",
     "imager",
     "kito",
     "kurone",
@@ -22,6 +24,7 @@
     "scrcpy",
     "tkool",
     "tldr",
+    "vbguest",
     "vhdx",
     "wkhtmltopdf"
   ]

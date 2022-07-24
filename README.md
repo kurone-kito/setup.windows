@@ -60,6 +60,10 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 |  `-A`   | without ARM64 Architecture                                                          |
 |  `-X`   | without Windows 10 / 11                                                             |
 
+#### Configuration tools
+
+- [chezmoi](https://www.chezmoi.io/)
+
 #### Convert tools for Media binary
 
 - [FFmpeg](https://www.ffmpeg.org/)
@@ -84,7 +88,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
     - v18
 - [Mono](https://www.mono-project.com/)
 - [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
-  - `(-A)` version 2015
   - version 2017
   - version 2019
   - version 2022
@@ -127,7 +130,8 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - **`!`** [Git](https://git-scm.com/)
   - **`!`** [Git Large File Storage](https://git-lfs.github.com/)
   - [git-delta: A viewer for git and diff output](https://github.com/dandavison/delta)
-- [GitHub Hub](https://hub.github.com/)
+- [GitHub CLI](https://cli.github.com/)
+- [GLab: GitLab CLI tool](https://glab.readthedocs.io/)
 
 #### Remote
 
@@ -162,6 +166,10 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - [act](https://github.com/nektos/act)
 - [GitLab Runner](https://gitlab.com/gitlab-org/gitlab-runner)
 - `(-A)` [Vagrant](https://www.vagrantup.com/)
+  - plugins (via Vagrant)
+    - [vagrant-disksize](https://github.com/sprotheroe/vagrant-disksize)
+    - [Vagrant Reload Provisioner](https://github.com/aidanns/vagrant-reload)
+    - [vagrant-vbguest](https://github.com/dotless-de/vagrant-vbguest)
 
 </details>
 <!-- markdownlint-enable MD033 -->
@@ -203,8 +211,8 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Devices
 
+- [AutoHotkey](https://www.autohotkey.com/)
 - [scrcpy](https://github.com/Genymobile/scrcpy)
-<!-- - [Drobo Dashboard](https://www.drobo.com/) -->
 - [logicool G Hub](https://gaming.logicool.co.jp/innovation/g-hub.html)
 - [Raspberry Pi Imager](https://www.raspberrypi.org/software/)
 
@@ -238,6 +246,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Remote
 
+- [Amazon Workspaces](https://clients.amazonworkspaces.com/)
 - `(-A)` [OpenVPN](https://openvpn.net/)
 - [Real VNC Viewer](https://www.realvnc.com/connect/download/viewer/)
 - [TeamViewer](https://www.teamviewer.com/)
@@ -252,7 +261,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Text editors
 
-- [GitHub Atom Editor](https://atom.io/)
 - [Sublime Text](https://www.sublimetext.com/)
 - [Visual Studio Code](https://code.visualstudio.com/)
 
@@ -262,7 +270,8 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - `(-X)` [Docker Toolbox](https://docs.docker.com/toolbox/)
 - [DOSBox-X](https://dosbox-x.com)
 - `(-A)` [Oracle VM Virtualbox + Extension Pack](https://www.virtualbox.org/)
-- [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/)
+- `(-8)` [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/)
+- `(-8)` [Ubuntu 22.04 LTS for WSL2](https://ubuntu.com/download/desktop)
 
 #### Web browsers
 
@@ -279,6 +288,8 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 <!-- markdownlint-disable MD033 -->
 <details><summary>Fonts</summary>
 
+- [Cascadia Code](https://github.com/microsoft/cascadia-code)
+- [Fira Code: free monospaced font with programming ligatures](https://github.com/tonsky/FiraCode)
 - [白源: HackGen Nerd](https://github.com/yuru7/HackGen)
 - [Lato](https://fonts.google.com/specimen/Lato)
 
@@ -313,14 +324,13 @@ NOTICE: In the Home edition, some features are excluded and installed.
   - fr-FR
   - ja-JP
   - zh-CN
-  - Language-specific fonts
 - Others
   - **`!`** .NET Framework 3.5
   - Microsoft Defender Application Guard
   - TIFF IFilter
   - Windows Developer Mode
   - Windows Feature Experience Pack
-  - Windows Storage Management
+  - ~~Windows Storage Management~~
   - XPS Viewer
 
 </details>

@@ -13,7 +13,6 @@ $progressFile = Join-Path $env:TEMP 'kurone-kito.setup.windows.tmp';
 function Set-Prepare {
 
   Disable-UAC
-  Disable-MicrosoftUpdate
   choco feature enable -n=allowEmptyChecksums
   <#
   .SYNOPSIS
@@ -22,7 +21,6 @@ function Set-Prepare {
 
 function Set-Teardown {
   choco feature disable -n=allowEmptyChecksums
-  Enable-MicrosoftUpdate
   Enable-UAC
   <#
   .SYNOPSIS
@@ -78,7 +76,34 @@ if ($vagrant) {
 }
 
 ###########################################################################
+### Remove the pre-installed apps
+Get-AppxPackage *BubbleWitch* | Remove-AppxPackage
+Get-AppxPackage *DisneyMagicKingdom* | Remove-AppxPackage
+Get-AppxPackage *DolbyAccess* | Remove-AppxPackage
+Get-AppxPackage king.com.CandyCrush* | Remove-AppxPackage
+Get-AppxPackage *HiddenCityMysteryofShadows* | Remove-AppxPackage
+Get-AppxPackage *MarchofEmpires* | Remove-AppxPackage
+Get-AppxPackage *Netflix* | Remove-AppxPackage
+Get-AppxPackage Microsoft.MicrosoftOfficeHub | Remove-AppxPackage
+
+###########################################################################
 ### Windows Features
+
+### System configuration
+Set-CornerNavigationOptions -EnableUpperLeftCornerSwitchApps -EnableUsePowerShellOnWinX
+Set-ExplorerOptions -showHiddenFilesFoldersDrives -showFileExtensions
+Set-StartScreenOptions -DisableBootToDesktop -EnableShowStartOnActiveScreen -EnableShowAppsViewOnStartScreen -EnableSearchEverywhereInAppsView -DisableListDesktopAppsFirst
+Set-BoxstarterTaskbarOptions -MultiMonitorOn -MultiMonitorMode All -MultiMonitorCombine Always
+Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowFileExtensions -EnableExpandToOpenFolder -EnableShowRecentFilesInQuickAccess -EnableShowFrequentFoldersInQuickAccess -DisableShowRibbon
+Enable-RemoteDesktop
+
+### Explorer options
+Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name NavPaneExpandToCurrentFolder -Value 1
+Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name SeparateProcess -Value 1
+Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name ShowCompColor -Value 1
+
+### Taskbar options
+Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Search -Name SearchboxTaskbarMode -Value 1
 
 @(
   # Virtualization
@@ -108,17 +133,6 @@ if ($vagrant) {
   cinst --cacheLocation="$cacheDir" $_ --source windowsfeatures
 }
 
-if (Test-PendingReboot) {
-  Invoke-Reboot
-}
-
-### System configuration
-Set-CornerNavigationOptions -EnableUpperLeftCornerSwitchApps -EnableUsePowerShellOnWinX
-Set-ExplorerOptions -showHiddenFilesFoldersDrives -showFileExtensions
-Set-StartScreenOptions -DisableBootToDesktop -EnableShowStartOnActiveScreen -EnableShowAppsViewOnStartScreen -EnableSearchEverywhereInAppsView -DisableListDesktopAppsFirst
-Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowFileExtensions -EnableExpandToOpenFolder -EnableShowRecentFilesInQuickAccess -EnableShowFrequentFoldersInQuickAccess -DisableShowRibbon
-# Enable-RemoteDesktop # ! <- CLI ERROR (but not stack)
-
 $installedOpenSSH = $false
 $caps = Get-Command Get-WindowsCapability -ErrorAction:SilentlyContinue
 if ($caps) {
@@ -129,8 +143,7 @@ if ($caps) {
     'es-ES',
     'fr-FR',
     'ja-JP',
-    'zh-CN'
-    'Language.Fonts',
+    'zh-CN',
 
     # Others
     'DirectX',
@@ -156,6 +169,10 @@ if ($caps) {
   $installedOpenSSH = $Installed.Count -gt 0
 }
 
+if (Test-PendingReboot) {
+  Invoke-Reboot
+}
+
 ###########################################################################
 ### Install apps via Chocolatey
 
@@ -171,10 +188,14 @@ cinst --cacheLocation="$cacheDir" adoptopenjdkjre --params="/ADDLOCAL=FeatureMai
 cinst --cacheLocation="$cacheDir" rpgtkoolvx-rtp
 cinst --cacheLocation="$cacheDir" rpgtkoolvxace-rtp
 
+### Configurations
+cinst --cacheLocation="$cacheDir" chezmoi
+
 ### CLI Tools
 cinst --cacheLocation="$cacheDir" git -params "/GitOnlyOnPath /NoAutoCrlf /NoGuiHereIntegration /NoShellIntegration /NoShellHereIntegration /SChannel /WindowsTerminal" # !! DEPENDENCIES
 cinst --cacheLocation="$cacheDir" git-lfs
-cinst --cacheLocation="$cacheDir" hub
+cinst --cacheLocation="$cacheDir" gh
+cinst --cacheLocation="$cacheDir" glab
 cinst --cacheLocation="$cacheDir" jq
 cinst --cacheLocation="$cacheDir" sudo
 
@@ -223,16 +244,12 @@ if (-not $arm64) {
 cinst --cacheLocation="$cacheDir" antlr4
 cinst --cacheLocation="$cacheDir" cmake
 cinst --cacheLocation="$cacheDir" fnm
-if (-not $arm64) {
-  cinst --cacheLocation="$cacheDir" microsoft-visual-cpp-build-tools --installargs "/Full" # ! Error? on ARM64
-}
-cinst --cacheLocation="$cacheDir" visualstudio2017buildtools --package-parameters "--allWorkloads --includeRecommended --includeOptional --passive --locale ja-JP"
-cinst --cacheLocation="$cacheDir" visualstudio2019buildtools --package-parameters "--allWorkloads --includeRecommended --includeOptional --passive --locale ja-JP"
-cinst --cacheLocation="$cacheDir" visualstudio2022buildtools --package-parameters "--allWorkloads --includeRecommended --includeOptional --passive --locale ja-JP"
+cinst --cacheLocation="$cacheDir" visualstudio2017buildtools --package-parameters '--allWorkloads --includeRecommended --includeOptional --passive'
+cinst --cacheLocation="$cacheDir" visualstudio2019buildtools --package-parameters '--allWorkloads --includeRecommended --includeOptional --passive'
+cinst --cacheLocation="$cacheDir" visualstudio2022buildtools --package-parameters '--allWorkloads --includeRecommended --includeOptional --passive'
 
 # Development: IDE
 cinst --cacheLocation="$cacheDir" vim --params "'/NoContextmenu /NoDesktopShortcuts /RestartExplorer'"
-cinst --cacheLocation="$cacheDir" atom # * with desktop shortcut
 cinst --cacheLocation="$cacheDir" sublimetext3
 cinst --cacheLocation="$cacheDir" vscode --params '"/NoDesktopIcon"'
 
@@ -268,6 +285,8 @@ cinst --cacheLocation="$cacheDir" 7zip
 cinst --cacheLocation="$cacheDir" svn
 
 ### Fonts
+cinst --cacheLocation="$cacheDir" cascadiafonts
+cinst --cacheLocation="$cacheDir" firacode
 cinst --cacheLocation="$cacheDir" font-hackgen
 cinst --cacheLocation="$cacheDir" font-hackgen-nerd
 cinst --cacheLocation="$cacheDir" lato
@@ -291,6 +310,7 @@ cinst --cacheLocation="$cacheDir" zoom # * with desktop shortcut
 
 ### Remote tools
 cinst --cacheLocation="$cacheDir" authy-desktop # * with desktop shortcut
+cinst --cacheLocation="$cacheDir" amazon-workspaces
 if (-not $arm64) {
   cinst --cacheLocation="$cacheDir" openvpn --params "'/SELECT_SHORTCUTS=0 /SELECT_LAUNCH=0'" # ! Error? on ARM64
 }
@@ -312,8 +332,8 @@ cinst --cacheLocation="$cacheDir" notion # * with desktop shortcut
 
 ### Virtualizations
 if (-not $arm64) {
-  cinst --cacheLocation="$cacheDir" vagrant # ! Error? on ARM64
   cinst --cacheLocation="$cacheDir" virtualbox --params "/ExtensionPack /NoDesktopShortcut" # ! Error? on ARM64
+  cinst --cacheLocation="$cacheDir" vagrant # ! Hangs on ARM64 only on Boxstarter
 }
 if ($win10or11) {
   cinst --cacheLocation="$cacheDir" docker-desktop # * with desktop shortcut
@@ -337,16 +357,39 @@ cinst --cacheLocation="$cacheDir" googlechrome # * with desktop shortcut
 ### WSL
 if ($win10or11) {
   cinst --cacheLocation="$cacheDir" wsl2 --params "/Version:2 /Retry:true"
+  cinst --cacheLocation="$cacheDir" wsl-ubuntu-2204
 }
 
 ###########################################################################
 ### Install apps via without Chocolatey
 
 ### Node.js
-fnm install 14
-fnm install 16
-fnm install 18
-fnm default 18
+if (Get-Command fnm -ErrorAction SilentlyContinue | Out-Null) {
+  $ErrorActionPreference = 'silentlycontinue'
+  fnm uninstall 14
+  fnm install 14
+  fnm uninstall 14
+  fnm install 16
+  fnm uninstall 14
+  fnm install 18
+  fnm default 18
+  $ErrorActionPreference = 'continue'
+}
+
+### Vagrant plugins
+if (Get-Command vagrant -ErrorAction SilentlyContinue | Out-Null) {
+  $installedPlugins = vagrant plugin list | Out-String
+  @(
+    'vagrant-disksize',
+    'vagrant-reload',
+    'vagrant-vbguest'
+  ) | Where-Object {
+    -not $installedPlugins.Contains($_)
+  } | ForEach-Object {
+    vagrant plugin install $_
+  }
+  vagrant plugin update
+}
 
 ###########################################################################
 ### Update
