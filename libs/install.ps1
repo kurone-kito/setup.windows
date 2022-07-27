@@ -25,5 +25,5 @@ $src = Join-Path '..' 'boxstarter.ps1'
 $dst = Join-Path $env:TEMP $('kito_setup_{0}.ps1' -f $env:KITO_SETUP_GUID)
 Copy-Item -Path $src -Destination $dst
 
-Install-BoxstarterPackage -PackageName "$dst" -Credential $cred
+Install-BoxstarterPackage -PackageName $dst -Credential $cred
 pause
