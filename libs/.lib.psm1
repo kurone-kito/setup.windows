@@ -4,18 +4,55 @@ The libraries for setup scripts.
 #>
 Set-StrictMode -Version Latest
 
-function Get-Options {
-  param (
-    [Parameter(Mandatory)][string]
-    # Specifies the filename.
-    $fileName
+function Add-Link {
+  param(
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
+    [System.IO.FileInfo]
+    $Source,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Destination
   )
-  '-ExecutionPolicy Bypass -NoLogo -File "{0}" 1' -f $fileName
+
+  $FileName = $Source.Name
+  $FullPath = $Source.FullName
+  $Replace = Join-Path $Destination -ChildPath $FileName
+  if (Test-Path -Path $Replace) {
+    Remove-Item -Force $Replace
+  }
+  New-Item -Path $Destination -ItemType SymbolicLink -Name $FileName -Value $FullPath
   <#
   .SYNOPSIS
-  The function gets the options on PowerShell execution.
-  .OUTPUTS
-  System.String. The options.
+  Add a symbolic link to a file.
+  .PARAMETER Source
+  The source file.
+  .PARAMETER Destination
+  The destination directory.
+  #>
+}
+
+function Add-Links {
+  param(
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
+    [string]
+    $Source,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Destination
+  )
+
+  New-Item -Path $Destination -ItemType Directory -Force
+  Get-ChildItem -Path $Source -Attributes !Directory `
+  | ForEach-Object { $_ | Add-Link -Destination $Destination }
+  <#
+  .SYNOPSIS
+  Add symbolic links to files.
+  .PARAMETER Source
+  The source directory.
+  .PARAMETER Destination
+  The destination directory.
   #>
 }
 
@@ -34,7 +71,7 @@ function Get-IsAdmin {
 }
 
 function Invoke-Self {
-  $options = Get-Options $MyInvocation.ScriptName
+  $options = Join-PSOptions $MyInvocation.ScriptName
   Start-Process powershell.exe -ArgumentList $options -Wait
   <#
   .SYNOPSIS
@@ -49,7 +86,7 @@ function Invoke-SelfWithPrivileges {
     return $false
   }
   [Console]::WriteLine('Please elevate to privileges for installing an app')
-  $options = Get-Options $MyInvocation.ScriptName
+  $options = Join-PSOptions $MyInvocation.ScriptName
   Start-Process powershell.exe -ArgumentList $options -Wait -Verb RunAs
   return $true
   <#
@@ -63,6 +100,21 @@ function Invoke-SelfWithPrivileges {
   #>
 }
 
+function Join-PSOptions {
+  param (
+    [Parameter(Mandatory)][string]
+    # Specifies the filename.
+    $fileName
+  )
+  '-ExecutionPolicy Bypass -NoLogo -File "{0}" 1' -f $fileName
+  <#
+  .SYNOPSIS
+  The function gets the options on PowerShell execution.
+  .OUTPUTS
+  System.String. The options.
+  #>
+}
+
 function Read-Confirm {
   param (
     [Parameter(Mandatory)][string]
@@ -70,17 +122,15 @@ function Read-Confirm {
     [string]
     $description = ''
   )
-  Write-Speech ($question + ' ' + $description) -stdout $false
+  '{0} {1}' -f $question, $description | Write-Speech -stdout $false
   $choiceDescription = 'System.Management.Automation.Host.ChoiceDescription'
-  $yes = new-object $choiceDescription('&Yes', 'Continue')
-  $no = new-object $choiceDescription('&No', 'Skip')
+  $yes = New-Object $choiceDescription('&Yes', 'Continue')
+  $no = New-Object $choiceDescription('&No', 'Skip')
   $choice = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
   $result = $host.ui.PromptForChoice($question, $description, $choice, 1)
-  if ($result -eq 0) {
-    $true
-  } else {
-    $false
-  }
+  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($yes)
+  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($no)
+  $result -eq 0
   <#
   .SYNOPSIS
   Prompts the user to confirm an action.
@@ -132,15 +182,16 @@ function Write-SkippedMessage {
 
 function Write-Speech {
   param (
-    [Parameter(Mandatory)][string]
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true)][string]
     $text,
     [boolean]
     $stdout = $true
   )
   $sapi = New-Object -ComObject SAPI.SpVoice
   # * NOTE: required the en-US locale to be installed
-  $sapi.Voice = $sapi.GetVoices("Language=409") | Select-Object -First 1
-  $sapi.Speak('Attention: ' + $text, 1)
+  $sapi.Voice = $sapi.GetVoices('Language=409') | Select-Object -First 1
+  $sapi.Speak('Attention: {0}' -f $text, 1)
+  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($sapi)
   if ($stdout) {
     Write-Warning $text
   }
