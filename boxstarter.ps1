@@ -5,7 +5,7 @@ The setup scripts by Boxstarter.
 
 Set-StrictMode -Version Latest
 
-$progressFile = Join-Path $env:TEMP 'kurone-kito.setup.windows.tmp';
+$runningFile = Join-Path $env:TEMP 'kurone-kito.setup.windows.tmp';
 
 ###########################################################################
 ### Functions
@@ -31,7 +31,7 @@ function Set-Teardown {
 ### Preparation
 
 Set-Prepare
-New-Item -Type File $progressFile -Force
+New-Item -Type File $runningFile -Force
 
 choco feature disable -n=skipPackageUpgradesWhenNotInstalled
 choco feature enable -n=useRememberedArgumentsForUpgrades
@@ -39,8 +39,8 @@ choco feature enable -n=useRememberedArgumentsForUpgrades
 ###########################################################################
 ### Collect information on the current environment.
 
-$win10or11 = (Get-CimInstance win32_OperatingSystem).Version -match '^1(0|1)\.'
-$arm64 = (Get-CimInstance Win32_ComputerSystem).SystemType -like "ARM64*"
+$isWin1X = (Get-CimInstance win32_OperatingSystem).Version -match '^1(0|1)\.'
+$isArm64 = (Get-CimInstance Win32_ComputerSystem).SystemType -like "ARM64*"
 
 $vagrant = Test-Path -Path C:\vagrant
 
@@ -210,7 +210,7 @@ cinst --cacheLocation="$cacheDir" boxstarter # * with desktop shortcut
 cinst --cacheLocation="$cacheDir" choco-protocol-support
 cinst --cacheLocation="$cacheDir" chocolatey
 cinst --cacheLocation="$cacheDir" chocolateygui --params="'/DefaultToDarkMode /Global'"
-if (-not $win10or11) {
+if (-not $isWin1X) {
   cinst --cacheLocation="$cacheDir" powershell-packagemanagement
 }
 
@@ -219,7 +219,7 @@ cinst --cacheLocation="$cacheDir" obs-studio # * with desktop shortcut
 cinst --cacheLocation="$cacheDir" autohotkey # * vb-cable dependeds it but automate installation is not working
 cinst --cacheLocation="$cacheDir" vb-cable
 cinst --cacheLocation="$cacheDir" vsthost
-if (-not $arm64) {
+if (-not $isArm64) {
   cinst --cacheLocation="$cacheDir" voicemeeter # ! <- ERROR? on ARM64
 }
 
@@ -235,7 +235,7 @@ cinst --cacheLocation="$cacheDir" sqlite
 
 ### Cloud storages
 # cinst --cacheLocation="$cacheDir" adobe-creative-cloud --ignore-checksums # ! <- depended to GUI interactive
-if (-not $arm64) {
+if (-not $isArm64) {
   cinst --cacheLocation="$cacheDir" dropbox # ! Error on ARM64 (only x86 binary)
 }
 # You should install iCloud from store.
@@ -265,7 +265,7 @@ cinst --cacheLocation="$cacheDir" ngrok
 cinst --cacheLocation="$cacheDir" insomnia-rest-api-client # * with desktop shortcut
 
 ### Devices
-if (-not $arm64) {
+if (-not $isArm64) {
   cinst --cacheLocation="$cacheDir" logicoolgaming # ! ignored the cacheDir
 }
 cinst --cacheLocation="$cacheDir" scrcpy # * with desktop shortcut
@@ -273,7 +273,7 @@ cinst --cacheLocation="$cacheDir" scrcpy # * with desktop shortcut
 ### Documentations
 cinst --cacheLocation="$cacheDir" graphviz
 cinst --cacheLocation="$cacheDir" kindle # * with desktop shortcut
-if (-not $arm64) {
+if (-not $isArm64) {
   cinst --cacheLocation="$cacheDir" pandoc # ! Hangs on ARM64
 }
 cinst --cacheLocation="$cacheDir" plantuml --params="'/NoShortcuts'"
@@ -311,7 +311,7 @@ cinst --cacheLocation="$cacheDir" zoom # * with desktop shortcut
 ### Remote tools
 cinst --cacheLocation="$cacheDir" authy-desktop # * with desktop shortcut
 cinst --cacheLocation="$cacheDir" amazon-workspaces
-if (-not $arm64) {
+if (-not $isArm64) {
   cinst --cacheLocation="$cacheDir" openvpn --params "'/SELECT_SHORTCUTS=0 /SELECT_LAUNCH=0'" # ! Error? on ARM64
 }
 cinst --cacheLocation="$cacheDir" teamviewer # * with desktop shortcut
@@ -331,11 +331,11 @@ cinst --cacheLocation="$cacheDir" notion # * with desktop shortcut
 # You should install Microsoft To Do from store.
 
 ### Virtualizations
-if (-not $arm64) {
+if (-not $isArm64) {
   cinst --cacheLocation="$cacheDir" virtualbox --params "/ExtensionPack /NoDesktopShortcut" # ! Error? on ARM64
   cinst --cacheLocation="$cacheDir" vagrant # ! Hangs on ARM64 only on Boxstarter
 }
-if ($win10or11) {
+if ($isWin1X) {
   cinst --cacheLocation="$cacheDir" docker-desktop # * with desktop shortcut
 } else {
   cinst --cacheLocation="$cacheDir" docker-toolbox
@@ -345,7 +345,7 @@ cinst --cacheLocation="$cacheDir" gitlab-runner --params "/Service"
 cinst --cacheLocation="$cacheDir" dosbox-x --ignore-checksums
 
 ### Web browsers
-if (-not $win10or11) {
+if (-not $isWin1X) {
   cinst --cacheLocation="$cacheDir" microsoft-edge
 }
 cinst --cacheLocation="$cacheDir" chromium --pre # * with desktop shortcut
@@ -355,7 +355,7 @@ cinst --cacheLocation="$cacheDir" tor-browser --params "/Locale:ja-JP" # * with 
 cinst --cacheLocation="$cacheDir" googlechrome # * with desktop shortcut
 
 ### WSL
-if ($win10or11) {
+if ($isWin1X) {
   cinst --cacheLocation="$cacheDir" wsl2 --params "/Version:2 /Retry:true"
   cinst --cacheLocation="$cacheDir" wsl-ubuntu-2204
 }
@@ -407,5 +407,5 @@ if (Test-PendingReboot) {
 
 ###########################################################################
 ### Teardown
-Remove-Item $progressFile -Force
+Remove-Item $runningFile -Force
 Set-Teardown

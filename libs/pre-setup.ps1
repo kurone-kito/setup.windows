@@ -7,8 +7,8 @@ Set-Location $PSScriptRoot
 
 Write-Host 'Launched the setup script. Continue...'
 
-$progressFile = Join-Path $env:TEMP 'kurone-kito.setup.windows.tmp';
-New-Item -Type File $progressFile -Force
+$runningFile = Join-Path $env:TEMP 'kurone-kito.setup.windows.tmp';
+New-Item -Type File $runningFile -Force
 
 Get-ChildItem -Recurse *.ps1 | Unblock-File
 
