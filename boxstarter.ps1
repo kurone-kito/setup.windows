@@ -128,7 +128,7 @@ Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Search -N
   'Windows-Defender-ApplicationGuard'
 ) | Where-Object {
   $info = clist $_ --source windowsfeatures
-  $info -and $info.Contains('State : Disabled')
+  $info -and $info -like '*State : Disabled*'
 } | ForEach-Object {
   cinst --cacheLocation="$cacheDir" $_ --source windowsfeatures
 }
@@ -184,7 +184,7 @@ cinst --cacheLocation="$cacheDir" dotnetcore-runtime
 cinst --cacheLocation="$cacheDir" directx
 cinst --cacheLocation="$cacheDir" xna31 --ignore-checksums
 cinst --cacheLocation="$cacheDir" xna
-cinst --cacheLocation="$cacheDir" adoptopenjdkjre --params="/ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome,FeatureIcedTeaWeb"
+cinst --cacheLocation="$cacheDir" adoptopenjdkjre --params='/ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome,FeatureIcedTeaWeb'
 cinst --cacheLocation="$cacheDir" rpgtkoolvx-rtp
 cinst --cacheLocation="$cacheDir" rpgtkoolvxace-rtp
 
@@ -192,7 +192,7 @@ cinst --cacheLocation="$cacheDir" rpgtkoolvxace-rtp
 cinst --cacheLocation="$cacheDir" chezmoi
 
 ### CLI Tools
-cinst --cacheLocation="$cacheDir" git -params "/GitOnlyOnPath /NoAutoCrlf /NoGuiHereIntegration /NoShellIntegration /NoShellHereIntegration /SChannel /WindowsTerminal" # !! DEPENDENCIES
+cinst --cacheLocation="$cacheDir" git -params '/GitOnlyOnPath /NoAutoCrlf /NoGuiHereIntegration /NoShellIntegration /NoShellHereIntegration /SChannel /WindowsTerminal' # !! DEPENDENCIES
 cinst --cacheLocation="$cacheDir" git-lfs
 cinst --cacheLocation="$cacheDir" gh
 cinst --cacheLocation="$cacheDir" glab
@@ -332,7 +332,7 @@ cinst --cacheLocation="$cacheDir" notion # * with desktop shortcut
 
 ### Virtualizations
 if (-not $isArm64) {
-  cinst --cacheLocation="$cacheDir" virtualbox --params "/ExtensionPack /NoDesktopShortcut" # ! Error? on ARM64
+  cinst --cacheLocation="$cacheDir" virtualbox --params '/ExtensionPack /NoDesktopShortcut' # ! Error? on ARM64
   cinst --cacheLocation="$cacheDir" vagrant # ! Hangs on ARM64 only on Boxstarter
 }
 if ($isWin1X) {
@@ -341,7 +341,7 @@ if ($isWin1X) {
   cinst --cacheLocation="$cacheDir" docker-toolbox
 }
 cinst --cacheLocation="$cacheDir" act-cli
-cinst --cacheLocation="$cacheDir" gitlab-runner --params "/Service"
+cinst --cacheLocation="$cacheDir" gitlab-runner --params '/Service'
 cinst --cacheLocation="$cacheDir" dosbox-x --ignore-checksums
 
 ### Web browsers
@@ -351,12 +351,12 @@ if (-not $isWin1X) {
 cinst --cacheLocation="$cacheDir" chromium --pre # * with desktop shortcut
 cinst --cacheLocation="$cacheDir" elinks
 cinst --cacheLocation="$cacheDir" firefoxesr --params "'/l:ja-JP /NoDesktopShortcut /RemoveDistributionDir'"
-cinst --cacheLocation="$cacheDir" tor-browser --params "/Locale:ja-JP" # * with desktop shortcut
+cinst --cacheLocation="$cacheDir" tor-browser --params '/Locale:ja-JP' # * with desktop shortcut
 cinst --cacheLocation="$cacheDir" googlechrome # * with desktop shortcut
 
 ### WSL
 if ($isWin1X) {
-  cinst --cacheLocation="$cacheDir" wsl2 --params "/Version:2 /Retry:true"
+  cinst --cacheLocation="$cacheDir" wsl2 --params '/Version:2 /Retry:true'
   cinst --cacheLocation="$cacheDir" wsl-ubuntu-2204
 }
 
@@ -383,11 +383,10 @@ if (Get-Command vagrant -ErrorAction SilentlyContinue | Out-Null) {
     'vagrant-disksize',
     'vagrant-reload',
     'vagrant-vbguest'
-  ) | Where-Object {
-    -not $installedPlugins.Contains($_)
-  } | ForEach-Object {
-    vagrant plugin install $_
-  }
+  ) `
+    | Select-Object { '*{0}*' -f $_ } `
+    | Where-Object { -not $installedPlugins -like $_ } `
+    | ForEach-Object { vagrant plugin install $_ }
   vagrant plugin update
 }
 
