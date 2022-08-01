@@ -10,8 +10,6 @@ Write-Host 'Launched the setup script. Continue...'
 $runningFile = Join-Path $env:TEMP 'kurone-kito.setup.windows.tmp';
 New-Item -Type File $runningFile -Force
 
-Get-ChildItem -Recurse *.ps1 | Unblock-File
-
 ./profile.ps1
 ./boxstarter.ps1
 ./install.ps1
