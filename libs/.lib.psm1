@@ -144,8 +144,9 @@ function Read-Confirm {
 }
 
 function Request-Credential {
-  $msg = 'Enter your password. It''s used for automatic login when the system reboots during the setup process.'
+  $msg = 'Enter your password. It''s automatic login when the system reboots during the setup process.'
   [Console]::WriteLine($msg)
+  [Console]::Beep(2000, 100); [Console]::Beep(1000, 100)
   $cred = Get-Credential $env:username -Message $msg
   if ($null -eq $cred) {
     [Console]::WriteLine('Abort.')
