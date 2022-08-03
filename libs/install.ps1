@@ -15,6 +15,9 @@ if (-not $args.Count) {
   exit
 }
 
+. ([IO.Path]::Combine($env:ProgramData, 'Boxstarter', 'BoxstarterShell.ps1'))
+Set-Location $PSScriptRoot
+
 $cred = Request-Credential
 if (-not $cred) {
   exit
