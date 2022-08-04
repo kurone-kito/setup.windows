@@ -70,6 +70,29 @@ function Get-IsAdmin {
   #>
 }
 
+function Invoke-BoxstarterFromURL {
+  param(
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
+    [string]
+    $Packages
+  )
+  $iePath = $env:ProgramFiles `
+    | Join-Path -ChildPath 'Internet Explorer' `
+    | Join-Path -ChildPath 'iexplore.exe'
+  [Environment]::GetFolderPath('Startup') `
+    | Join-Path -ChildPath 'boxstarter-post-restart.bat' `
+    | New-TouchFile
+  $url = 'https://boxstarter.org/package/' + $Packages
+  Start-Process $iePath -ArgumentList $url
+  Out-Beep
+  <#
+  .SYNOPSIS
+  Invoke the boxstarter from a URL.
+  .PARAMETER Packages
+  The package name(s).
+  #>
+}
+
 function Invoke-Self {
   $options = Join-PSOptions $MyInvocation.ScriptName
   Start-Process powershell.exe -ArgumentList $options -Wait
@@ -112,6 +135,36 @@ function Join-PSOptions {
   The function gets the options on PowerShell execution.
   .OUTPUTS
   System.String. The options.
+  #>
+}
+
+function New-TouchFile {
+  param(
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
+    [string]
+    $Path
+  )
+  if (-not (Test-Path -Path $Path)) {
+    New-Item -Path $Path -ItemType File | Out-Null
+  }
+  <#
+  .SYNOPSIS
+  Create a file.
+  .PARAMETER Path
+  The path of the file.
+  #>
+}
+
+function Out-Beep {
+  if ([System.Environment]::OSVersion.Platform -eq 'Win32NT') {
+    [Console]::Beep(2000, 100)
+    [Console]::Beep(1000, 100)
+  } else {
+    Write-Host "`a"
+  }
+  <#
+  .SYNOPSIS
+  The function makes a beep alert.
   #>
 }
 
