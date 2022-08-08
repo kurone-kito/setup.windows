@@ -28,6 +28,25 @@ Windows が不安定な時、OS をより手軽に再インストールするた
 
 ## Usage
 
+### A. Quick install (Recommended)
+
+1. Open the follow link **in Microsoft Edge**:  
+   下記のリンクを **Microsoft Edge で**開きます:  
+   <https://boxstarter.org/package/url?https://raw.githubusercontent.com/kurone-kito/setup.windows/master/boxstarter.ps1>
+2. A confirmation dialog will appear asking permission to download, run ClickOnce, and allow UAC. Please allow all of them.  
+   ダウンロード、ClickOnce の実行、そして UAC の許可を求める確認ダイアログが表示されます。それらにおいて、全て許可してください。
+3. The terminal will start, and the setup will prompt you to enter the password for the current user account. It is required for an automatic reboot during setup; You should enter it correctly and press Enter at the end.  
+   端末が起動し、セットアップで現在のユーザーアカウントのパスワードを入力するよう促されます。これは、セットアップ中に自動で再起動するために必要なものなので、正しく入力し、最後に Enter キーを押してください。
+4. Some time rebooted, the installation is complete; it will wait for you to enter the Enter key to exit.  
+   複数回再起動し、インストールが完了すると、Enter キーの入力待ちとなるため、Enter キーを入力して終了します。
+5. Finally, restart Windows manually to complete the setup.  
+   手動で Windows を再起動して、セットアップ完了です。
+
+### B. Classic install
+
+Clone or download and unzip this repository in advance, and run the following command:  
+予めこのリポジトリをクローン、もしくはダウンロードと解凍した上で下記のコマンドを実行します:
+
 ```PowerShell
 PS> .\setup
 ```
