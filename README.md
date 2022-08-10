@@ -17,7 +17,35 @@ Windows が不安定な時、OS をより手軽に再インストールするた
 [Chocolatey](https://chocolatey.org) と
 [BoxStarter](https://boxstarter.org) との、2 つのツールが役立ちました。
 
+## System requirements
+
+- x86, x64, or ARM64 computer
+- Windows 8.1, 10 20H2 or later, or 11
+  - Windows 8.1 not supported on ARM64 architecture
+- At least 2 GB of physical RAM.
+- At least 150 GB of free space is required as a system storage.
+- Internet connection
+
 ## Usage
+
+### A. Quick install (Recommended)
+
+1. Open the follow link **in Microsoft Edge**:  
+   下記のリンクを **Microsoft Edge で**開きます:  
+   <https://boxstarter.org/package/url?https://raw.githubusercontent.com/kurone-kito/setup.windows/master/boxstarter.ps1>
+2. A confirmation dialog will appear asking permission to download, run ClickOnce, and allow UAC. Please allow all of them.  
+   ダウンロード、ClickOnce の実行、そして UAC の許可を求める確認ダイアログが表示されます。それらにおいて、全て許可してください。
+3. The terminal will start, and the setup will prompt you to enter the password for the current user account. It is required for an automatic reboot during setup; You should enter it correctly and press Enter at the end.  
+   端末が起動し、セットアップで現在のユーザーアカウントのパスワードを入力するよう促されます。これは、セットアップ中に自動で再起動するために必要なものなので、正しく入力し、最後に Enter キーを押してください。
+4. Some time rebooted, the installation is complete; it will wait for you to enter the Enter key to exit.  
+   複数回再起動し、インストールが完了すると、Enter キーの入力待ちとなるため、Enter キーを入力して終了します。
+5. Finally, restart Windows manually to complete the setup.  
+   手動で Windows を再起動して、セットアップ完了です。
+
+### B. Classic install
+
+Clone or download and unzip this repository in advance, and run the following command:  
+予めこのリポジトリをクローン、もしくはダウンロードと解凍した上で下記のコマンドを実行します:
 
 ```PowerShell
 PS> .\setup
@@ -51,6 +79,10 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 |  `-A`   | without ARM64 Architecture                                                          |
 |  `-X`   | without Windows 10 / 11                                                             |
 
+#### Configuration tools
+
+- [chezmoi](https://www.chezmoi.io/)
+
 #### Convert tools for Media binary
 
 - [FFmpeg](https://www.ffmpeg.org/)
@@ -75,7 +107,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
     - v18
 - [Mono](https://www.mono-project.com/)
 - [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
-  - `(-A)` version 2015
   - version 2017
   - version 2019
   - version 2022
@@ -94,8 +125,8 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Packages manager
 
-- [BoxStarter](https://boxstarter.org)
-- [Chocolatey](https://chocolatey.org) (directly install)
+- **`!`** [BoxStarter](https://boxstarter.org)
+- **`!`** [Chocolatey](https://chocolatey.org) (directly install)
 - [Chocolatey `choco://` Protocol support](https://github.com/bcurran3/ChocolateyPackages/tree/master/choco-protocol-support)
 - `(-X)` [PowerShell Package Manager](https://www.powershellgallery.com)
 - [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
@@ -118,7 +149,8 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - **`!`** [Git](https://git-scm.com/)
   - **`!`** [Git Large File Storage](https://git-lfs.github.com/)
   - [git-delta: A viewer for git and diff output](https://github.com/dandavison/delta)
-- [GitHub Hub](https://hub.github.com/)
+- [GitHub CLI](https://cli.github.com/)
+- [GLab: GitLab CLI tool](https://glab.readthedocs.io/)
 
 #### Remote
 
@@ -153,6 +185,10 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - [act](https://github.com/nektos/act)
 - [GitLab Runner](https://gitlab.com/gitlab-org/gitlab-runner)
 - `(-A)` [Vagrant](https://www.vagrantup.com/)
+  - plugins (via Vagrant)
+    - [vagrant-disksize](https://github.com/sprotheroe/vagrant-disksize)
+    - [Vagrant Reload Provisioner](https://github.com/aidanns/vagrant-reload)
+    - [vagrant-vbguest](https://github.com/dotless-de/vagrant-vbguest)
 
 </details>
 <!-- markdownlint-enable MD033 -->
@@ -194,8 +230,8 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Devices
 
+- [AutoHotkey](https://www.autohotkey.com/)
 - [scrcpy](https://github.com/Genymobile/scrcpy)
-<!-- - [Drobo Dashboard](https://www.drobo.com/) -->
 - [logicool G Hub](https://gaming.logicool.co.jp/innovation/g-hub.html)
 - [Raspberry Pi Imager](https://www.raspberrypi.org/software/)
 
@@ -229,6 +265,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Remote
 
+- [Amazon Workspaces](https://clients.amazonworkspaces.com/)
 - `(-A)` [OpenVPN](https://openvpn.net/)
 - [Real VNC Viewer](https://www.realvnc.com/connect/download/viewer/)
 - [TeamViewer](https://www.teamviewer.com/)
@@ -243,7 +280,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Text editors
 
-- [GitHub Atom Editor](https://atom.io/)
 - [Sublime Text](https://www.sublimetext.com/)
 - [Visual Studio Code](https://code.visualstudio.com/)
 
@@ -253,7 +289,8 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - `(-X)` [Docker Toolbox](https://docs.docker.com/toolbox/)
 - [DOSBox-X](https://dosbox-x.com)
 - `(-A)` [Oracle VM Virtualbox + Extension Pack](https://www.virtualbox.org/)
-- [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/)
+- `(-8)` [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/)
+- `(-8)` [Ubuntu 22.04 LTS for WSL2](https://ubuntu.com/download/desktop)
 
 #### Web browsers
 
@@ -270,6 +307,8 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 <!-- markdownlint-disable MD033 -->
 <details><summary>Fonts</summary>
 
+- [Cascadia Code](https://github.com/microsoft/cascadia-code)
+- [Fira Code: free monospaced font with programming ligatures](https://github.com/tonsky/FiraCode)
 - [白源: HackGen Nerd](https://github.com/yuru7/HackGen)
 - [Lato](https://fonts.google.com/specimen/Lato)
 
@@ -304,14 +343,13 @@ NOTICE: In the Home edition, some features are excluded and installed.
   - fr-FR
   - ja-JP
   - zh-CN
-  - Language-specific fonts
 - Others
   - **`!`** .NET Framework 3.5
   - Microsoft Defender Application Guard
   - TIFF IFilter
   - Windows Developer Mode
   - Windows Feature Experience Pack
-  - Windows Storage Management
+  - ~~Windows Storage Management~~
   - XPS Viewer
 
 </details>
@@ -333,9 +371,49 @@ PS> .\additional-setup
 
 ### Apps install
 
-- Unity version 2019.4.31f1 (via Unity Hub)
+- [Drobo Dashboard](https://www.drobo.com/)
+- [Unity version 2019.4.31f1](https://unity3d.com/) (via Unity Hub)
+  - Module: Android Build Support
+  - Module: Documentation
+  - Module: Language Pack (Japanese)
+
+### Initialize for web-frontend development environment
+
+The script creates and installs a local CA in the system root store, and generates locally-trusted certificates using the mkcert.  
+セットアップ スクリプトは mkcert を使用して、システムルートストアにローカル CA を作成してインストールし、ローカルで信頼できる証明書を生成します。
+
+Also, by starting Firefox in this process, if the root store does not exist, it will be initialized.  
+また、この工程で Firefox を起動することにより、ルートストアが存在しない場合、初期化します。
+
+### Pulls some docker images
+
+<!-- markdownlint-disable MD033 -->
+<details><summary>list</summary>
+
+| Image                         | Tag                                                                                                       |
+| :---------------------------- | :-------------------------------------------------------------------------------------------------------- |
+| `hello-world`                 | _`latest`_                                                                                                |
+| `alpine`                      | _`latest`_                                                                                                |
+| `busybox`                     | _`latest`_                                                                                                |
+| `debian`                      | _`latest`_                                                                                                |
+| `ubuntu`                      | _`latest`_                                                                                                |
+| `docker`                      | `dind`, `git`, _`latest`_                                                                                 |
+| `node`                        | `14`, `14-alpine`, `14-bullseye-slim`, `16`, `16-alpine` `16-bullseye-slim`, `18`, `18-alpine`, `18-slim` |
+| `gitlab/gitlab-runner`        | _`latest`_                                                                                                |
+| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                              |
+
+</details>
+<!-- markdownlint-enable MD033 -->
 
 ## Test on Virtualbox
+
+Notice: The test environment provided by this repository has been out of
+maintenance for some time and may not work. Therefore, it may be more
+reliable to build your virtual environment and run it instead of using
+this one.  
+注意: このリポジトリはテスト用の仮想環境を提供していますが、
+長らくメンテナンスをサボっていたため、動作しない可能性が高いです。
+各々で独自の仮想環境を構築し、その上で動作検証をした方がより確実でしょう。
 
 Test require a desktop OS that bash can use. e.g. macOS, Ubuntu desktop.  
 テストには bash が使えるデスクトップ OS、例えば、、macOS や Ubuntu などが必要です。

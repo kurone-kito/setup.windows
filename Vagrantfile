@@ -1,6 +1,9 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require 'etc'
+
+# specifies the audio driver
 audio_driver = case RUBY_PLATFORM
   when /linux/
     'alsa'
@@ -11,44 +14,76 @@ audio_driver = case RUBY_PLATFORM
   else
     raise 'Unknown RUBY_PLATFORM=#{RUBY_PLATFORM}'
   end
-guest_iso = case RUBY_PLATFORM
+
+# specifies the total memory size
+total_memory = case RUBY_PLATFORM
   when /linux/
-    '/usr/share/virtualbox/VBoxGuestAdditions.iso'
-  when /darwin/
-    '/Applications/VirtualBox.app/Contents/MacOS/VBoxGuestAdditions.iso'
+    `cat /proc/meminfo | grep MemTotal | grep -o '[0-9]\\+'`.to_i
+  when /darwin|freebsd/
+    `sysctl -a | grep -e hw.physmem -e hw.memsize | grep -o '[0-9]\\+'`.to_i
   when /cygwin|mswin|mingw|bccwin|wince|emx/
-    '%PROGRAMFILES%/Oracle/VirtualBox/VBoxGuestAdditions.iso'
+    `wmic ComputerSystem get TotalPhysicalMemory | findstr /r /c:"[0-9][0-9]*"`.to_i
   else
     raise 'Unknown RUBY_PLATFORM=#{RUBY_PLATFORM}'
   end
-
-# https://az792536.vo.msecnd.net/vms/VMBuild_20150916/Vagrant/IE11/IE11.Win81.Vagrant.zip
-# https://az792536.vo.msecnd.net/vms/VMBuild_20190311/Vagrant/MSEdge/MSEdge.Win10.Vagrant.zip
+total_memory /= 1048576
 
 Vagrant.configure('2') do |config|
-  config.vagrant.plugins = 'vagrant-reload'
+  config.vagrant.plugins = [
+    'vagrant-reload',
+    'vagrant-vbguest',
+    'vagrant-disksize',
+  ]
   config.vm.define 'win8.1' do |atomic|
-    atomic.vm.box = 'opentable/win-8.1-enterprise-amd64-nocm'
+    atomic.vm.box = 'jaswsinc/windows81'
     atomic.vm.provider 'virtualbox' do |vb|
       vb.name = 'setup-windows-8.1'
-      vb.memory = '3072'
+      vb.memory = ([total_memory / 16, 1536].max).to_s
     end
+    atomic.winrm.username = 'IEUser'
+    atomic.winrm.password = 'Passw0rd!'
   end
   config.vm.define 'win10' do |atomic|
-    atomic.vm.box = 'senglin/win-10-enterprise-vs2015community'
+    atomic.vm.box = 'gusztavvargadr/windows-10'
     atomic.vm.provider 'virtualbox' do |vb|
       vb.name = 'setup-windows-10'
-      vb.memory = '4096'
+      vb.memory = ([total_memory / 10, 2048].max).to_s
+     end
+  end
+  config.vm.define 'win11', primary: true do |atomic|
+    atomic.vm.box = 'gusztavvargadr/windows-11'
+    atomic.vm.provider 'virtualbox' do |vb|
+      vb.name = 'setup-windows-11'
+      vb.memory = ([total_memory / 10, 2048].max).to_s
     end
   end
+  config.vm.define 'ws2019' do |atomic|
+    atomic.vm.box = 'gusztavvargadr/windows-server'
+    atomic.vm.box_version = '1809.0.2207'
+    atomic.vm.provider 'virtualbox' do |vb|
+      vb.name = 'setup-windows-2019'
+      vb.memory = ([total_memory / 10, 2048].max).to_s
+    end
+  end
+  config.vm.define 'ws2022' do |atomic|
+    atomic.vm.box = 'gusztavvargadr/windows-server'
+    atomic.vm.box_version = '2102.0.2207'
+    atomic.vm.provider 'virtualbox' do |vb|
+      vb.name = 'setup-windows-2022'
+      vb.memory = ([total_memory / 10, 2048].max).to_s
+    end
+  end
+  config.disksize.size = '168GB'
   config.vm.box_check_update = true
   config.vm.guest = :windows
   config.vm.communicator = 'winrm'
-  config.winrm.username = 'vagrant'
-  config.winrm.password = 'vagrant'
+  config.vm.network :forwarded_port, guest: 5985, host: 5985, id: 'winrm', auto_correct: true
+  config.vm.network :forwarded_port, guest: 3389, host: 3389, id: 'rdp', auto_correct: true
+  config.winrm.retry_limit = 30
+  config.winrm.retry_delay = 10
   config.vm.provider 'virtualbox' do |vb|
     vb.gui = true
-    vb.cpus = 4
+    vb.cpus = [Etc.nprocessors, [Etc.nprocessors / 4, 2].max].min
     vb.linked_clone = true
     vb.customize [
       'modifyvm', :id,
@@ -56,11 +91,14 @@ Vagrant.configure('2') do |config|
       '--acpi', 'on',
       '--apic', 'on',
       '--audio', audio_driver,
+      '--audioin', 'on',
+      '--audioout', 'on',
       '--audiocontroller', 'hda',
       '--biosapic', 'apic',
       '--bioslogofadeout', 'on',
       '--chipset', 'ich9',
-      # '--graphicscontroller', 'vboxsvga',
+      '--clipboard', 'bidirectional',
+      '--graphicscontroller', 'vboxsvga',
       '--hpet', 'on',
       '--hwvirtex', 'on',
       '--ioapic', 'on',
@@ -74,20 +112,11 @@ Vagrant.configure('2') do |config|
       '--paravirtprovider', 'default',
       '--usb', 'on',
       '--usbxhci', 'on',
-      '--vram', '128',
+      '--vram', '192',
       '--vtxvpid', 'on',
       '--vtxux', 'on',
     ]
-    vb.customize [
-      'storageattach', :id,
-      '--storagectl', 'IDE Controller',
-      '--port', '0',
-      '--device', '1',
-      '--type', 'dvddrive',
-      '--medium', guest_iso
-    ]
   end
-  config.vm.provision 'Install...Virtualbox guest additions', type: 'shell', path: 'libs/virtualbox.ps1'
+  config.vm.provision 'invoke the deploy script', type: 'shell', path: 't/deploy.ps1'
   config.vm.provision :reload
-  # config.vm.provision 'setup', type: 'shell', path: 'setup.cmd'
 end

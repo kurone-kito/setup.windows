@@ -5,365 +5,650 @@ The setup scripts by Boxstarter.
 
 Set-StrictMode -Version Latest
 
-$progressFile = Join-Path $env:TEMP 'kurone-kito.setup.windows.tmp';
+###########################################################################
+### Constants
+
+Get-CimInstance Win32_ComputerSystem `
+  | Select-Object -ExpandProperty SystemType `
+  | Set-Variable -name ARCH -option Constant -Scope local
+Get-CimInstance win32_OperatingSystem `
+  | Select-Object -ExpandProperty Version `
+  | Set-Variable -name WINVER -option Constant -Scope local
+Join-Path $env:TEMP 'kurone-kito.setup.windows.tmp' `
+  | Set-Variable -name RUNNING_FILE -option Constant -Scope local
+
+$ARCH -like 'ARM64*' `
+  | Set-Variable -name IS_ARM64 -option Constant -Scope local
+$WINVER -match '^1(0|1)\.' `
+  | Set-Variable -name IS_WIN1X -option Constant -Scope local
+Test-Path -Path C:\vagrant `
+  | Set-Variable -name IS_VAGRANT -option Constant -Scope local
+
+$global:CHOCO_INSTALLS = @()
 
 ###########################################################################
 ### Functions
 
-function Set-Prepare {
-
-  Disable-UAC
-  Disable-MicrosoftUpdate
-  choco feature enable -n=allowEmptyChecksums
+# Add ---------------------------------------------------------------------
+function Add-3DToolsInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @('freecad', '--params "/NoShortcut /WindowStyle:3"'), # * with desktop shortcut
+    @('blender') # * with desktop shortcut
+  )
   <#
   .SYNOPSIS
+  Add the queue of 3D tools to install.
   #>
 }
 
-function Set-Teardown {
-  choco feature disable -n=allowEmptyChecksums
-  Enable-MicrosoftUpdate
-  Enable-UAC
+function Add-AudioAndBroadcastingInstallation() {
+  $global:CHOCO_INSTALLS += ,@(
+    'obs-studio', # * with desktop shortcut
+    'autohotkey', # * vb-cable dependeds it but automate installation is not working
+    'vb-cable',
+    'vsthost'
+  )
+  if ($IS_ARM64) {
+    $global:CHOCO_INSTALLS += ,@('voicemeeter') # ! <- ERROR? on ARM64
+  }
   <#
   .SYNOPSIS
+  Add the queue of audio and broadcasting tools to install.
   #>
 }
 
-###########################################################################
-### Preparation
-
-Set-Prepare
-New-Item -Type File $progressFile -Force
-
-choco feature disable -n=skipPackageUpgradesWhenNotInstalled
-choco feature enable -n=useRememberedArgumentsForUpgrades
-
-###########################################################################
-### Collect information on the current environment.
-
-$win10or11 = (Get-CimInstance win32_OperatingSystem).Version -match '^1(0|1)\.'
-$arm64 = (Get-CimInstance Win32_ComputerSystem).SystemType -like "ARM64*"
-
-$vagrant = Test-Path -Path C:\vagrant
-
-###########################################################################
-### Create the Cache directory
-$cacheGuid = if (-not [System.String]::IsNullOrWhiteSpace($env:KITO_SETUP_GUID)) {
-  $env:KITO_SETUP_GUID
-} else {
-  New-Guid
-}
-$cacheDir = Join-Path $env:TEMP $cacheGuid
-New-Item -ErrorAction SilentlyContinue -Path $cacheDir -ItemType directory
-
-# ? FAQ: Why do you specify the cache explicitly?
-# When using Vagrant, you can place the cache folder externally to minimize
-# downloads and make it easier to verify that it works. Also, Boxstarter
-# may recursively create an implicit cache folder named “chocolatey”, which
-# sometimes has a full path longer than 248 characters. By making the cache
-# folder explicit, It can minimize the length of the path.
-# see: https://github.com/chocolatey/boxstarter/issues/241
-
-###########################################################################
-### Install the corresponding guest tool when the
-### current environment is a virtual PC environment.
-
-### Virtualbox Windows Additions
-
-# ! The current environment is a Vagrant environment does not
-# ! necessarily mean that it is a Virtualbox environment.
-# ! Also, the method of determining this is somewhat unreliable.
-if ($vagrant) {
-  cinst --cacheLocation="$cacheDir" virtualbox-guest-additions-guest.install
+function Add-BinaryToolsInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @('7zip', 'ffmpeg', 'rpi-imager', 'sqlite'),
+    @('imagemagick') # * with desktop shortcut
+  )
+  <#
+  .SYNOPSIS
+  Add the queue of binary tools to install.
+  #>
 }
 
-###########################################################################
-### Windows Features
-
-@(
-  # Virtualization
-  'Microsoft-Hyper-V-All',
-  'VirtualMachinePlatform',
-  'HypervisorPlatform',
-  'Containers-DisposableClientVM',
-  'Microsoft-Windows-Subsystem-Linux',
-
-  # NFS
-  'ServicesForNFS-ClientOnly',
-  'ClientForNFS-Infrastructure',
-  'NFS-administration',
-
-  # Connection
-  'TelnetClient',
-  'TFTP',
-
-  # Others
-  'NetFx3',
-  'TIFFIFilter',
-  'Windows-Defender-ApplicationGuard'
-) | Where-Object {
-  $info = clist $_ --source windowsfeatures
-  $info -and $info.Contains('State : Disabled')
-} | ForEach-Object {
-  cinst --cacheLocation="$cacheDir" $_ --source windowsfeatures
+function Add-CLIToolsInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @(
+      'git',
+      '--params "/GitOnlyOnPath /NoAutoCrlf /NoGuiHereIntegration /NoShellIntegration /NoShellHereIntegration /SChannel /WindowsTerminal"'
+    ), # !! DEPENDENCIES
+    @('chezmoi', 'git-lfs', 'gh', 'glab', 'jq', 'sudo', 'svn', 'unbound'),
+    @('gnupg') # !! DEPENDENCIES
+  )
+  <#
+  .SYNOPSIS
+  Add the queue of CLI tools to install.
+  #>
 }
 
-if (Test-PendingReboot) {
-  Invoke-Reboot
+function Add-CloudStorageClientsInstallation() {
+  # $global:CHOCO_INSTALLS += ,@('icloud') # * You should install iCloud from store.
+  # $global:CHOCO_INSTALLS += ,@('adobe-creative-cloud', '--ignore-checksums') # ! <- depended to GUI interactive
+  if (-not $IS_ARM64) {
+    $global:CHOCO_INSTALLS += ,@('dropbox') # ! Error on ARM64 (only x86 binary)
+  }
+  <#
+  .SYNOPSIS
+  Add the queue of cloud storages client to install.
+  #>
 }
 
-### System configuration
-Set-CornerNavigationOptions -EnableUpperLeftCornerSwitchApps -EnableUsePowerShellOnWinX
-Set-ExplorerOptions -showHiddenFilesFoldersDrives -showFileExtensions
-Set-StartScreenOptions -DisableBootToDesktop -EnableShowStartOnActiveScreen -EnableShowAppsViewOnStartScreen -EnableSearchEverywhereInAppsView -DisableListDesktopAppsFirst
-Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowFileExtensions -EnableExpandToOpenFolder -EnableShowRecentFilesInQuickAccess -EnableShowFrequentFoldersInQuickAccess -DisableShowRibbon
-# Enable-RemoteDesktop # ! <- CLI ERROR (but not stack)
+function Add-DeviceDriversInstallation() {
+  if (-not $IS_ARM64) {
+    $global:CHOCO_INSTALLS += ,@('logicoolgaming') # ! Error on ARM64 (only x86 binary)
+  }
+  $global:CHOCO_INSTALLS += ,@('scrcpy') # * with desktop shortcut
+  <#
+  .SYNOPSIS
+  Add the queue of device drivers to install.
+  #>
+}
 
-$installedOpenSSH = $false
-$caps = Get-Command Get-WindowsCapability -ErrorAction:SilentlyContinue
-if ($caps) {
-  $cap = Get-WindowsCapability -Online
-  @(
+
+function Add-DevToolsInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @(
+      'visualstudio2017buildtools',
+      '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
+    ),
+    @(
+      'visualstudio2019buildtools',
+      '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
+    ),
+    @(
+      'visualstudio2022buildtools',
+      '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
+    ),
+    @('antlr4', 'awscli', 'cmake', 'mkcert', 'mono', 'ngrok'),
+    @('sublimetext3'),
+    @('insomnia-rest-api-client', 'unity-hub'), # * with desktop shortcut
+    @(
+      'vim',
+      '--params "/NoContextmenu /NoDesktopShortcuts /RestartExplorer"'
+    ),
+    @('vscode', '--params "/NoDesktopIcon"')
+  )
+  <#
+  .SYNOPSIS
+  Add the queue of development tools to install.
+  #>
+}
+
+function Add-DocumentationToolsInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @('plantuml', '--params="/NoShortcuts"'),
+    @('graphviz', 'tldr', 'wkhtmltopdf'),
+    @('grammarly-for-windows', 'kindle', 'notion') # * with desktop shortcut
+  )
+  # $global:CHOCO_INSTALLS += ,@('messenger', 'slack', 'skype') # * You should install from store.
+  if (-not $IS_ARM64) {
+    $global:CHOCO_INSTALLS += ,@('pandoc') # ! Hangs on ARM64
+  }
+  <#
+  .SYNOPSIS
+  Add the queue of documentation tools to install.
+  #>
+}
+
+function Add-FontsInstallation() {
+  $global:CHOCO_INSTALLS += ,@(
+    'cascadiafonts',
+    'firacode',
+    'font-hackgen',
+    'font-hackgen-nerd',
+    'lato'
+  )
+  <#
+  .SYNOPSIS
+  Add the queue of fonts to install.
+  #>
+}
+
+function Add-GamesInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @('epicgameslauncher', 'steam-client'), # * with desktop shortcut
+    @('origin', 'steamcmd', 'stepmania'),
+    @('minecraft-launcher', '--params="/NOICON"')
+  )
+  <#
+  .SYNOPSIS
+  Add the queue of games to install.
+  #>
+}
+
+function Add-MessagingToolsInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @('discord', 'mattermost-desktop', 'zoom'), # * with desktop shortcut
+    @('gitter', 'keybase', 'mmctl')
+  )
+  # $global:CHOCO_INSTALLS += ,@('messenger', 'slack', 'skype') # * You should install from store.
+  <#
+  .SYNOPSIS
+  Add the queue of messaging tools to install.
+  #>
+}
+
+function Add-PackageManagersInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @('choco-protocol-support'),
+    @('chocolateygui', '--params="/DefaultToDarkMode /Global"')
+  )
+  if (-not $IS_WIN1X) {
+    $global:CHOCO_INSTALLS += ,@('powershell-packagemanagement')
+  }
+  <#
+  .SYNOPSIS
+  Add the queue of package managers to install.
+  #>
+}
+
+function Add-RemoteClientsInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @('tor', 'vnc-viewer'),
+    @(
+      'amazon-workspaces', # * with desktop shortcut
+      'authy-desktop', # * with desktop shortcut
+      'teamviewer' # * with desktop shortcut
+    )
+  )
+  if (-not $IS_ARM64) {
+    $global:CHOCO_INSTALLS += ,@(
+      'openvpn', # ! Error? on ARM64
+      '--params "/SELECT_SHORTCUTS=0 /SELECT_LAUNCH=0"'
+    )
+  }
+  if ((Get-OpenSSHInstalls) -eq 0) {
+    $global:CHOCO_INSTALLS += ,@('openssh', '--params "/SSHServerFeature"')
+  }
+  <#
+  .SYNOPSIS
+  Add the queue of remote clients to install.
+  #>
+}
+
+function Add-RuntimesInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @(
+      'vcredist-all',
+      'dotnetfx',
+      'dotnet-runtime',
+      'dotnetcore-runtime',
+      'directx'
+    ),
+    @('xna31', '--ignore-checksums'),
+    @('xna', 'rpgtkoolvx-rtp', 'rpgtkoolvxace-rtp'),
+    @(
+      'adoptopenjdkjre',
+      '--params="/ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome,FeatureIcedTeaWeb"'
+    )
+  )
+  <#
+  .SYNOPSIS
+  Add the queue of runtimes to install.
+  #>
+}
+
+function Add-ShellExtensionsInstallation() {
+  $global:CHOCO_INSTALLS += @(
+    @('powershell'), # !! DEPENDENCIES
+    @(
+      'pwsh',
+      '--install-arguments="ADD_EXPLORER_CONTEXT_MENU_OPENPOWERSHELL=1 REGISTER_MANIFEST=1 ENABLE_PSREMOTING=1 USE_MU=1 ENABLE_MU=1"',
+      '--packageparameters "/CleanUpPath"'
+    ),
+    @(
+      'oh-my-posh',
+      'poshgit' # ! <- CLI ERROR (but not stack)
+    )
+  )
+  <#
+  .SYNOPSIS
+  Add the queue of shell extensions to install.
+  #>
+}
+
+function Add-VirtualizationToolsInstallation() {
+  if (-not $IS_ARM64) {
+    $global:CHOCO_INSTALLS += ,@(
+      'virtualbox', # ! Error? on ARM64
+      '--params "/ExtensionPack /NoDesktopShortcut"'
+    )
+  }
+  if ($IS_WIN1X) {
+    $global:CHOCO_INSTALLS += ,@('docker-desktop') # * with desktop shortcut
+  } else {
+    $global:CHOCO_INSTALLS += ,@('docker-toolbox')
+  }
+  $global:CHOCO_INSTALLS += @(
+    @('act-cli'),
+    @('gitlab-runner', '--params "/Service"'),
+    @('dosbox-x', '--ignore-checksums') # * with desktop shortcut
+  )
+  <#
+  .SYNOPSIS
+  Add the queue of virtualization tools to install.
+  #>
+}
+
+function Add-WebBrowserInstallation() {
+  if (-not $IS_WIN1X) {
+    $global:CHOCO_INSTALLS += ,@('microsoft-edge')
+  }
+  $global:CHOCO_INSTALLS += @(
+    @('elinks'),
+    @('googlechrome'), # * with desktop shortcut
+    @('chromium', '--pre'), # * with desktop shortcut
+    @('tor-browser', '--params "/Locale:ja-JP"'), # * with desktop shortcut
+    @('firefoxesr', '--params "/l:ja-JP /NoDesktopShortcut /RemoveDistributionDir"')
+  )
+  <#
+  .SYNOPSIS
+  Add the queue of web browsers to install.
+  #>
+}
+
+function Add-WSLInstallation() {
+  if ($IS_WIN1X) {
+    $global:CHOCO_INSTALLS += @(
+      @('wsl2', '--params "/Version:2 /Retry:true"'),
+      @('wsl-ubuntu-2204')
+    )
+  }
+  <#
+  .SYNOPSIS
+  Add the queue of WSL2 to install.
+  #>
+}
+
+# Get ---------------------------------------------------------------------
+function Get-OpenSSHInstalls() {
+  Get-WindowsCapability -Online `
+    | Where-Object -Property Name -match OpenSSH `
+    | Where-Object -Property State -eq Installed `
+    | Measure-Object `
+    | Select-Object -ExpandProperty Count
+  <#
+  .SYNOPSIS
+  Get the number of OpenSSH installations.
+  #>
+}
+
+# Install -----------------------------------------------------------------
+function Install-ChocoPackages() {
+  $global:CHOCO_INSTALLS | ForEach-Object {
+    choco install @_
+  }
+  <#
+  .SYNOPSIS
+  Install the queued packages with Chocolatey.
+  #>
+}
+
+function Install-FNM() {
+  choco install fnm
+  fnm env --use-on-cd | Out-String | Invoke-Expression
+  Install-NodeJS -NodeVersion 14 -NPMVersion 6
+  Install-NodeJS -NodeVersion 16
+  Install-NodeJS -NodeVersion 18
+  <#
+  .SYNOPSIS
+  Install the Node.js via FNM, and install some global packages.
+  #>
+}
+
+function Install-NodeJS() {
+  param(
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
+    [string]
+    $NodeVersion,
+    [string]
+    $NPMVersion = 'latest'
+  )
+  fnm install $NodeVersion
+  fnm default $NodeVersion
+
+  # https://qiita.com/Qoo_Rus/items/afb52517e0e17b720990
+  npm install -g --silent 'agentkeepalive@latest'
+  npm install -g --silent "npm@${NPMVersion}"
+  npm upgrade -g --silent
+  npm install -g --silent 'yarn@berry'
+  <#
+  .SYNOPSIS
+  Install the Node.js and some global packages.
+  #>
+}
+
+function Install-SomeWindowsCapability() {
+  $installList = @(
     # Languages and fonts
     'en-US',
     'es-ES',
     'fr-FR',
-    'ja-JP',
-    'zh-CN'
-    'Language.Fonts',
+    'zh-CN',
+    'Language.Basic.*ja-JP', # ! ERROR?? on Vagrant Win10 (intel)
+    'Language.Fonts.Jpan'
 
     # Others
     'DirectX',
     'OpenSSH',
     'ShellComponents',
-    'StorageManagement',
+    # 'StorageManagement', # ! ERROR?? on Vagrant Win11 (intel)
     'Tools.DeveloperMode.Core',
     'XPS.Viewer'
-  ) | ForEach-Object {
-    $cap `
-    | Where-Object -Property Name -Match $_ `
-    | Where-Object -Property State -ne Installed `
-    | ForEach-Object {
-      Write-Output $_.Name
-      Add-WindowsCapability -Name $_.Name -ErrorAction:SilentlyContinue -Online
-    }
+  )
+
+  $caps = Get-WindowsCapability -Online `
+    | Where-Object -Property State -ne Installed
+  $installList | ForEach-Object {
+    $target = $_
+    $caps `
+    | Where-Object -Property Name -Match $target `
+    | Select-Object -ExpandProperty Name
+  } | ForEach-Object {
+    Write-BoxstarterMessage ('installing {0}...' -f $_)
+    Add-WindowsCapability `
+      -Name $_ `
+      -ErrorAction:SilentlyContinue `
+      -Online
   }
 
-  $Installed = Get-WindowsCapability -Online `
-    | Where-Object -Property Name -match OpenSSH `
-    | Where-Object -Property State -eq Installed `
-    | Measure-Object
-  $installedOpenSSH = $Installed.Count -gt 0
+  <#
+  .SYNOPSIS
+  Install the queued Windows capabilities.
+  #>
 }
+
+function Install-SomeWindowsFeatures() {
+  $installList = @(
+    # Virtualization
+    'Microsoft-Hyper-V-All',
+    'VirtualMachinePlatform',
+    'HypervisorPlatform',
+    'Containers-DisposableClientVM',
+    'Microsoft-Windows-Subsystem-Linux',
+
+    # NFS
+    'ServicesForNFS-ClientOnly',
+    'ClientForNFS-Infrastructure',
+    'NFS-administration',
+
+    # Connection
+    'TelnetClient',
+    'TFTP',
+
+    # Others
+    'NetFx3',
+    'TIFFIFilter',
+    'Windows-Defender-ApplicationGuard'
+  )
+  try {
+    $disabledFeatures = choco find -s windowsfeatures `
+      | Select-String Disabled `
+      | Select-Object -ExpandProperty Line `
+      | Select-String -Pattern '^[A-Za-z0-9-]+' `
+      | Select-Object -ExpandProperty Matches `
+      | Select-Object -ExpandProperty Value
+    $diff = Compare-Object `
+      -ReferenceObject $installList `
+      -DifferenceObject $disabledFeatures `
+      -PassThru `
+      -IncludeEqual `
+      -ExcludeDifferent
+    choco install @diff -s windowsfeatures
+  } catch {
+    Write-BoxstarterMessage `
+      -Message 'Notice: Chocolatey search for Windows features failed so it will install all listed components. So slightly increases the installation process but does not affect the installation results.' `
+      -NoLogo `
+      -Color DarkYellow
+    choco install @installList -s windowsfeatures
+  }
+  <#
+  .SYNOPSIS
+  Install some Windows features.
+  #>
+}
+
+function Install-Vagrant() {
+  choco install vagrant
+  $env:Path += ';C:\HashiCorp\Vagrant\bin'
+  $installedPlugins = vagrant plugin list | Out-String
+  @('vagrant-disksize', 'vagrant-reload', 'vagrant-vbguest') `
+    | Where-Object { -not ($installedPlugins -like ('*{0}*' -f $_)) } `
+    | ForEach-Object { vagrant plugin install $_ }
+  vagrant plugin update
+  <#
+  .SYNOPSIS
+  Install Vagrant and some plugins.
+  #>
+}
+
+# Pop ---------------------------------------------------------------------
+function Pop-Preparation() {
+  Remove-Item $RUNNING_FILE -Force
+  Enable-UAC
+  <#
+  .SYNOPSIS
+  Remove the preparation settings.
+  #>
+}
+
+# Push --------------------------------------------------------------------
+function Push-Preparation() {
+  New-Item -Type File $RUNNING_FILE -Force | Out-Null
+  Disable-UAC
+  <#
+  .SYNOPSIS
+  Set the preparation settings.
+  #>
+}
+
+# Remove ------------------------------------------------------------------
+function Remove-SomeAppx() {
+  @(
+    '*BubbleWitch*',
+    '*DisneyMagicKingdom*',
+    '*DolbyAccess*',
+    'king.com.CandyCrush*',
+    '*HiddenCityMysteryofShadows*',
+    '*MarchofEmpires*',
+    '*Netflix*',
+    'Microsoft.MicrosoftOfficeHub'
+  ) | ForEach-Object { Get-AppxPackage $_ | Remove-AppxPackage }
+  <#
+  .SYNOPSIS
+  Remove some Appx packages.
+  #>
+}
+
+# Set ---------------------------------------------------------------------
+function Set-ChocoFeatures() {
+  choco feature disable -n=skipPackageUpgradesWhenNotInstalled
+  choco feature enable -n=useRememberedArgumentsForUpgrades
+  <#
+  .SYNOPSIS
+  Set the Chocolatey features.
+  #>
+}
+
+function Set-CleanManagerSageSet() {
+  $baseUri = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\'
+  $keys = @(
+    'Active Setup Temp Folders',
+    'BranchCache',
+    'D3D Shader Cache',
+    'Delivery Optimization Files',
+    'Diagnostic Data Viewer database files',
+    'Downloaded Program Files',
+    'Internet Cache Files',
+    'Old ChkDsk Files',
+    'Recycle Bin',
+    'RetailDemo Offline Content',
+    'Setup Log Files',
+    'System error memory dump files',
+    'System error minidump files',
+    'Temporary Files',
+    'Thumbnail Cache',
+    'Update Cleanup',
+    'User file versions',
+    'Windows Defender',
+    'Windows Error Reporting Files'
+  )
+  $keys | ForEach-Object {
+    New-ItemProperty `
+      -Path ($baseUri + $_) `
+      -Name StateFlags0001 `
+      -PropertyType DWord `
+      -Value 2 `
+      -Force `
+      | Out-Null
+  }
+  <#
+  .SYNOPSIS
+  Set the CleanManager SageSet.
+  #>
+}
+
+function Set-WindowsOptions() {
+  Set-CornerNavigationOptions -EnableUpperLeftCornerSwitchApps -EnableUsePowerShellOnWinX
+  Set-ExplorerOptions -showHiddenFilesFoldersDrives -showFileExtensions
+  Set-StartScreenOptions -DisableBootToDesktop -EnableShowStartOnActiveScreen -EnableShowAppsViewOnStartScreen -EnableSearchEverywhereInAppsView -DisableListDesktopAppsFirst
+  Set-BoxstarterTaskbarOptions -MultiMonitorOn -MultiMonitorMode All -MultiMonitorCombine Always
+  Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowFileExtensions -EnableExpandToOpenFolder -EnableShowRecentFilesInQuickAccess -EnableShowFrequentFoldersInQuickAccess -DisableShowRibbon
+  Enable-RemoteDesktop
+
+  ### Explorer options
+  Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name NavPaneExpandToCurrentFolder -Value 1
+  Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name SeparateProcess -Value 1
+  Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name ShowCompColor -Value 1
+
+  ### Taskbar options
+  Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Search -Name SearchboxTaskbarMode -Value 1
+  <#
+  .SYNOPSIS
+  Set the Windows options.
+  #>
+}
+
+###########################################################################
+### Main
+
+Push-Preparation
+Set-ChocoFeatures
+choco install boxstarter chocolatey
+
+###########################################################################
+### Windows Features
+
+Remove-SomeAppx
+Set-WindowsOptions
+
+Set-CleanManagerSageSet
+cleanmgr /dc /sagerun:1
+
+Install-SomeWindowsCapability
+Install-SomeWindowsFeatures
 
 ###########################################################################
 ### Install apps via Chocolatey
 
-### Runtimes
-cinst --cacheLocation="$cacheDir" vcredist-all
-cinst --cacheLocation="$cacheDir" dotnetfx # !! DEPENDENCIES
-cinst --cacheLocation="$cacheDir" dotnet-runtime
-cinst --cacheLocation="$cacheDir" dotnetcore-runtime
-cinst --cacheLocation="$cacheDir" directx
-cinst --cacheLocation="$cacheDir" xna31 --ignore-checksums
-cinst --cacheLocation="$cacheDir" xna
-cinst --cacheLocation="$cacheDir" adoptopenjdkjre --params="/ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome,FeatureIcedTeaWeb"
-cinst --cacheLocation="$cacheDir" rpgtkoolvx-rtp
-cinst --cacheLocation="$cacheDir" rpgtkoolvxace-rtp
+Add-RuntimesInstallation
+Add-CLIToolsInstallation
+Add-ShellExtensionsInstallation
+Add-PackageManagersInstallation
 
-### CLI Tools
-cinst --cacheLocation="$cacheDir" git -params "/GitOnlyOnPath /NoAutoCrlf /NoGuiHereIntegration /NoShellIntegration /NoShellHereIntegration /SChannel /WindowsTerminal" # !! DEPENDENCIES
-cinst --cacheLocation="$cacheDir" git-lfs
-cinst --cacheLocation="$cacheDir" hub
-cinst --cacheLocation="$cacheDir" jq
-cinst --cacheLocation="$cacheDir" sudo
+Add-AudioAndBroadcastingInstallation
+Add-3DToolsInstallation
+Add-CloudStorageClientsInstallation
 
-### Shell
-cinst --cacheLocation="$cacheDir" oh-my-posh
-cinst --cacheLocation="$cacheDir" powershell # !! DEPENDENCIES
-cinst --cacheLocation="$cacheDir" powershell-core --install-arguments='"ADD_EXPLORER_CONTEXT_MENU_OPENPOWERSHELL=1 REGISTER_MANIFEST=1 ENABLE_PSREMOTING=1"'
-cinst --cachcation="$cacheDir" poshgit # ! <- CLI ERROR (but not stack)
+Add-DevToolsInstallation
+Add-BinaryToolsInstallation
+Add-DeviceDriversInstallation
+Add-DocumentationToolsInstallation
 
-### Package Management
-cinst --cacheLocation="$cacheDir" boxstarter # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" choco-protocol-support
-cinst --cacheLocation="$cacheDir" chocolatey
-cinst --cacheLocation="$cacheDir" chocolateygui --params="'/DefaultToDarkMode /Global'"
-if (-not $win10or11) {
-  cinst --cacheLocation="$cacheDir" powershell-packagemanagement
-}
+Add-FontsInstallation
+Add-GamesInstallation
+Add-MessagingToolsInstallation
 
-### Audio & Broadcasting
-cinst --cacheLocation="$cacheDir" obs-studio # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" autohotkey # * vb-cable dependeds it but automate installation is not working
-cinst --cacheLocation="$cacheDir" vb-cable
-cinst --cacheLocation="$cacheDir" vsthost
-if (-not $arm64) {
-  cinst --cacheLocation="$cacheDir" voicemeeter # ! <- ERROR? on ARM64
-}
+Add-RemoteClientsInstallation
+Add-VirtualizationToolsInstallation
+Add-WebBrowserInstallation
+Add-WSLInstallation
 
-### 3D
-cinst --cacheLocation="$cacheDir" blender # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" freecad --params "/NoShortcut /WindowStyle:3" # * with desktop shortcut
-
-### Binary tools
-cinst --cacheLocation="$cacheDir" ffmpeg
-cinst --cacheLocation="$cacheDir" rpi-imager
-cinst --cacheLocation="$cacheDir" imagemagick # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" sqlite
-
-### Cloud storages
-# cinst --cacheLocation="$cacheDir" adobe-creative-cloud --ignore-checksums # ! <- depended to GUI interactive
-if (-not $arm64) {
-  cinst --cacheLocation="$cacheDir" dropbox # ! Error on ARM64 (only x86 binary)
-}
-# You should install iCloud from store.
-
-### Development: for CLI
-cinst --cacheLocation="$cacheDir" antlr4
-cinst --cacheLocation="$cacheDir" cmake
-cinst --cacheLocation="$cacheDir" fnm
-if (-not $arm64) {
-  cinst --cacheLocation="$cacheDir" microsoft-visual-cpp-build-tools --installargs "/Full" # ! Error? on ARM64
-}
-cinst --cacheLocation="$cacheDir" visualstudio2017buildtools --package-parameters "--allWorkloads --includeRecommended --includeOptional --passive --locale ja-JP"
-cinst --cacheLocation="$cacheDir" visualstudio2019buildtools --package-parameters "--allWorkloads --includeRecommended --includeOptional --passive --locale ja-JP"
-cinst --cacheLocation="$cacheDir" visualstudio2022buildtools --package-parameters "--allWorkloads --includeRecommended --includeOptional --passive --locale ja-JP"
-
-# Development: IDE
-cinst --cacheLocation="$cacheDir" vim --params "'/NoContextmenu /NoDesktopShortcuts /RestartExplorer'"
-cinst --cacheLocation="$cacheDir" atom # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" sublimetext3
-cinst --cacheLocation="$cacheDir" vscode --params '"/NoDesktopIcon"'
-
-### Development: for Mobile apps
-cinst --cacheLocation="$cacheDir" androidstudio
-cinst --cacheLocation="$cacheDir" mono
-cinst --cacheLocation="$cacheDir" unity-hub
-
-# Development: for Web apps
-cinst --cacheLocation="$cacheDir" awscli
-cinst --cacheLocation="$cacheDir" mkcert
-cinst --cacheLocation="$cacheDir" ngrok
-cinst --cacheLocation="$cacheDir" insomnia-rest-api-client # * with desktop shortcut
-
-### Devices
-# cinst --cacheLocation="$cacheDir" drobo-dashboard # Cannot automation
-if (-not $arm64) {
-  cinst --cacheLocation="$cacheDir" logicoolgaming # ! ignored the cacheDir
-}
-cinst --cacheLocation="$cacheDir" scrcpy # * with desktop shortcut
-
-### Documentations
-cinst --cacheLocation="$cacheDir" graphviz
-cinst --cacheLocation="$cacheDir" kindle # * with desktop shortcut
-if (-not $arm64) {
-  cinst --cacheLocation="$cacheDir" pandoc # ! Hangs on ARM64
-}
-cinst --cacheLocation="$cacheDir" plantuml --params="'/NoShortcuts'"
-cinst --cacheLocation="$cacheDir" tldr
-cinst --cacheLocation="$cacheDir" wkhtmltopdf
-
-### Files
-cinst --cacheLocation="$cacheDir" 7zip
-cinst --cacheLocation="$cacheDir" svn
-
-### Fonts
-cinst --cacheLocation="$cacheDir" font-hackgen
-cinst --cacheLocation="$cacheDir" font-hackgen-nerd
-cinst --cacheLocation="$cacheDir" lato
-
-### Games
-cinst --cacheLocation="$cacheDir" epicgameslauncher # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" minecraft-launcher --params="'/NOICON'"
-cinst --cacheLocation="$cacheDir" origin
-cinst --cacheLocation="$cacheDir" steam-client # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" steamcmd
-cinst --cacheLocation="$cacheDir" stepmania
-
-### Messaging
-cinst --cacheLocation="$cacheDir" discord # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" gitter
-cinst --cacheLocation="$cacheDir" keybase
-cinst --cacheLocation="$cacheDir" mattermost-desktop # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" mmctl
-cinst --cacheLocation="$cacheDir" zoom # * with desktop shortcut
-# You should install FB-Messenger, Skype and Slack from store.
-
-### Remote tools
-cinst --cacheLocation="$cacheDir" authy-desktop # * with desktop shortcut
-if (-not $arm64) {
-  cinst --cacheLocation="$cacheDir" openvpn --params "'/SELECT_SHORTCUTS=0 /SELECT_LAUNCH=0'" # ! Error? on ARM64
-}
-cinst --cacheLocation="$cacheDir" teamviewer # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" tor
-cinst --cacheLocation="$cacheDir" vnc-viewer
-if (-not $installedOpenSSH) {
-  cinst --cacheLocation="$cacheDir" openssh --params "'/SSHServerFeature'"
-}
-
-### Signature
-cinst --cacheLocation="$cacheDir" unbound
-cinst --cacheLocation="$cacheDir" gnupg # !! DEPENDENCIES
-
-### Tasks & Memos
-cinst --cacheLocation="$cacheDir" grammarly-for-windows
-cinst --cacheLocation="$cacheDir" notion # * with desktop shortcut
-# You should install Microsoft To Do from store.
-
-### Virtualizations
-if (-not $arm64) {
-  cinst --cacheLocation="$cacheDir" vagrant # ! Error? on ARM64
-  cinst --cacheLocation="$cacheDir" virtualbox --params "/ExtensionPack /NoDesktopShortcut" # ! Error? on ARM64
-}
-if ($win10or11) {
-  cinst --cacheLocation="$cacheDir" docker-desktop # * with desktop shortcut
-} else {
-  cinst --cacheLocation="$cacheDir" docker-toolbox
-}
-cinst --cacheLocation="$cacheDir" act-cli
-cinst --cacheLocation="$cacheDir" gitlab-runner --params "/Service"
-cinst --cacheLocation="$cacheDir" dosbox-x --ignore-checksums
-
-### Web browsers
-if (-not $win10or11) {
-  cinst --cacheLocation="$cacheDir" microsoft-edge
-}
-cinst --cacheLocation="$cacheDir" chromium --pre # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" elinks
-cinst --cacheLocation="$cacheDir" firefoxesr --params "'/l:ja-JP /NoDesktopShortcut /RemoveDistributionDir'"
-cinst --cacheLocation="$cacheDir" tor-browser --params "/Locale:ja-JP" # * with desktop shortcut
-cinst --cacheLocation="$cacheDir" googlechrome # * with desktop shortcut
-
-### WSL
-if ($win10or11) {
-  cinst --cacheLocation="$cacheDir" wsl2 --params "/Version:2 /Retry:true"
-}
+Install-ChocoPackages
 
 ###########################################################################
 ### Install apps via without Chocolatey
 
-### Node.js
-fnm install 14
-fnm install 16
-fnm install 18
-fnm default 18
+Install-FNM
+Install-Vagrant
 
 ###########################################################################
 ### Update
 Enable-MicrosoftUpdate
-Install-WindowsUpdate -acceptEula
-
-choco upgrade -y all
-
-###########################################################################
-### Post install
-
-if (Test-PendingReboot) {
-  Invoke-Reboot
-}
+Install-WindowsUpdate
 
 ###########################################################################
 ### Teardown
-Remove-Item $progressFile -Force
-Set-Teardown
+Pop-Preparation

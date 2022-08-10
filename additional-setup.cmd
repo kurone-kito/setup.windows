@@ -1,7 +1,4 @@
 @echo off
 
-echo Welcome to the setup.windows!
-echo Preparing...
-
-powershell -Command "Unblock-File %~dp0pre\index.ps1"
-powershell -NoProfile -ExecutionPolicy Bypass %~dp0pre\index.ps1
+powershell -Command "Get-ChildItem -Recurse %~dp0libs\*.ps1 | Unblock-File"
+powershell -NoProfile -ExecutionPolicy Bypass %~dp0libs\additional-setup.ps1
