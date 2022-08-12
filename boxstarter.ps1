@@ -58,8 +58,9 @@ function Add-AudioAndBroadcastingInstallation() {
 }
 
 function Add-BinaryToolsInstallation() {
+  $global:CHOCO_INSTALLS += ,@('sqlite')
   $global:CHOCO_INSTALLS += @(
-    @('7zip', 'ffmpeg', 'rpi-imager', 'sqlite'),
+    @('7zip', 'ffmpeg', 'rpi-imager'),
     @('imagemagick') # * with desktop shortcut
   )
   <#
@@ -74,7 +75,8 @@ function Add-CLIToolsInstallation() {
       'git',
       '--params "/GitOnlyOnPath /NoAutoCrlf /NoGuiHereIntegration /NoShellIntegration /NoShellHereIntegration /SChannel /WindowsTerminal"'
     ), # !! DEPENDENCIES
-    @('chezmoi', 'git-lfs', 'gh', 'glab', 'jq', 'sudo', 'svn', 'unbound'),
+    @('chezmoi', 'jq', 'sudo'),
+    @('unbound'),
     @('gnupg') # !! DEPENDENCIES
   )
   <#
@@ -121,8 +123,8 @@ function Add-DevToolsInstallation() {
       'visualstudio2022buildtools',
       '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
     ),
-    @('antlr4', 'awscli', 'cmake', 'mkcert', 'mono', 'ngrok'),
-    @('sublimetext3'),
+    @('antlr4', 'awscli', 'cmake', 'mkcert', 'mono'),
+    @('ngrok', 'sublimetext3'),
     @('insomnia-rest-api-client', 'unity-hub'), # * with desktop shortcut
     @(
       'vim',
@@ -139,8 +141,10 @@ function Add-DevToolsInstallation() {
 function Add-DocumentationToolsInstallation() {
   $global:CHOCO_INSTALLS += @(
     @('plantuml', '--params="/NoShortcuts"'),
-    @('graphviz', 'tldr', 'wkhtmltopdf'),
-    @('grammarly-for-windows', 'kindle', 'notion') # * with desktop shortcut
+    @('graphviz', 'tldr', 'wkhtmltopdf')
+  )
+  $global:CHOCO_INSTALLS += ,@(
+    'grammarly-for-windows', 'kindle', 'notion' # * with desktop shortcut
   )
   # $global:CHOCO_INSTALLS += ,@('messenger', 'slack', 'skype') # * You should install from store.
   if (-not $IS_ARM64) {
@@ -181,7 +185,8 @@ function Add-GamesInstallation() {
 function Add-MessagingToolsInstallation() {
   $global:CHOCO_INSTALLS += @(
     @('discord', 'mattermost-desktop', 'zoom'), # * with desktop shortcut
-    @('gitter', 'keybase', 'mmctl')
+    @('gitter', 'keybase')
+    @('mmctl')
   )
   # $global:CHOCO_INSTALLS += ,@('messenger', 'slack', 'skype') # * You should install from store.
   <#
@@ -191,9 +196,9 @@ function Add-MessagingToolsInstallation() {
 }
 
 function Add-PackageManagersInstallation() {
-  $global:CHOCO_INSTALLS += @(
-    @('choco-protocol-support'),
-    @('chocolateygui', '--params="/DefaultToDarkMode /Global"')
+  $global:CHOCO_INSTALLS += ,@('choco-protocol-support')
+  $global:CHOCO_INSTALLS += ,@(
+    'chocolateygui', '--params="/DefaultToDarkMode /Global"'
   )
   if (-not $IS_WIN1X) {
     $global:CHOCO_INSTALLS += ,@('powershell-packagemanagement')
@@ -205,6 +210,7 @@ function Add-PackageManagersInstallation() {
 }
 
 function Add-RemoteClientsInstallation() {
+  $global:CHOCO_INSTALLS += ,@('git-lfs', 'gh', 'glab', 'svn')
   $global:CHOCO_INSTALLS += @(
     @('tor', 'vnc-viewer'),
     @(
@@ -238,7 +244,8 @@ function Add-RuntimesInstallation() {
       'directx'
     ),
     @('xna31', '--ignore-checksums'),
-    @('xna', 'rpgtkoolvx-rtp', 'rpgtkoolvxace-rtp'),
+    @('xna'),
+    @('rpgtkoolvx-rtp', 'rpgtkoolvxace-rtp'),
     @(
       'adoptopenjdkjre',
       '--params="/ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome,FeatureIcedTeaWeb"'
@@ -271,9 +278,8 @@ function Add-ShellExtensionsInstallation() {
 
 function Add-VirtualizationToolsInstallation() {
   if (-not $IS_ARM64) {
-    $global:CHOCO_INSTALLS += ,@(
-      'virtualbox', # ! Error? on ARM64
-      '--params "/ExtensionPack /NoDesktopShortcut"'
+    $global:CHOCO_INSTALLS += ,@( # ! Error? on ARM64
+      'virtualbox', '--params "/ExtensionPack /NoDesktopShortcut"'
     )
   }
   if ($IS_WIN1X) {
@@ -283,8 +289,10 @@ function Add-VirtualizationToolsInstallation() {
   }
   $global:CHOCO_INSTALLS += @(
     @('act-cli'),
-    @('gitlab-runner', '--params "/Service"'),
-    @('dosbox-x', '--ignore-checksums') # * with desktop shortcut
+    @('gitlab-runner', '--params "/Service"')
+  )
+  $global:CHOCO_INSTALLS += ,@(
+    'dosbox-x', '--ignore-checksums' # * with desktop shortcut
   )
   <#
   .SYNOPSIS
@@ -475,7 +483,7 @@ function Install-Vagrant() {
   $env:Path += ';C:\HashiCorp\Vagrant\bin'
   $installedPlugins = vagrant plugin list | Out-String
   @('vagrant-disksize', 'vagrant-reload', 'vagrant-vbguest') `
-    | Where-Object { -not ($installedPlugins -like ('*{0}*' -f $_)) } `
+    | Where-Object { $installedPlugins -notlike ('*{0}*' -f $_) } `
     | ForEach-Object { vagrant plugin install $_ }
   vagrant plugin update
   <#
