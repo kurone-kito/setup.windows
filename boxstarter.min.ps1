@@ -31,10 +31,10 @@ $global:CHOCO_INSTALLS = @()
 
 # Add ---------------------------------------------------------------------
 function Add-3DToolsInstallation() {
-  $global:CHOCO_INSTALLS += @(
-    @('freecad', '--params "/NoShortcut /WindowStyle:3"'), # * with desktop shortcut
-    @('blender') # * with desktop shortcut
-  )
+  # $global:CHOCO_INSTALLS += @(
+  #   @('freecad', '--params "/NoShortcut /WindowStyle:3"'), # * with desktop shortcut
+  #   @('blender') # * with desktop shortcut
+  # )
   <#
   .SYNOPSIS
   Add the queue of 3D tools to install.
@@ -42,15 +42,15 @@ function Add-3DToolsInstallation() {
 }
 
 function Add-AudioAndBroadcastingInstallation() {
-  $global:CHOCO_INSTALLS += ,@(
-    'obs-studio', # * with desktop shortcut
-    'autohotkey', # * vb-cable dependeds it but automate installation is not working
-    'vb-cable',
-    'vsthost'
-  )
-  if ($IS_ARM64) {
-    $global:CHOCO_INSTALLS += ,@('voicemeeter') # ! <- ERROR? on ARM64
-  }
+  # $global:CHOCO_INSTALLS += ,@(
+  #   'obs-studio', # * with desktop shortcut
+  #   'autohotkey', # * vb-cable dependeds it but automate installation is not working
+  #   'vb-cable',
+  #   'vsthost'
+  # )
+  # if ($IS_ARM64) {
+  #   $global:CHOCO_INSTALLS += ,@('voicemeeter') # ! <- ERROR? on ARM64
+  # }
   <#
   .SYNOPSIS
   Add the queue of audio and broadcasting tools to install.
@@ -59,10 +59,10 @@ function Add-AudioAndBroadcastingInstallation() {
 
 function Add-BinaryToolsInstallation() {
   $global:CHOCO_INSTALLS += ,@('sqlite')
-  $global:CHOCO_INSTALLS += @(
-    @('7zip', 'ffmpeg', 'rpi-imager'),
-    @('imagemagick') # * with desktop shortcut
-  )
+  # $global:CHOCO_INSTALLS += @(
+  #   @('7zip', 'ffmpeg', 'rpi-imager'),
+  #   @('imagemagick') # * with desktop shortcut
+  # )
   <#
   .SYNOPSIS
   Add the queue of binary tools to install.
@@ -76,7 +76,7 @@ function Add-CLIToolsInstallation() {
       '--params "/GitOnlyOnPath /NoAutoCrlf /NoGuiHereIntegration /NoShellIntegration /NoShellHereIntegration /SChannel /WindowsTerminal"'
     ), # !! DEPENDENCIES
     @('chezmoi', 'jq', 'sudo', 'winfetch'),
-    @('unbound'),
+    # @('unbound'),
     @('gnupg') # !! DEPENDENCIES
   )
   <#
@@ -88,9 +88,9 @@ function Add-CLIToolsInstallation() {
 function Add-CloudStorageClientsInstallation() {
   # $global:CHOCO_INSTALLS += ,@('icloud') # * You should install iCloud from store.
   # $global:CHOCO_INSTALLS += ,@('adobe-creative-cloud', '--ignore-checksums') # ! <- depended to GUI interactive
-  if (-not $IS_ARM64) {
-    $global:CHOCO_INSTALLS += ,@('dropbox') # ! Error on ARM64 (only x86 binary)
-  }
+  # if (-not $IS_ARM64) {
+  #   $global:CHOCO_INSTALLS += ,@('dropbox') # ! Error on ARM64 (only x86 binary)
+  # }
   <#
   .SYNOPSIS
   Add the queue of cloud storages client to install.
@@ -98,10 +98,10 @@ function Add-CloudStorageClientsInstallation() {
 }
 
 function Add-DeviceDriversInstallation() {
-  if (-not $IS_ARM64) {
-    $global:CHOCO_INSTALLS += ,@('logicoolgaming') # ! Error on ARM64 (only x86 binary)
-  }
-  $global:CHOCO_INSTALLS += ,@('scrcpy') # * with desktop shortcut
+  # if (-not $IS_ARM64) {
+  #   $global:CHOCO_INSTALLS += ,@('logicoolgaming') # ! Error on ARM64 (only x86 binary)
+  # }
+  # $global:CHOCO_INSTALLS += ,@('scrcpy') # * with desktop shortcut
   <#
   .SYNOPSIS
   Add the queue of device drivers to install.
@@ -111,21 +111,21 @@ function Add-DeviceDriversInstallation() {
 
 function Add-DevToolsInstallation() {
   $global:CHOCO_INSTALLS += @(
-    @(
-      'visualstudio2017buildtools',
-      '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
-    ),
-    @(
-      'visualstudio2019buildtools',
-      '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
-    ),
-    @(
-      'visualstudio2022buildtools',
-      '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
-    ),
+    # @(
+    #   'visualstudio2017buildtools',
+    #   '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
+    # ),
+    # @(
+    #   'visualstudio2019buildtools',
+    #   '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
+    # ),
+    # @(
+    #   'visualstudio2022buildtools',
+    #   '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
+    # ),
     @('antlr4', 'awscli', 'cmake', 'mkcert', 'mono'),
-    @('android-sdk', 'ngrok', 'sublimetext3'),
-    @('insomnia-rest-api-client', 'unity-hub'), # * with desktop shortcut
+    # @('android-sdk', 'ngrok', 'sublimetext3'),
+    # @('insomnia-rest-api-client', 'unity-hub'), # * with desktop shortcut
     @(
       'vim',
       '--params "/NoContextmenu /NoDesktopShortcuts /RestartExplorer"'
@@ -143,9 +143,9 @@ function Add-DocumentationToolsInstallation() {
     @('plantuml', '--params="/NoShortcuts"'),
     @('cheat', 'graphviz', 'tldr', 'wkhtmltopdf')
   )
-  $global:CHOCO_INSTALLS += ,@(
-    'grammarly-for-windows', 'kindle', 'notion' # * with desktop shortcut
-  )
+  # $global:CHOCO_INSTALLS += ,@(
+  #   'grammarly-for-windows', 'kindle', 'notion' # * with desktop shortcut
+  # )
   # $global:CHOCO_INSTALLS += ,@('messenger', 'slack', 'skype') # * You should install from store.
   if (-not $IS_ARM64) {
     $global:CHOCO_INSTALLS += ,@('pandoc') # ! Hangs on ARM64
@@ -171,11 +171,11 @@ function Add-FontsInstallation() {
 }
 
 function Add-GamesInstallation() {
-  $global:CHOCO_INSTALLS += @(
-    @('epicgameslauncher', 'steam-client'), # * with desktop shortcut
-    @('origin', 'steamcmd', 'stepmania'),
-    @('minecraft-launcher', '--params="/NOICON"')
-  )
+  # $global:CHOCO_INSTALLS += @(
+  #   @('epicgameslauncher', 'steam-client'), # * with desktop shortcut
+  #   @('origin', 'steamcmd', 'stepmania'),
+  #   @('minecraft-launcher', '--params="/NOICON"')
+  # )
   <#
   .SYNOPSIS
   Add the queue of games to install.
@@ -184,8 +184,8 @@ function Add-GamesInstallation() {
 
 function Add-MessagingToolsInstallation() {
   $global:CHOCO_INSTALLS += @(
-    @('discord', 'mattermost-desktop', 'zoom'), # * with desktop shortcut
-    @('gitter', 'keybase')
+    # @('discord', 'mattermost-desktop', 'zoom'), # * with desktop shortcut
+    # @('gitter', 'keybase')
     @('mmctl')
   )
   # $global:CHOCO_INSTALLS += ,@('messenger', 'slack', 'skype') # * You should install from store.
@@ -197,9 +197,9 @@ function Add-MessagingToolsInstallation() {
 
 function Add-PackageManagersInstallation() {
   $global:CHOCO_INSTALLS += ,@('choco-protocol-support')
-  $global:CHOCO_INSTALLS += ,@(
-    'chocolateygui', '--params="/DefaultToDarkMode /Global"'
-  )
+  # $global:CHOCO_INSTALLS += ,@(
+  #   'chocolateygui', '--params="/DefaultToDarkMode /Global"'
+  # )
   if (-not $IS_WIN1X) {
     $global:CHOCO_INSTALLS += ,@('powershell-packagemanagement')
   }
@@ -211,14 +211,14 @@ function Add-PackageManagersInstallation() {
 
 function Add-RemoteClientsInstallation() {
   $global:CHOCO_INSTALLS += ,@('git-lfs', 'gh', 'glab', 'svn')
-  $global:CHOCO_INSTALLS += @(
-    @('tor', 'vnc-viewer'),
-    @(
-      'amazon-workspaces', # * with desktop shortcut
-      'authy-desktop', # * with desktop shortcut
-      'teamviewer' # * with desktop shortcut
-    )
-  )
+  # $global:CHOCO_INSTALLS += @(
+  #   @('tor', 'vnc-viewer'),
+  #   @(
+  #     'amazon-workspaces', # * with desktop shortcut
+  #     'authy-desktop', # * with desktop shortcut
+  #     'teamviewer' # * with desktop shortcut
+  #   )
+  # )
   if (-not $IS_ARM64) {
     $global:CHOCO_INSTALLS += ,@(
       'openvpn', # ! Error? on ARM64
@@ -245,7 +245,7 @@ function Add-RuntimesInstallation() {
     ),
     @('xna31', '--ignore-checksums'),
     @('xna'),
-    @('rpgtkoolvx-rtp', 'rpgtkoolvxace-rtp'),
+    # @('rpgtkoolvx-rtp', 'rpgtkoolvxace-rtp'),
     @(
       'adoptopenjdkjre',
       '--params="/ADDLOCAL=FeatureMain,FeatureEnvironment,FeatureJarFileRunWith,FeatureJavaHome,FeatureIcedTeaWeb"'
@@ -277,11 +277,11 @@ function Add-ShellExtensionsInstallation() {
 }
 
 function Add-VirtualizationToolsInstallation() {
-  if (-not $IS_ARM64) {
-    $global:CHOCO_INSTALLS += ,@( # ! Error? on ARM64
-      'virtualbox', '--params "/ExtensionPack /NoDesktopShortcut"'
-    )
-  }
+  # if (-not $IS_ARM64) {
+  #   $global:CHOCO_INSTALLS += ,@( # ! Error? on ARM64
+  #     'virtualbox', '--params "/ExtensionPack /NoDesktopShortcut"'
+  #   )
+  # }
   if ($IS_WIN1X) {
     $global:CHOCO_INSTALLS += ,@('docker-desktop') # * with desktop shortcut
   } else {
@@ -291,9 +291,9 @@ function Add-VirtualizationToolsInstallation() {
     @('act-cli'),
     @('gitlab-runner', '--params "/Service"')
   )
-  $global:CHOCO_INSTALLS += ,@(
-    'dosbox-x', '--ignore-checksums' # * with desktop shortcut
-  )
+  # $global:CHOCO_INSTALLS += ,@(
+  #   'dosbox-x', '--ignore-checksums' # * with desktop shortcut
+  # )
   <#
   .SYNOPSIS
   Add the queue of virtualization tools to install.
@@ -308,7 +308,7 @@ function Add-WebBrowserInstallation() {
     @('elinks'),
     @('googlechrome'), # * with desktop shortcut
     @('chromium', '--pre'), # * with desktop shortcut
-    @('tor-browser', '--params "/Locale:ja-JP"'), # * with desktop shortcut
+    # @('tor-browser', '--params "/Locale:ja-JP"'), # * with desktop shortcut
     @('firefoxesr', '--params "/l:ja-JP /NoDesktopShortcut /RemoveDistributionDir"')
   )
   <#
@@ -392,15 +392,15 @@ function Install-SomeWindowsCapability() {
   $installList = @(
     # Languages and fonts
     'en-US',
-    'es-ES',
-    'fr-FR',
-    'zh-CN',
+    # 'es-ES',
+    # 'fr-FR',
+    # 'zh-CN',
     'Language.Basic.*ja-JP', # ! ERROR?? on Vagrant Win10 (intel)
     'Language.Fonts.Jpan'
 
     # Others
     'DirectX',
-    'OpenSSH',
+    # 'OpenSSH',
     'ShellComponents',
     # 'StorageManagement', # ! ERROR?? on Vagrant Win11 (intel)
     'Tools.DeveloperMode.Core',

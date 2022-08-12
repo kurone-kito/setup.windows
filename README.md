@@ -33,6 +33,9 @@ Windows が不安定な時、OS をより手軽に再インストールするた
 1. Open the follow link **in Microsoft Edge**:  
    下記のリンクを **Microsoft Edge で**開きます:  
    <https://boxstarter.org/package/url?https://raw.githubusercontent.com/kurone-kito/setup.windows/master/boxstarter.ps1>
+   - Or if, for some reason, you only want to install a minimal number of apps, use the URL below instead:  
+     または諸事情で最小限のアプリのみをインストールしたい場合は、代わりに下記の URL を使用します:  
+     <https://boxstarter.org/package/url?https://raw.githubusercontent.com/kurone-kito/setup.windows/master/boxstarter.min.ps1>
 2. A confirmation dialog will appear asking permission to download, run ClickOnce, and allow UAC. Please allow all of them.  
    ダウンロード、ClickOnce の実行、そして UAC の許可を求める確認ダイアログが表示されます。それらにおいて、全て許可してください。
 3. The terminal will start, and the setup will prompt you to enter the password for the current user account. It is required for an automatic reboot during setup; You should enter it correctly and press Enter at the end.  
@@ -77,16 +80,18 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 | :-----: | :---------------------------------------------------------------------------------- |
 | **`!`** | **DEPENDENCIES**: Removing this app may cause this setup to stop working correctly. |
 |  `-A`   | without ARM64 Architecture                                                          |
+|  `-M`   | Exclude when using minimal setups                                                   |
 |  `-X`   | without Windows 10 / 11                                                             |
 
 #### Configuration tools
 
 - [chezmoi](https://www.chezmoi.io/)
+- [winfetch](https://github.com/kiedtl/winfetch)
 
 #### Convert tools for Media binary
 
-- [FFmpeg](https://www.ffmpeg.org/)
-- [ImageMagick](https://imagemagick.org/index.php)
+- `(-M)` [FFmpeg](https://www.ffmpeg.org/)
+- `(-M)` [ImageMagick](https://imagemagick.org/index.php)
 
 #### Convert tools for Texts
 
@@ -106,7 +111,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
     - v16 LTS Gallium
     - v18
 - [Mono](https://www.mono-project.com/)
-- [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
+- `(-M)` [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
   - version 2017
   - version 2019
   - version 2022
@@ -114,19 +119,19 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Documentation
 
 - [Graphviz](https://graphviz.org/)
-- [pandoc](https://pandoc.org/)
+- `(-A)` [pandoc](https://pandoc.org/)
 - [PlantUML](https://plantuml.com/)
 - [tldr pages](https://tldr.sh)
 - [wkhtmltopdf](https://wkhtmltopdf.org/)
 
 #### Files management
 
-- [7-Zip](https://www.7-zip.org/)
+- `(-M)` [7-Zip](https://www.7-zip.org/)
 
 #### Packages manager
 
 - **`!`** [BoxStarter](https://boxstarter.org)
-- **`!`** [Chocolatey](https://chocolatey.org) (directly install)
+- **`!`** [Chocolatey](https://chocolatey.org)
 - [Chocolatey `choco://` Protocol support](https://github.com/bcurran3/ChocolateyPackages/tree/master/choco-protocol-support)
 - `(-X)` [PowerShell Package Manager](https://www.powershellgallery.com)
 - [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
@@ -141,7 +146,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Testing
 
 - [mkcert](https://mkcert.dev/)
-- [ngrok](https://ngrok.com/)
+- `(-M)` [ngrok](https://ngrok.com/)
 
 #### Version control system
 
@@ -155,7 +160,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Remote
 
 - [awscli](https://aws.amazon.com/cli/)
-- `(-X)` [OpenSSH](https://www.openssh.com/) (install via the Windows feature when on Windows 10 or 11)
+- `(-MX)` [OpenSSH](https://www.openssh.com/) (install via the Windows feature when on Windows 10 or 11)
 
 #### Shell
 
@@ -168,7 +173,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Signature
 
 - **`!`** [GnuPG: The GNU Privacy Guard](https://gnupg.org/)
-- **`!`** [Unbound](https://www.nlnetlabs.nl/projects/unbound/)
+- `(-M)` [Unbound](https://www.nlnetlabs.nl/projects/unbound/)
 
 #### Text Browsing
 
@@ -177,7 +182,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Text editors
 
-- [GNU Nano](https://www.nano-editor.org)
 - [Vim](https://www.vim.org/)
 
 #### Virtualizations
@@ -196,79 +200,80 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 <!-- markdownlint-disable MD033 -->
 <details><summary>Desktop Apps</summary>
 
-| note | description                |
-| :--: | :------------------------- |
-| `-A` | without ARM64 Architecture |
-| `-X` | without Windows 10 / 11    |
-| `-8` | without Windows 8.1        |
+| note | description                       |
+| :--: | :-------------------------------- |
+| `-A` | without ARM64 Architecture        |
+| `-M` | Exclude when using minimal setups |
+| `-X` | without Windows 10 / 11           |
+| `-8` | without Windows 8.1               |
 
 #### 3D Modeling
 
-- [Blender](https://www.blender.org/)
-- [FreeCAD](https://www.freecadweb.org/)
+- `(-M)` [Blender](https://www.blender.org/)
+- `(-M)` [FreeCAD](https://www.freecadweb.org/)
 
 #### Audios, Videos, and Broadcasting
 
-- [OBS Studio](https://obsproject.com/)
-- [VB-CABLE Virtual Audio Device](https://vb-audio.com/Cable/)
-- `(-A)` [VoiceMeeter](https://vb-audio.com/Voicemeeter/)
-- [VSTHost](https://www.hermannseib.com/english/vsthost.htm)
+- `(-M)` [OBS Studio](https://obsproject.com/)
+- `(-M)` [VB-CABLE Virtual Audio Device](https://vb-audio.com/Cable/)
+- `(-AM)` [VoiceMeeter](https://vb-audio.com/Voicemeeter/)
+- `(-M)` [VSTHost](https://www.hermannseib.com/english/vsthost.htm)
 
 #### Authentication
 
-- [Authy Desktop](https://www.authy.com/)
-- [Keybase](https://keybase.io/)
+- `(-M)` [Authy Desktop](https://www.authy.com/)
+- `(-M)` [Keybase](https://keybase.io/)
 
 #### Cloud storages
 
-- `(-A)` [Dropbox](https://www.dropbox.com/)
+- `(-AM)` [Dropbox](https://www.dropbox.com/)
 
 #### Development
 
-- [Android Studio](https://developer.android.com/studio)
-- [Unity Hub](https://unity3d.com/)
+- `(-M)` [Android SDK](https://developer.android.com/)
+- `(-M)` [Unity Hub](https://unity3d.com/)
 
 #### Devices
 
-- [AutoHotkey](https://www.autohotkey.com/)
-- [scrcpy](https://github.com/Genymobile/scrcpy)
-- [logicool G Hub](https://gaming.logicool.co.jp/innovation/g-hub.html)
-- [Raspberry Pi Imager](https://www.raspberrypi.org/software/)
+- `(-M)` [AutoHotkey](https://www.autohotkey.com/)
+- `(-M)` [scrcpy](https://github.com/Genymobile/scrcpy)
+- `(-M)` [logicool G Hub](https://gaming.logicool.co.jp/innovation/g-hub.html)
+- `(-M)` [Raspberry Pi Imager](https://www.raspberrypi.org/software/)
 
 #### Documents and Office apps
 
-- [Amazon Kindle](https://www.amazon.com/kindle)
+- `(-M)` [Amazon Kindle](https://www.amazon.com/kindle)
 
 #### Games
 
-- [EPIC Games Launcher](https://www.epicgames.com/store/download)
-- [Origin (EA Desktop)](https://www.origin.com/)
-- [Minecraft Java Edition](https://www.minecraft.net/)
-- [Steam](https://store.steampowered.com/)
-- [Stepmania](https://www.stepmania.com/)
+- `(-M)` [EPIC Games Launcher](https://www.epicgames.com/store/download)
+- `(-M)` [Origin (EA Desktop)](https://www.origin.com/)
+- `(-M)` [Minecraft Java Edition](https://www.minecraft.net/)
+- `(-M)` [Steam](https://store.steampowered.com/)
+- `(-M)` [Stepmania](https://www.stepmania.com/)
 
 #### Memos and Tasks
 
-- [Grammarly](https://www.grammarly.com/)
-- [Notion](https://www.notion.so/)
+- `(-M)` [Grammarly](https://www.grammarly.com/)
+- `(-M)` [Notion](https://www.notion.so/)
 
 #### Messaging and Socials
 
-- [Discord](https://discord.com/)
-- [Gitter](https://gitter.im/)
-- [Mattermost / with CLI tools](https://mattermost.com/)
-- [Zoom](https://zoom.us/)
+- `(-M)` [Discord](https://discord.com/)
+- `(-M)` [Gitter](https://gitter.im/)
+- `(-M)` [Mattermost / with CLI tools](https://mattermost.com/)
+- `(-M)` [Zoom](https://zoom.us/)
 
 #### Packages manager
 
-- [Chocolatey GUI](https://github.com/chocolatey/ChocolateyGUI)
+- `(-M)` [Chocolatey GUI](https://github.com/chocolatey/ChocolateyGUI)
 
 #### Remote
 
-- [Amazon Workspaces](https://clients.amazonworkspaces.com/)
+- `(-M)` [Amazon Workspaces](https://clients.amazonworkspaces.com/)
 - `(-A)` [OpenVPN](https://openvpn.net/)
-- [Real VNC Viewer](https://www.realvnc.com/connect/download/viewer/)
-- [TeamViewer](https://www.teamviewer.com/)
+- `(-M)` [Real VNC Viewer](https://www.realvnc.com/connect/download/viewer/)
+- `(-M)` [TeamViewer](https://www.teamviewer.com/)
 
 #### Runtime
 
@@ -276,19 +281,19 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - Microsoft XNA Framework
   - [v3.1](https://www.microsoft.com/download/details.aspx?id=15163)
   - [v4.0](https://www.microsoft.com/download/details.aspx?id=20914)
-- [RPG Tkool VX / Ace RTP](https://tkool.jp)
+- `(-M)` [RPG Tkool VX / Ace RTP](https://tkool.jp)
 
 #### Text editors
 
-- [Sublime Text](https://www.sublimetext.com/)
+- `(-M)` [Sublime Text](https://www.sublimetext.com/)
 - [Visual Studio Code](https://code.visualstudio.com/)
 
 #### Virtualizations
 
 - `(-8)` [Docker Desktop](https://www.docker.com/products/docker-desktop)
 - `(-X)` [Docker Toolbox](https://docs.docker.com/toolbox/)
-- [DOSBox-X](https://dosbox-x.com)
-- `(-A)` [Oracle VM Virtualbox + Extension Pack](https://www.virtualbox.org/)
+- `(-M)` [DOSBox-X](https://dosbox-x.com)
+- `(-AM)` [Oracle VM Virtualbox + Extension Pack](https://www.virtualbox.org/)
 - `(-8)` [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/)
 - `(-8)` [Ubuntu 22.04 LTS for WSL2](https://ubuntu.com/download/desktop)
 
@@ -296,10 +301,10 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 - [Google Chrome](https://www.google.com/chrome/)
 - [Chromium](https://www.chromium.org/Home)
-- [Insomnia](https://insomnia.rest/)
+- `(-M)` [Insomnia](https://insomnia.rest/)
 - `(-X)` [Microsoft Edge](https://www.microsoft.com/edge)
 - [Mozilla Firefox ESR](https://www.mozilla.org/firefox/)
-- [Tor Browser](https://www.torproject.org/projects/torbrowser.html)
+- `(-M)` [Tor Browser](https://www.torproject.org/projects/torbrowser.html)
 
 </details>
 <!-- markdownlint-enable MD033 -->
@@ -323,6 +328,7 @@ NOTICE: In the Home edition, some features are excluded and installed.
 |  note   | description                                                                         |
 | :-----: | :---------------------------------------------------------------------------------- |
 | **`!`** | **DEPENDENCIES**: Removing this app may cause this setup to stop working correctly. |
+|  `-M`   | Exclude when using minimal setups                                                   |
 |  `-8`   | without Windows 8.1                                                                 |
 
 - Virtualization features
@@ -339,10 +345,10 @@ NOTICE: In the Home edition, some features are excluded and installed.
   - TFTP client
 - Languages
   - en-US
-  - es-ES
-  - fr-FR
+  - `(-M)` es-ES
+  - `(-M)` fr-FR
   - ja-JP
-  - zh-CN
+  - `(-M)` zh-CN
 - Others
   - **`!`** .NET Framework 3.5
   - Microsoft Defender Application Guard
