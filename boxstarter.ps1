@@ -75,7 +75,7 @@ function Add-CLIToolsInstallation() {
       'git',
       '--params "/GitOnlyOnPath /NoAutoCrlf /NoGuiHereIntegration /NoShellIntegration /NoShellHereIntegration /SChannel /WindowsTerminal"'
     ), # !! DEPENDENCIES
-    @('chezmoi', 'jq', 'sudo'),
+    @('chezmoi', 'jq', 'sudo', 'winfetch'),
     @('unbound'),
     @('gnupg') # !! DEPENDENCIES
   )
@@ -124,7 +124,7 @@ function Add-DevToolsInstallation() {
       '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
     ),
     @('antlr4', 'awscli', 'cmake', 'mkcert', 'mono'),
-    @('ngrok', 'sublimetext3'),
+    @('android-sdk', 'ngrok', 'sublimetext3'),
     @('insomnia-rest-api-client', 'unity-hub'), # * with desktop shortcut
     @(
       'vim',
@@ -141,7 +141,7 @@ function Add-DevToolsInstallation() {
 function Add-DocumentationToolsInstallation() {
   $global:CHOCO_INSTALLS += @(
     @('plantuml', '--params="/NoShortcuts"'),
-    @('graphviz', 'tldr', 'wkhtmltopdf')
+    @('cheat', 'graphviz', 'tldr', 'wkhtmltopdf')
   )
   $global:CHOCO_INSTALLS += ,@(
     'grammarly-for-windows', 'kindle', 'notion' # * with desktop shortcut

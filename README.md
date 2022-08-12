@@ -82,6 +82,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Configuration tools
 
 - [chezmoi](https://www.chezmoi.io/)
+- [winfetch](https://github.com/kiedtl/winfetch)
 
 #### Convert tools for Media binary
 
@@ -114,7 +115,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Documentation
 
 - [Graphviz](https://graphviz.org/)
-- [pandoc](https://pandoc.org/)
+- `(-A)` [pandoc](https://pandoc.org/)
 - [PlantUML](https://plantuml.com/)
 - [tldr pages](https://tldr.sh)
 - [wkhtmltopdf](https://wkhtmltopdf.org/)
@@ -126,7 +127,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Packages manager
 
 - **`!`** [BoxStarter](https://boxstarter.org)
-- **`!`** [Chocolatey](https://chocolatey.org) (directly install)
+- **`!`** [Chocolatey](https://chocolatey.org)
 - [Chocolatey `choco://` Protocol support](https://github.com/bcurran3/ChocolateyPackages/tree/master/choco-protocol-support)
 - `(-X)` [PowerShell Package Manager](https://www.powershellgallery.com)
 - [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
@@ -168,7 +169,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Signature
 
 - **`!`** [GnuPG: The GNU Privacy Guard](https://gnupg.org/)
-- **`!`** [Unbound](https://www.nlnetlabs.nl/projects/unbound/)
+- [Unbound](https://www.nlnetlabs.nl/projects/unbound/)
 
 #### Text Browsing
 
@@ -177,7 +178,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Text editors
 
-- [GNU Nano](https://www.nano-editor.org)
 - [Vim](https://www.vim.org/)
 
 #### Virtualizations
@@ -225,7 +225,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Development
 
-- [Android Studio](https://developer.android.com/studio)
+- [Android SDK](https://developer.android.com/)
 - [Unity Hub](https://unity3d.com/)
 
 #### Devices
