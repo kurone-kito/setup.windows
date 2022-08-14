@@ -29,7 +29,10 @@ function Write-DockerSkippedLog {
   #>
 }
 
-$DockerDesktop = [IO.Path]::Combine($env:ProgramFiles, 'Docker', 'Docker', 'Docker Desktop.exe')
+$DockerDesktop = $env:ProgramFiles `
+  | Join-Path -ChildPath Docker `
+  | Join-Path -ChildPath Docker `
+  | Join-Path -ChildPath 'Docker Desktop.exe'
 
 if (-not (Test-Path $DockerDesktop)) {
   Write-SkippedMessage 'Docker Desktop is not installed.'

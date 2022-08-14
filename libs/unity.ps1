@@ -29,7 +29,10 @@ function Write-UnityHubSkippedLog {
   #>
 }
 
-$UnityHub = [IO.Path]::Combine($env:ProgramFiles, 'Unity Hub', 'Unity Hub.exe')
+$UnityHub = $env:ProgramFiles `
+  | Join-Path -ChildPath 'Unity Hub' `
+  | Join-Path -ChildPath 'Unity Hub.exe'
+
 if (-not (Test-Path $UnityHub)) {
   Write-UnityHubSkippedLog 'Unity Hub is not installed.'
   exit
