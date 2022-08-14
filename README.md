@@ -134,6 +134,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - **`!`** [Chocolatey](https://chocolatey.org)
 - [Chocolatey `choco://` Protocol support](https://github.com/bcurran3/ChocolateyPackages/tree/master/choco-protocol-support)
 - `(-X)` [PowerShell Package Manager](https://www.powershellgallery.com)
+- [Scoop](https://scoop.sh) (directly install)
 - [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
 
 #### Runtime
@@ -355,7 +356,6 @@ NOTICE: In the Home edition, some features are excluded and installed.
   - TIFF IFilter
   - Windows Developer Mode
   - Windows Feature Experience Pack
-  - ~~Windows Storage Management~~
   - XPS Viewer
 
 </details>
@@ -377,7 +377,7 @@ PS> .\additional-setup
 
 ### Apps install
 
-- [Drobo Dashboard](https://www.drobo.com/)
+- `(-M)` [Drobo Dashboard](https://www.drobo.com/)
 - [Unity version 2019.4.31f1](https://unity3d.com/) (via Unity Hub)
   - Module: Android Build Support
   - Module: Documentation
