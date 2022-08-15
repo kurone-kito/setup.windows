@@ -3,7 +3,7 @@
 The entrypoint of the setup script.
 #>
 Set-StrictMode -Version Latest
-Set-Location $PSScriptRoot
+Push-Location $PSScriptRoot
 Import-Module -Name ./.lib.psm1
 
 Write-Host 'Launched the setup script. Continue...'
@@ -12,3 +12,5 @@ Write-Host 'Launched the setup script. Continue...'
 'url?https://raw.githubusercontent.com/kurone-kito/setup.windows/{0}/boxstarter.ps1' `
   -f 'master' `
   | Invoke-BoxstarterFromURL
+
+Pop-Location

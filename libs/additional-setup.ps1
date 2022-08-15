@@ -3,7 +3,7 @@
 The entrypoint of the setup script.
 #>
 Set-StrictMode -Version Latest
-Set-Location $PSScriptRoot
+Push-Location $PSScriptRoot
 
 Write-Host 'Launched the additonal setup script. Continue...'
 
@@ -14,3 +14,5 @@ Write-Host 'Launched the additonal setup script. Continue...'
 if (-not (Test-Path -Path C:\vagrant)) {
   ./docker.ps1
 }
+
+Pop-Location
