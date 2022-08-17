@@ -3,15 +3,17 @@
 Setup the Unity Editor
 #>
 Set-StrictMode -Version Latest
-Set-Location $PSScriptRoot
+Push-Location $PSScriptRoot
 Import-Module -Name ./.lib.psm1
 
 if (Invoke-SelfWithPrivileges) {
+  Pop-Location
   exit
 }
 
 if (-not $args.Count) {
   Invoke-Self
+  Pop-Location
   exit
 }
 
@@ -29,7 +31,10 @@ function Write-UnityHubSkippedLog {
   #>
 }
 
-$UnityHub = [IO.Path]::Combine($env:ProgramFiles, 'Unity Hub', 'Unity Hub.exe')
+$UnityHub = $env:ProgramFiles `
+  | Join-Path -ChildPath 'Unity Hub' `
+  | Join-Path -ChildPath 'Unity Hub.exe'
+
 if (-not (Test-Path $UnityHub)) {
   Write-UnityHubSkippedLog 'Unity Hub is not installed.'
   exit
@@ -55,3 +60,5 @@ if ($isSetupUnity -ne $True) {
 $opts = '-- --headless install -v {0} -c {1} -m android -m documentation -m language-ja --cm' `
   -f $version, $changeset
 Start-Process $UnityHub -ArgumentList $opts -NoNewWindow -Wait
+
+Pop-Location

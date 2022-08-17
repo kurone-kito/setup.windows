@@ -123,14 +123,12 @@ function Add-DevToolsInstallation() {
       'visualstudio2022buildtools',
       '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
     ),
-    @('antlr4', 'awscli', 'cmake', 'mkcert', 'mono'),
+    @('antlr4', 'awscli', 'cmake', 'mkcert'),
     @('android-sdk', 'ngrok', 'sublimetext3'),
     @('insomnia-rest-api-client', 'unity-hub'), # * with desktop shortcut
-    @(
-      'vim',
-      '--params "/NoContextmenu /NoDesktopShortcuts /RestartExplorer"'
-    ),
-    @('vscode', '--params "/NoDesktopIcon"')
+    @('vim', '--params "/NoContextmenu /NoDesktopShortcuts"'),
+    @('vscode', '--params "/NoDesktopIcon"'),
+    @('mono') # * Can't continue during Visual Studio installation
   )
   <#
   .SYNOPSIS
@@ -185,7 +183,7 @@ function Add-GamesInstallation() {
 function Add-MessagingToolsInstallation() {
   $global:CHOCO_INSTALLS += @(
     @('discord', 'mattermost-desktop', 'zoom'), # * with desktop shortcut
-    @('gitter', 'keybase')
+    @('gitter', 'keybase'),
     @('mmctl')
   )
   # $global:CHOCO_INSTALLS += ,@('messenger', 'slack', 'skype') # * You should install from store.
@@ -626,22 +624,22 @@ Add-CLIToolsInstallation
 Add-ShellExtensionsInstallation
 Add-PackageManagersInstallation
 
+Add-FontsInstallation
 Add-AudioAndBroadcastingInstallation
-Add-3DToolsInstallation
 Add-CloudStorageClientsInstallation
+Add-WebBrowserInstallation
 
+Add-DocumentationToolsInstallation
 Add-DevToolsInstallation
 Add-BinaryToolsInstallation
 Add-DeviceDriversInstallation
-Add-DocumentationToolsInstallation
 
-Add-FontsInstallation
+Add-3DToolsInstallation
 Add-GamesInstallation
 Add-MessagingToolsInstallation
 
 Add-RemoteClientsInstallation
 Add-VirtualizationToolsInstallation
-Add-WebBrowserInstallation
 Add-WSLInstallation
 
 Install-ChocoPackages
@@ -651,6 +649,8 @@ Install-ChocoPackages
 
 Install-FNM
 Install-Vagrant
+
+Invoke-WebRequest -useb get.scoop.sh | Invoke-Expression
 
 ###########################################################################
 ### Update

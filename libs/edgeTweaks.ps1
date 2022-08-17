@@ -3,15 +3,17 @@
 Hide the first run experience of the Edge
 #>
 Set-StrictMode -Version Latest
-Set-Location $PSScriptRoot
+Push-Location $PSScriptRoot
 Import-Module -Name ./.lib.psm1
 
 if (Invoke-SelfWithPrivileges) {
+  Pop-Location
   exit
 }
 
 if (-not $args.Count) {
   Invoke-Self
+  Pop-Location
   exit
 }
 
@@ -24,3 +26,5 @@ New-ItemProperty `
   -Value 1 `
   -Force `
   | Out-Null
+
+Pop-Location

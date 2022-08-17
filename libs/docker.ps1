@@ -3,15 +3,17 @@
 Setup the Docker desktop
 #>
 Set-StrictMode -Version Latest
-Set-Location $PSScriptRoot
+Push-Location $PSScriptRoot
 Import-Module -Name ./.lib.psm1
 
 if (Invoke-SelfWithPrivileges) {
+  Pop-Location
   exit
 }
 
 if (-not $args.Count) {
   Invoke-Self
+  Pop-Location
   exit
 }
 
@@ -29,7 +31,10 @@ function Write-DockerSkippedLog {
   #>
 }
 
-$DockerDesktop = [IO.Path]::Combine($env:ProgramFiles, 'Docker', 'Docker', 'Docker Desktop.exe')
+$DockerDesktop = $env:ProgramFiles `
+  | Join-Path -ChildPath Docker `
+  | Join-Path -ChildPath Docker `
+  | Join-Path -ChildPath 'Docker Desktop.exe'
 
 if (-not (Test-Path $DockerDesktop)) {
   Write-SkippedMessage 'Docker Desktop is not installed.'
@@ -72,3 +77,5 @@ docker pull ghcr.io/catthehacker/ubuntu:act-latest
 # ! Commented out because the container is too lerge!
 # docker pull ghcr.io/catthehacker/ubuntu:full-20.04
 # docker pull ghcr.io/catthehacker/ubuntu:full-latest
+
+Pop-Location

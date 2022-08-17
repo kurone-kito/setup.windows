@@ -3,7 +3,7 @@
 Setup the unity
 #>
 Set-StrictMode -Version Latest
-Set-Location $PSScriptRoot
+Push-Location $PSScriptRoot
 Import-Module -Name ./.lib.psm1
 
 function Write-MkcertSkippedLog {
@@ -20,9 +20,10 @@ function Write-MkcertSkippedLog {
   #>
 }
 
-if (-not (Get-Command mkcert)) {
+if (Get-Command mkcert -ErrorAction SilentlyContinue | Out-Null) {
+  mkcert --install
+} else {
   Write-MkcertSkippedLog 'mkcert is not installed'
-  exit
 }
 
-mkcert --install
+Pop-Location

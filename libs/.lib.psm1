@@ -181,8 +181,10 @@ function Read-Confirm {
   $no = New-Object $choiceDescription('&No', 'Skip')
   $choice = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
   $result = $host.ui.PromptForChoice($question, $description, $choice, 1)
-  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($yes)
-  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($no)
+  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($yes) `
+    | Out-Null
+  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($no) `
+    | Out-Null
   $result -eq 0
   <#
   .SYNOPSIS
@@ -245,7 +247,8 @@ function Write-Speech {
   # * NOTE: required the en-US locale to be installed
   $sapi.Voice = $sapi.GetVoices('Language=409') | Select-Object -First 1
   $sapi.Speak('Attention: {0}' -f $text, 1)
-  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($sapi)
+  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($sapi) `
+    | Out-Null
   if ($stdout) {
     Write-Warning $text
   }
