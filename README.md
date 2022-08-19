@@ -336,7 +336,6 @@ NOTICE: In the Home edition, some features are excluded and installed.
   - **`!`** Hyper-V
   - **`!`** Virtual Machine Platform
   - **`!`** Hypervisor Platform
-  - Windows Sandbox
   - **`!`** `(-8)` Windows Subsystem for Linux
 - Network client
   - NFS Client

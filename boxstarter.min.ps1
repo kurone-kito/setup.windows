@@ -432,7 +432,6 @@ function Install-SomeWindowsFeatures() {
     'Microsoft-Hyper-V-All',
     'VirtualMachinePlatform',
     'HypervisorPlatform',
-    'Containers-DisposableClientVM',
     'Microsoft-Windows-Subsystem-Linux',
 
     # NFS
