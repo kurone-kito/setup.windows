@@ -27,5 +27,8 @@
     "vbguest",
     "vhdx",
     "wkhtmltopdf"
-  ]
+  ],
+  "files.watcherExclude": {
+    "**/.vagrant/**": true
+  }
 }
