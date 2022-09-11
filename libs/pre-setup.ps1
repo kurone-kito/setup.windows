@@ -11,6 +11,6 @@ Write-Host 'Launched the setup script. Continue...'
 ./edgeTweaks.ps1
 'url?https://raw.githubusercontent.com/kurone-kito/setup.windows/{0}/boxstarter.ps1' `
   -f 'master' `
-  | Invoke-BoxstarterFromURL
+| Invoke-BoxstarterFromURL
 
 Pop-Location

@@ -4,7 +4,8 @@ The libraries for setup scripts.
 #>
 Set-StrictMode -Version Latest
 
-function Add-Link {
+function Add-Link
+{
   param(
     [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
     [System.IO.FileInfo]
@@ -18,7 +19,8 @@ function Add-Link {
   $FileName = $Source.Name
   $FullPath = $Source.FullName
   $Replace = Join-Path $Destination -ChildPath $FileName
-  if (Test-Path -Path $Replace) {
+  if (Test-Path -Path $Replace)
+  {
     Remove-Item -Force $Replace
   }
   New-Item -Path $Destination -ItemType SymbolicLink -Name $FileName -Value $FullPath
@@ -32,7 +34,8 @@ function Add-Link {
   #>
 }
 
-function Add-Links {
+function Add-Links
+{
   param(
     [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
     [string]
@@ -56,7 +59,8 @@ function Add-Links {
   #>
 }
 
-function Get-IsAdmin {
+function Get-IsAdmin
+{
   $user = [System.Security.Principal.WindowsIdentity]::GetCurrent()
   $principal = [Security.Principal.WindowsPrincipal]$user
   $principal.IsInRole('Administrators')
@@ -70,18 +74,19 @@ function Get-IsAdmin {
   #>
 }
 
-function Invoke-BoxstarterFromURL {
+function Invoke-BoxstarterFromURL
+{
   param(
     [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
     [string]
     $Packages
   )
   $iePath = $env:ProgramFiles `
-    | Join-Path -ChildPath 'Internet Explorer' `
-    | Join-Path -ChildPath 'iexplore.exe'
+  | Join-Path -ChildPath 'Internet Explorer' `
+  | Join-Path -ChildPath 'iexplore.exe'
   [Environment]::GetFolderPath('Startup') `
-    | Join-Path -ChildPath 'boxstarter-post-restart.bat' `
-    | New-TouchFile
+  | Join-Path -ChildPath 'boxstarter-post-restart.bat' `
+  | New-TouchFile
   $url = 'https://boxstarter.org/package/' + $Packages
   Start-Process $iePath -ArgumentList $url
   Out-Beep
@@ -93,7 +98,8 @@ function Invoke-BoxstarterFromURL {
   #>
 }
 
-function Invoke-Self {
+function Invoke-Self
+{
   $options = Join-PSOptions $MyInvocation.ScriptName
   Start-Process powershell.exe -ArgumentList $options -Wait
   <#
@@ -104,8 +110,10 @@ function Invoke-Self {
   #>
 }
 
-function Invoke-SelfWithPrivileges {
-  if (Get-IsAdmin) {
+function Invoke-SelfWithPrivileges
+{
+  if (Get-IsAdmin)
+  {
     return $false
   }
   [Console]::WriteLine('Please elevate to privileges for installing an app')
@@ -123,7 +131,8 @@ function Invoke-SelfWithPrivileges {
   #>
 }
 
-function Join-PSOptions {
+function Join-PSOptions
+{
   param (
     [Parameter(Mandatory)][string]
     # Specifies the filename.
@@ -138,13 +147,15 @@ function Join-PSOptions {
   #>
 }
 
-function New-TouchFile {
+function New-TouchFile
+{
   param(
     [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
     [string]
     $Path
   )
-  if (-not (Test-Path -Path $Path)) {
+  if (-not (Test-Path -Path $Path))
+  {
     New-Item -Path $Path -ItemType File | Out-Null
   }
   <#
@@ -155,11 +166,15 @@ function New-TouchFile {
   #>
 }
 
-function Out-Beep {
-  if ([System.Environment]::OSVersion.Platform -eq 'Win32NT') {
+function Out-Beep
+{
+  if ([System.Environment]::OSVersion.Platform -eq 'Win32NT')
+  {
     [Console]::Beep(2000, 100)
     [Console]::Beep(1000, 100)
-  } else {
+  }
+  else
+  {
     Write-Host "`a"
   }
   <#
@@ -168,7 +183,8 @@ function Out-Beep {
   #>
 }
 
-function Read-Confirm {
+function Read-Confirm
+{
   param (
     [Parameter(Mandatory)][string]
     $question,
@@ -182,9 +198,9 @@ function Read-Confirm {
   $choice = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
   $result = $host.ui.PromptForChoice($question, $description, $choice, 1)
   [System.Runtime.Interopservices.Marshal]::ReleaseComObject($yes) `
-    | Out-Null
+  | Out-Null
   [System.Runtime.Interopservices.Marshal]::ReleaseComObject($no) `
-    | Out-Null
+  | Out-Null
   $result -eq 0
   <#
   .SYNOPSIS
@@ -198,12 +214,14 @@ function Read-Confirm {
   #>
 }
 
-function Request-Credential {
+function Request-Credential
+{
   $msg = 'Enter your password. It''s automatic login when the system reboots during the setup process.'
   [Console]::WriteLine($msg)
   [Console]::Beep(2000, 100); [Console]::Beep(1000, 100)
   $cred = Get-Credential $env:username -Message $msg
-  if ($null -eq $cred) {
+  if ($null -eq $cred)
+  {
     [Console]::WriteLine('Abort.')
   }
   $cred
@@ -218,7 +236,8 @@ function Request-Credential {
   #>
 }
 
-function Write-SkippedMessage {
+function Write-SkippedMessage
+{
   param (
     [Parameter(Mandatory)][string]
     $app,
@@ -236,7 +255,8 @@ function Write-SkippedMessage {
   #>
 }
 
-function Write-Speech {
+function Write-Speech
+{
   param (
     [Parameter(ValueFromPipeline = $true, Mandatory = $true)][string]
     $text,
@@ -248,8 +268,9 @@ function Write-Speech {
   $sapi.Voice = $sapi.GetVoices('Language=409') | Select-Object -First 1
   $sapi.Speak('Attention: {0}' -f $text, 1)
   [System.Runtime.Interopservices.Marshal]::ReleaseComObject($sapi) `
-    | Out-Null
-  if ($stdout) {
+  | Out-Null
+  if ($stdout)
+  {
     Write-Warning $text
   }
   <#

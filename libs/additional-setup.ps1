@@ -11,7 +11,8 @@ Write-Host 'Launched the additonal setup script. Continue...'
 ./choco-with-interactive.ps1
 ./unity.ps1
 
-if (-not (Test-Path -Path C:\vagrant)) {
+if (-not (Test-Path -Path C:\vagrant))
+{
   ./docker.ps1
 }
 

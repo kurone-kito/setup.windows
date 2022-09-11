@@ -6,18 +6,21 @@ Set-StrictMode -Version Latest
 Push-Location $PSScriptRoot
 Import-Module -Name ./.lib.psm1
 
-if (Invoke-SelfWithPrivileges) {
+if (Invoke-SelfWithPrivileges)
+{
   Pop-Location
   exit
 }
 
-if (-not $args.Count) {
+if (-not $args.Count)
+{
   Invoke-Self
   Pop-Location
   exit
 }
 
-function Write-DockerSkippedLog {
+function Write-DockerSkippedLog
+{
   param (
     [Parameter(Mandatory)][string]
     $due
@@ -32,11 +35,12 @@ function Write-DockerSkippedLog {
 }
 
 $DockerDesktop = $env:ProgramFiles `
-  | Join-Path -ChildPath Docker `
-  | Join-Path -ChildPath Docker `
-  | Join-Path -ChildPath 'Docker Desktop.exe'
+| Join-Path -ChildPath Docker `
+| Join-Path -ChildPath Docker `
+| Join-Path -ChildPath 'Docker Desktop.exe'
 
-if (-not (Test-Path $DockerDesktop)) {
+if (-not (Test-Path $DockerDesktop))
+{
   Write-SkippedMessage 'Docker Desktop is not installed.'
   exit
 }
@@ -45,8 +49,9 @@ Write-Speech 'If this is your first setup, Docker may need to be interacted with
 
 Start-Process $DockerDesktop
 
-do {
-  sleep 5
+do
+{
+  Start-Sleep 5
   docker version | Out-Null
 } until ($?)
 

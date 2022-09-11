@@ -6,7 +6,8 @@ Set-StrictMode -Version Latest
 Push-Location $PSScriptRoot
 Import-Module -Name ./.lib.psm1
 
-function Write-MkcertSkippedLog {
+function Write-MkcertSkippedLog
+{
   param (
     [Parameter(Mandatory)][string]
     $due
@@ -20,9 +21,12 @@ function Write-MkcertSkippedLog {
   #>
 }
 
-if (Get-Command mkcert -ErrorAction SilentlyContinue | Out-Null) {
+if (Get-Command mkcert -ErrorAction SilentlyContinue | Out-Null)
+{
   mkcert --install
-} else {
+}
+else
+{
   Write-MkcertSkippedLog 'mkcert is not installed'
 }
 
