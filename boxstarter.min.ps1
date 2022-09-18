@@ -47,6 +47,7 @@ function Add-AudioAndBroadcastingInstallation()
   # $global:CHOCO_INSTALLS += ,@(
   #   'obs-studio', # * with desktop shortcut
   #   'autohotkey', # * vb-cable dependeds it but automate installation is not working
+  #   'reflector-4', # * with desktop shortcut
   #   'vb-cable',
   #   'vsthost'
   # )
