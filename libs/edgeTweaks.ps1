@@ -6,12 +6,14 @@ Set-StrictMode -Version Latest
 Push-Location $PSScriptRoot
 Import-Module -Name ./.lib.psm1
 
-if (Invoke-SelfWithPrivileges) {
+if (Invoke-SelfWithPrivileges)
+{
   Pop-Location
   exit
 }
 
-if (-not $args.Count) {
+if (-not $args.Count)
+{
   Invoke-Self
   Pop-Location
   exit
@@ -25,6 +27,6 @@ New-ItemProperty `
   -PropertyType DWord `
   -Value 1 `
   -Force `
-  | Out-Null
+| Out-Null
 
 Pop-Location

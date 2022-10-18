@@ -9,20 +9,20 @@ Set-StrictMode -Version Latest
 ### Constants
 
 Get-CimInstance Win32_ComputerSystem `
-  | Select-Object -ExpandProperty SystemType `
-  | Set-Variable -name ARCH -option Constant -Scope local
+| Select-Object -ExpandProperty SystemType `
+| Set-Variable -Name ARCH -Option Constant -Scope local
 Get-CimInstance win32_OperatingSystem `
-  | Select-Object -ExpandProperty Version `
-  | Set-Variable -name WINVER -option Constant -Scope local
+| Select-Object -ExpandProperty Version `
+| Set-Variable -Name WINVER -Option Constant -Scope local
 Join-Path $env:TEMP 'kurone-kito.setup.windows.tmp' `
-  | Set-Variable -name RUNNING_FILE -option Constant -Scope local
+| Set-Variable -Name RUNNING_FILE -Option Constant -Scope local
 
 $ARCH -like 'ARM64*' `
-  | Set-Variable -name IS_ARM64 -option Constant -Scope local
+| Set-Variable -Name IS_ARM64 -Option Constant -Scope local
 $WINVER -match '^1(0|1)\.' `
-  | Set-Variable -name IS_WIN1X -option Constant -Scope local
+| Set-Variable -Name IS_WIN1X -Option Constant -Scope local
 Test-Path -Path C:\vagrant `
-  | Set-Variable -name IS_VAGRANT -option Constant -Scope local
+| Set-Variable -Name IS_VAGRANT -Option Constant -Scope local
 
 $global:CHOCO_INSTALLS = @()
 
@@ -30,7 +30,8 @@ $global:CHOCO_INSTALLS = @()
 ### Functions
 
 # Add ---------------------------------------------------------------------
-function Add-3DToolsInstallation() {
+function Add-3DToolsInstallation()
+{
   # $global:CHOCO_INSTALLS += @(
   #   @('freecad', '--params "/NoShortcut /WindowStyle:3"'), # * with desktop shortcut
   #   @('blender') # * with desktop shortcut
@@ -41,14 +42,17 @@ function Add-3DToolsInstallation() {
   #>
 }
 
-function Add-AudioAndBroadcastingInstallation() {
+function Add-AudioAndBroadcastingInstallation()
+{
   # $global:CHOCO_INSTALLS += ,@(
   #   'obs-studio', # * with desktop shortcut
   #   'autohotkey', # * vb-cable dependeds it but automate installation is not working
+  #   'reflector-4', # * with desktop shortcut
   #   'vb-cable',
   #   'vsthost'
   # )
-  # if ($IS_ARM64) {
+  # if ($IS_ARM64)
+  # {
   #   $global:CHOCO_INSTALLS += ,@('voicemeeter') # ! <- ERROR? on ARM64
   # }
   <#
@@ -57,8 +61,9 @@ function Add-AudioAndBroadcastingInstallation() {
   #>
 }
 
-function Add-BinaryToolsInstallation() {
-  $global:CHOCO_INSTALLS += ,@('sqlite')
+function Add-BinaryToolsInstallation()
+{
+  $global:CHOCO_INSTALLS += , @('sqlite')
   # $global:CHOCO_INSTALLS += @(
   #   @('7zip', 'ffmpeg', 'rpi-imager'),
   #   @('imagemagick') # * with desktop shortcut
@@ -69,7 +74,8 @@ function Add-BinaryToolsInstallation() {
   #>
 }
 
-function Add-CLIToolsInstallation() {
+function Add-CLIToolsInstallation()
+{
   $global:CHOCO_INSTALLS += @(
     @(
       'git',
@@ -85,10 +91,12 @@ function Add-CLIToolsInstallation() {
   #>
 }
 
-function Add-CloudStorageClientsInstallation() {
+function Add-CloudStorageClientsInstallation()
+{
   # $global:CHOCO_INSTALLS += ,@('icloud') # * You should install iCloud from store.
   # $global:CHOCO_INSTALLS += ,@('adobe-creative-cloud', '--ignore-checksums') # ! <- depended to GUI interactive
-  # if (-not $IS_ARM64) {
+  # if (-not $IS_ARM64)
+  # {
   #   $global:CHOCO_INSTALLS += ,@('dropbox') # ! Error on ARM64 (only x86 binary)
   # }
   <#
@@ -97,8 +105,10 @@ function Add-CloudStorageClientsInstallation() {
   #>
 }
 
-function Add-DeviceDriversInstallation() {
-  # if (-not $IS_ARM64) {
+function Add-DeviceDriversInstallation()
+{
+  # if (-not $IS_ARM64)
+  # {
   #   $global:CHOCO_INSTALLS += ,@('logicoolgaming') # ! Error on ARM64 (only x86 binary)
   # }
   # $global:CHOCO_INSTALLS += ,@('scrcpy') # * with desktop shortcut
@@ -108,8 +118,8 @@ function Add-DeviceDriversInstallation() {
   #>
 }
 
-
-function Add-DevToolsInstallation() {
+function Add-DevToolsInstallation()
+{
   $global:CHOCO_INSTALLS += @(
     # @(
     #   'visualstudio2017buildtools',
@@ -136,7 +146,8 @@ function Add-DevToolsInstallation() {
   #>
 }
 
-function Add-DocumentationToolsInstallation() {
+function Add-DocumentationToolsInstallation()
+{
   $global:CHOCO_INSTALLS += @(
     @('plantuml', '--params="/NoShortcuts"'),
     @('cheat', 'graphviz', 'tldr', 'wkhtmltopdf')
@@ -145,8 +156,9 @@ function Add-DocumentationToolsInstallation() {
   #   'grammarly-for-windows', 'kindle', 'notion' # * with desktop shortcut
   # )
   # $global:CHOCO_INSTALLS += ,@('messenger', 'slack', 'skype') # * You should install from store.
-  if (-not $IS_ARM64) {
-    $global:CHOCO_INSTALLS += ,@('pandoc') # ! Hangs on ARM64
+  if (-not $IS_ARM64)
+  {
+    $global:CHOCO_INSTALLS += , @('pandoc') # ! Hangs on ARM64
   }
   <#
   .SYNOPSIS
@@ -154,8 +166,9 @@ function Add-DocumentationToolsInstallation() {
   #>
 }
 
-function Add-FontsInstallation() {
-  $global:CHOCO_INSTALLS += ,@(
+function Add-FontsInstallation()
+{
+  $global:CHOCO_INSTALLS += , @(
     'cascadiafonts',
     'firacode',
     'font-hackgen',
@@ -168,7 +181,8 @@ function Add-FontsInstallation() {
   #>
 }
 
-function Add-GamesInstallation() {
+function Add-GamesInstallation()
+{
   # $global:CHOCO_INSTALLS += @(
   #   @('epicgameslauncher', 'steam-client'), # * with desktop shortcut
   #   @('origin', 'steamcmd', 'stepmania'),
@@ -180,7 +194,8 @@ function Add-GamesInstallation() {
   #>
 }
 
-function Add-MessagingToolsInstallation() {
+function Add-MessagingToolsInstallation()
+{
   $global:CHOCO_INSTALLS += @(
     # @('discord', 'mattermost-desktop', 'zoom'), # * with desktop shortcut
     # @('gitter', 'keybase'),
@@ -193,13 +208,15 @@ function Add-MessagingToolsInstallation() {
   #>
 }
 
-function Add-PackageManagersInstallation() {
-  $global:CHOCO_INSTALLS += ,@('choco-protocol-support')
+function Add-PackageManagersInstallation()
+{
+  $global:CHOCO_INSTALLS += , @('choco-protocol-support')
   # $global:CHOCO_INSTALLS += ,@(
   #   'chocolateygui', '--params="/DefaultToDarkMode /Global"'
   # )
-  if (-not $IS_WIN1X) {
-    $global:CHOCO_INSTALLS += ,@('powershell-packagemanagement')
+  if (-not $IS_WIN1X)
+  {
+    $global:CHOCO_INSTALLS += , @('powershell-packagemanagement')
   }
   <#
   .SYNOPSIS
@@ -207,8 +224,9 @@ function Add-PackageManagersInstallation() {
   #>
 }
 
-function Add-RemoteClientsInstallation() {
-  $global:CHOCO_INSTALLS += ,@('git-lfs', 'gh', 'glab', 'svn')
+function Add-RemoteClientsInstallation()
+{
+  $global:CHOCO_INSTALLS += , @('git-lfs', 'gh', 'glab', 'svn')
   # $global:CHOCO_INSTALLS += @(
   #   @('tor', 'vnc-viewer'),
   #   @(
@@ -217,14 +235,16 @@ function Add-RemoteClientsInstallation() {
   #     'teamviewer' # * with desktop shortcut
   #   )
   # )
-  if (-not $IS_ARM64) {
-    $global:CHOCO_INSTALLS += ,@(
+  if (-not $IS_ARM64)
+  {
+    $global:CHOCO_INSTALLS += , @(
       'openvpn', # ! Error? on ARM64
       '--params "/SELECT_SHORTCUTS=0 /SELECT_LAUNCH=0"'
     )
   }
-  if ((Get-OpenSSHInstalls) -eq 0) {
-    $global:CHOCO_INSTALLS += ,@('openssh', '--params "/SSHServerFeature"')
+  if ((Get-OpenSSHInstalls) -eq 0)
+  {
+    $global:CHOCO_INSTALLS += , @('openssh', '--params "/SSHServerFeature"')
   }
   <#
   .SYNOPSIS
@@ -232,7 +252,8 @@ function Add-RemoteClientsInstallation() {
   #>
 }
 
-function Add-RuntimesInstallation() {
+function Add-RuntimesInstallation()
+{
   $global:CHOCO_INSTALLS += @(
     @(
       'vcredist-all',
@@ -255,7 +276,8 @@ function Add-RuntimesInstallation() {
   #>
 }
 
-function Add-ShellExtensionsInstallation() {
+function Add-ShellExtensionsInstallation()
+{
   $global:CHOCO_INSTALLS += @(
     @('powershell'), # !! DEPENDENCIES
     @(
@@ -274,16 +296,21 @@ function Add-ShellExtensionsInstallation() {
   #>
 }
 
-function Add-VirtualizationToolsInstallation() {
-  # if (-not $IS_ARM64) {
+function Add-VirtualizationToolsInstallation()
+{
+  # if (-not $IS_ARM64)
+  # {
   #   $global:CHOCO_INSTALLS += ,@( # ! Error? on ARM64
   #     'virtualbox', '--params "/ExtensionPack /NoDesktopShortcut"'
   #   )
   # }
-  if ($IS_WIN1X) {
-    $global:CHOCO_INSTALLS += ,@('docker-desktop') # * with desktop shortcut
-  } else {
-    $global:CHOCO_INSTALLS += ,@('docker-toolbox')
+  if ($IS_WIN1X)
+  {
+    $global:CHOCO_INSTALLS += , @('docker-desktop') # * with desktop shortcut
+  }
+  else
+  {
+    $global:CHOCO_INSTALLS += , @('docker-toolbox')
   }
   $global:CHOCO_INSTALLS += @(
     @('act-cli'),
@@ -298,9 +325,11 @@ function Add-VirtualizationToolsInstallation() {
   #>
 }
 
-function Add-WebBrowserInstallation() {
-  if (-not $IS_WIN1X) {
-    $global:CHOCO_INSTALLS += ,@('microsoft-edge')
+function Add-WebBrowserInstallation()
+{
+  if (-not $IS_WIN1X)
+  {
+    $global:CHOCO_INSTALLS += , @('microsoft-edge')
   }
   $global:CHOCO_INSTALLS += @(
     @('elinks'),
@@ -315,8 +344,10 @@ function Add-WebBrowserInstallation() {
   #>
 }
 
-function Add-WSLInstallation() {
-  if ($IS_WIN1X) {
+function Add-WSLInstallation()
+{
+  if ($IS_WIN1X)
+  {
     $global:CHOCO_INSTALLS += @(
       @('wsl2', '--params "/Version:2 /Retry:true"'),
       @('wsl-ubuntu-2204')
@@ -329,12 +360,13 @@ function Add-WSLInstallation() {
 }
 
 # Get ---------------------------------------------------------------------
-function Get-OpenSSHInstalls() {
+function Get-OpenSSHInstalls()
+{
   Get-WindowsCapability -Online `
-    | Where-Object -Property Name -match OpenSSH `
-    | Where-Object -Property State -eq Installed `
-    | Measure-Object `
-    | Select-Object -ExpandProperty Count
+  | Where-Object -Property Name -Match OpenSSH `
+  | Where-Object -Property State -EQ Installed `
+  | Measure-Object `
+  | Select-Object -ExpandProperty Count
   <#
   .SYNOPSIS
   Get the number of OpenSSH installations.
@@ -342,7 +374,8 @@ function Get-OpenSSHInstalls() {
 }
 
 # Install -----------------------------------------------------------------
-function Install-ChocoPackages() {
+function Install-ChocoPackages()
+{
   $global:CHOCO_INSTALLS | ForEach-Object {
     choco install @_
   }
@@ -352,7 +385,8 @@ function Install-ChocoPackages() {
   #>
 }
 
-function Install-FNM() {
+function Install-FNM()
+{
   choco install fnm
   fnm env --use-on-cd | Out-String | Invoke-Expression
   Install-NodeJS -NodeVersion 14 -NPMVersion 6
@@ -364,7 +398,8 @@ function Install-FNM() {
   #>
 }
 
-function Install-NodeJS() {
+function Install-NodeJS()
+{
   param(
     [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
     [string]
@@ -386,7 +421,8 @@ function Install-NodeJS() {
   #>
 }
 
-function Install-SomeWindowsCapability() {
+function Install-SomeWindowsCapability()
+{
   $installList = @(
     # Languages and fonts
     'en-US',
@@ -406,7 +442,7 @@ function Install-SomeWindowsCapability() {
   )
 
   $caps = Get-WindowsCapability -Online `
-    | Where-Object -Property State -ne Installed
+  | Where-Object -Property State -NE Installed
   $installList | ForEach-Object {
     $target = $_
     $caps `
@@ -426,7 +462,8 @@ function Install-SomeWindowsCapability() {
   #>
 }
 
-function Install-SomeWindowsFeatures() {
+function Install-SomeWindowsFeatures()
+{
   $installList = @(
     # Virtualization
     'Microsoft-Hyper-V-All',
@@ -448,13 +485,14 @@ function Install-SomeWindowsFeatures() {
     'TIFFIFilter',
     'Windows-Defender-ApplicationGuard'
   )
-  try {
+  try
+  {
     $disabledFeatures = choco find -s windowsfeatures `
-      | Select-String Disabled `
-      | Select-Object -ExpandProperty Line `
-      | Select-String -Pattern '^[A-Za-z0-9-]+' `
-      | Select-Object -ExpandProperty Matches `
-      | Select-Object -ExpandProperty Value
+    | Select-String Disabled `
+    | Select-Object -ExpandProperty Line `
+    | Select-String -Pattern '^[A-Za-z0-9-]+' `
+    | Select-Object -ExpandProperty Matches `
+    | Select-Object -ExpandProperty Value
     $diff = Compare-Object `
       -ReferenceObject $installList `
       -DifferenceObject $disabledFeatures `
@@ -462,11 +500,13 @@ function Install-SomeWindowsFeatures() {
       -IncludeEqual `
       -ExcludeDifferent
     choco install @diff -s windowsfeatures
-  } catch {
+  }
+  catch
+  {
     Write-BoxstarterMessage `
-      -Message 'Notice: Chocolatey search for Windows features failed so it will install all listed components. So slightly increases the installation process but does not affect the installation results.' `
-      -NoLogo `
-      -Color DarkYellow
+      -message 'Notice: Chocolatey search for Windows features failed so it will install all listed components. So slightly increases the installation process but does not affect the installation results.' `
+      -nologo `
+      -color DarkYellow
     choco install @installList -s windowsfeatures
   }
   <#
@@ -475,13 +515,14 @@ function Install-SomeWindowsFeatures() {
   #>
 }
 
-function Install-Vagrant() {
+function Install-Vagrant()
+{
   choco install vagrant
   $env:Path += ';C:\HashiCorp\Vagrant\bin'
   $installedPlugins = vagrant plugin list | Out-String
   @('vagrant-disksize', 'vagrant-reload', 'vagrant-vbguest') `
-    | Where-Object { $installedPlugins -notlike ('*{0}*' -f $_) } `
-    | ForEach-Object { vagrant plugin install $_ }
+  | Where-Object { $installedPlugins -notlike ('*{0}*' -f $_) } `
+  | ForEach-Object { vagrant plugin install $_ }
   vagrant plugin update
   <#
   .SYNOPSIS
@@ -490,7 +531,8 @@ function Install-Vagrant() {
 }
 
 # Pop ---------------------------------------------------------------------
-function Pop-Preparation() {
+function Pop-Preparation()
+{
   Remove-Item $RUNNING_FILE -Force
   Enable-UAC
   <#
@@ -500,7 +542,8 @@ function Pop-Preparation() {
 }
 
 # Push --------------------------------------------------------------------
-function Push-Preparation() {
+function Push-Preparation()
+{
   New-Item -Type File $RUNNING_FILE -Force | Out-Null
   Disable-UAC
   <#
@@ -510,7 +553,8 @@ function Push-Preparation() {
 }
 
 # Remove ------------------------------------------------------------------
-function Remove-SomeAppx() {
+function Remove-SomeAppx()
+{
   @(
     '*BubbleWitch*',
     '*DisneyMagicKingdom*',
@@ -528,7 +572,8 @@ function Remove-SomeAppx() {
 }
 
 # Set ---------------------------------------------------------------------
-function Set-ChocoFeatures() {
+function Set-ChocoFeatures()
+{
   choco feature disable -n=skipPackageUpgradesWhenNotInstalled
   choco feature enable -n=useRememberedArgumentsForUpgrades
   <#
@@ -537,7 +582,8 @@ function Set-ChocoFeatures() {
   #>
 }
 
-function Set-CleanManagerSageSet() {
+function Set-CleanManagerSageSet()
+{
   $baseUri = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\'
   $keys = @(
     'Active Setup Temp Folders',
@@ -567,7 +613,7 @@ function Set-CleanManagerSageSet() {
       -PropertyType DWord `
       -Value 2 `
       -Force `
-      | Out-Null
+    | Out-Null
   }
   <#
   .SYNOPSIS
@@ -575,7 +621,8 @@ function Set-CleanManagerSageSet() {
   #>
 }
 
-function Set-WindowsOptions() {
+function Set-WindowsOptions()
+{
   Set-CornerNavigationOptions -EnableUpperLeftCornerSwitchApps -EnableUsePowerShellOnWinX
   Set-ExplorerOptions -showHiddenFilesFoldersDrives -showFileExtensions
   Set-StartScreenOptions -DisableBootToDesktop -EnableShowStartOnActiveScreen -EnableShowAppsViewOnStartScreen -EnableSearchEverywhereInAppsView -DisableListDesktopAppsFirst

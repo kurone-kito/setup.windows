@@ -216,6 +216,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Audios, Videos, and Broadcasting
 
 - `(-M)` [OBS Studio](https://obsproject.com/)
+- `(-M)` [Reflector 4](https://www.airsquirrels.com/reflector/)
 - `(-M)` [VB-CABLE Virtual Audio Device](https://vb-audio.com/Cable/)
 - `(-AM)` [VoiceMeeter](https://vb-audio.com/Voicemeeter/)
 - `(-M)` [VSTHost](https://www.hermannseib.com/english/vsthost.htm)

@@ -6,18 +6,21 @@ Set-StrictMode -Version Latest
 Push-Location $PSScriptRoot
 Import-Module -Name ./.lib.psm1
 
-if (Invoke-SelfWithPrivileges) {
+if (Invoke-SelfWithPrivileges)
+{
   Pop-Location
   exit
 }
 
-if (-not $args.Count) {
+if (-not $args.Count)
+{
   Invoke-Self
   Pop-Location
   exit
 }
 
-function Write-UnityHubSkippedLog {
+function Write-UnityHubSkippedLog
+{
   param (
     [Parameter(Mandatory)][string]
     $due
@@ -32,10 +35,11 @@ function Write-UnityHubSkippedLog {
 }
 
 $UnityHub = $env:ProgramFiles `
-  | Join-Path -ChildPath 'Unity Hub' `
-  | Join-Path -ChildPath 'Unity Hub.exe'
+| Join-Path -ChildPath 'Unity Hub' `
+| Join-Path -ChildPath 'Unity Hub.exe'
 
-if (-not (Test-Path $UnityHub)) {
+if (-not (Test-Path $UnityHub))
+{
   Write-UnityHubSkippedLog 'Unity Hub is not installed.'
   exit
 }
@@ -43,7 +47,8 @@ if (-not (Test-Path $UnityHub)) {
 $version = '2019.4.31f1'
 $changeset = 'bd5abf232a62'
 $versions = & $UnityHub -- --headless editors --installed | Out-String
-if ($versions | Select-String -Pattern $version) {
+if ($versions | Select-String -Pattern $version)
+{
   Write-UnityHubSkippedLog ('Unity Editor version {0} is already installed.' -f $version)
   exit
 }
@@ -52,7 +57,8 @@ Start-Process $UnityHub -NoNewWindow -RedirectStandardOutput 'NUL'
 
 $isSetupUnity = Read-Confirm 'To continue with the Unity setup, you will need to log in. Please login to your account in the running Unity Hub. If you are already logged in, press Y to install Unity. Otherwise, enter N to skip the Unity installation.'
 
-if ($isSetupUnity -ne $True) {
+if ($isSetupUnity -ne $True)
+{
   Write-UnityHubSkippedLog 'canceled by user'
   exit
 }

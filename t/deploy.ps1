@@ -1,7 +1,8 @@
 Set-StrictMode -Version Latest
 
 # Functions ###############################################################
-function Deploy-Launcher() {
+function Deploy-Launcher()
+{
   param(
     [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
     [string]
@@ -10,11 +11,11 @@ function Deploy-Launcher() {
 
   $launcherName = 'sw-launcher.cmd'
   $launcherPath = $ProjectHome `
-    | Join-Path -ChildPath t `
-    | Join-Path -ChildPath $launcherName
+  | Join-Path -ChildPath t `
+  | Join-Path -ChildPath $launcherName
   Copy-Item $launcherPath ([Environment]::GetFolderPath('Startup')) -Force
 
-    <#
+  <#
     .SYNOPSIS
     deploy a launcher file to the startup folder
     .DESCRIPTION
@@ -26,19 +27,21 @@ function Deploy-Launcher() {
     #>
 }
 
-function Expand-SystemDisk() {
+function Expand-SystemDisk()
+{
   $regexp = 'disk (\d+)\s+(\w+)\s+(\d+ .?b)\s+(\d+ .?b)  (.*)'
   $diskList = 'list disk' | diskpart | Select-String -Pattern $regexp
   $matchGroups = $diskList[0] `
-    | Select-Object -ExpandProperty Matches `
-    | Select-Object -ExpandProperty Groups
+  | Select-Object -ExpandProperty Matches `
+  | Select-Object -ExpandProperty Groups
   $rawFree = $matchGroups[4] `
-    | Select-Object -ExpandProperty Value `
-    | Select-String -Pattern "^[0-9]+" `
-    | Select-Object -ExpandProperty Matches `
-    | Select-Object -ExpandProperty Value
+  | Select-Object -ExpandProperty Value `
+  | Select-String -Pattern '^[0-9]+' `
+  | Select-Object -ExpandProperty Matches `
+  | Select-Object -ExpandProperty Value
   $free = [int]$rawFree * 1024
-  if ($free -gt 0) {
+  if ($free -gt 0)
+  {
     # ? NOTE: `New-TemporaryFile` cmdlet supports Powershell v5 or later
     $tmpPath = Join-Path $env:TEMP ([Guid]::NewGuid())
     Write-Host $tmpPath
@@ -58,14 +61,15 @@ exit
   #>
 }
 
-function Get-ProjectHome() {
+function Get-ProjectHome()
+{
   $shell = New-Object -ComObject Shell.Application
   $result = $shell.NameSpace('shell:Downloads') `
-    | Select-Object -ExpandProperty Self `
-    | Select-Object -ExpandProperty Path `
-    | Join-Path -ChildPath setup.windows
+  | Select-Object -ExpandProperty Self `
+  | Select-Object -ExpandProperty Path `
+  | Join-Path -ChildPath setup.windows
   [System.Runtime.Interopservices.Marshal]::ReleaseComObject($shell) `
-    | Out-Null
+  | Out-Null
   $result
 
   <#
@@ -106,4 +110,4 @@ New-ItemProperty `
   -PropertyType DWord `
   -Value 1 `
   -Force `
-  | Out-Null
+| Out-Null
