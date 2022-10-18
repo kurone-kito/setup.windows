@@ -191,17 +191,13 @@ function Read-Confirm
     [string]
     $description = ''
   )
-  '{0} {1}' -f $question, $description | Write-Speech -stdout $false
+  '{0} {1}' -f $question, $description | Write-Speech -stdout $false | Out-Null
   $choiceDescription = 'System.Management.Automation.Host.ChoiceDescription'
   $yes = New-Object $choiceDescription('&Yes', 'Continue')
   $no = New-Object $choiceDescription('&No', 'Skip')
   $choice = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
   $result = $host.ui.PromptForChoice($question, $description, $choice, 1)
-  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($yes) `
-  | Out-Null
-  [System.Runtime.Interopservices.Marshal]::ReleaseComObject($no) `
-  | Out-Null
-  $result -eq 0
+  return $result -eq 0
   <#
   .SYNOPSIS
   Prompts the user to confirm an action.
