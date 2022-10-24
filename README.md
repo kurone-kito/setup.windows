@@ -372,10 +372,15 @@ PS> .\additional-setup
 
 ### Apps install
 
-- [Unity version 2019.4.31f1](https://unity3d.com/) (via Unity Hub)
-  - Module: Android Build Support
-  - Module: Documentation
-  - Module: Language Pack (Japanese)
+- [Unity Editor](https://unity3d.com/) (via Unity Hub)
+  - version 2019.4.31f1
+    - Module: Android Build Support
+    - Module: Documentation
+    - Module: Language Pack (Japanese)
+  - version 2022.3.6f1
+    - Module: Android Build Support
+    - Module: Documentation
+    - Module: Language Pack (Japanese)
 
 ### Initialize for web-frontend development environment
 
