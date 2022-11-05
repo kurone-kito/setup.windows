@@ -232,6 +232,7 @@ function Add-RemoteClientsInstallation()
   #   @(
   #     'amazon-workspaces', # * with desktop shortcut
   #     'authy-desktop', # * with desktop shortcut
+  #     'forticlientvpn',
   #     'teamviewer' # * with desktop shortcut
   #   )
   # )
