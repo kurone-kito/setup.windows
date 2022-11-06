@@ -273,6 +273,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Remote
 
 - `(-M)` [Amazon Workspaces](https://clients.amazonworkspaces.com/)
+- `(-M)` [FortiClient VPN](https://www.fortinet.com/products/endpoint-security/forticlient)
 - `(-A)` [OpenVPN](https://openvpn.net/)
 - `(-M)` [Real VNC Viewer](https://www.realvnc.com/connect/download/viewer/)
 - `(-M)` [TeamViewer](https://www.teamviewer.com/)
