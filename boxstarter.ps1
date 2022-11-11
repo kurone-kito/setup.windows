@@ -121,6 +121,8 @@ function Add-DeviceDriversInstallation()
 function Add-DevToolsInstallation()
 {
   $global:CHOCO_INSTALLS += @(
+    # @('visualstudio2013-sdk'),
+    # @('microsoft-visual-cpp-build-tools', '--installargs "/Full"'),
     @(
       'visualstudio2017buildtools',
       '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
@@ -428,9 +430,9 @@ function Install-SomeWindowsCapability()
   $installList = @(
     # Languages and fonts
     'en-US',
-    'es-ES',
-    'fr-FR',
-    'zh-CN',
+    # 'es-ES',
+    # 'fr-FR',
+    # 'zh-CN',
     'Language.Basic.*ja-JP', # ! ERROR?? on Vagrant Win10 (intel)
     'Language.Fonts.Jpan'
 

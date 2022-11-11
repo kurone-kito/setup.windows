@@ -121,6 +121,7 @@ function Add-DeviceDriversInstallation()
 function Add-DevToolsInstallation()
 {
   $global:CHOCO_INSTALLS += @(
+    # @('visualstudio2013-sdk'),
     # @(
     #   'visualstudio2017buildtools',
     #   '--package-parameters "--allWorkloads --includeRecommended --includeOptional --passive"'
