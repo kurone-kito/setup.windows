@@ -115,6 +115,9 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
   - version 2017
   - version 2019
   - version 2022
+- [Rust](https://www.rust-lang.org/)
+  - GNU ABI
+  - Microsoft Visual Studio ABI
 
 #### Documentation
 

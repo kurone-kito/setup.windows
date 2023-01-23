@@ -138,6 +138,7 @@ function Add-DevToolsInstallation()
     @('insomnia-rest-api-client', 'unity-hub'), # * with desktop shortcut
     @('vim', '--params "/NoContextmenu /NoDesktopShortcuts"'),
     @('vscode', '--params "/NoDesktopIcon"'),
+    @('rust', 'rust-ms'),
     @('mono') # * Can't continue during Visual Studio installation
   )
   <#
