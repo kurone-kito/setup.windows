@@ -34,15 +34,6 @@ Vagrant.configure('2') do |config|
     'vagrant-vbguest',
     'vagrant-disksize',
   ]
-  config.vm.define 'win8.1' do |atomic|
-    atomic.vm.box = 'jaswsinc/windows81'
-    atomic.vm.provider 'virtualbox' do |vb|
-      vb.name = 'setup-windows-8.1'
-      vb.memory = ([total_memory / 16, 1536].max).to_s
-    end
-    atomic.winrm.username = 'IEUser'
-    atomic.winrm.password = 'Passw0rd!'
-  end
   config.vm.define 'win10' do |atomic|
     atomic.vm.box = 'gusztavvargadr/windows-10'
     atomic.vm.provider 'virtualbox' do |vb|
