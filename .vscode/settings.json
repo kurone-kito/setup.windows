@@ -1,35 +1,13 @@
 {
-  "cSpell.ignorePaths": [
-    ".git/objects",
-    ".github/CODE_OF_CONDUCT.*",
-    ".vscode"
-  ],
-  "cSpell.words": [
-    "antlr",
-    "authy",
-    "awscli",
-    "cascadia",
-    "choco",
-    "dind",
-    "drobo",
-    "fira",
-    "forti",
-    "imager",
-    "kito",
-    "kurone",
-    "lato",
-    "logicool",
-    "meslo",
-    "mkcert",
-    "redistributable",
-    "scrcpy",
-    "tkool",
-    "tldr",
-    "vbguest",
-    "vhdx",
-    "wkhtmltopdf"
-  ],
   "files.watcherExclude": {
     "**/.vagrant/**": true
+  },
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/reviewpad/schemas/main/latest/schema.json": [
+      "reviewpad.yml"
+    ],
+    "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/packages/cspell-types/cspell.schema.json": [
+      "cspell.config.yml"
+    ]
   }
 }

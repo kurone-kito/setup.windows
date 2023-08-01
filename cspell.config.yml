@@ -1,0 +1,30 @@
+dictionaries:
+  - cpp
+  - en_US
+  - en-gb
+  - fonts
+  - git
+language: en,eo,ja
+languageSettings:
+  - allowCompoundWords: true
+    caseSensitive: false
+    enabled: true
+    languageId: "*"
+    locale: en,eo,ja
+ignorePaths:
+  - .git
+  - .github/CODE_OF_CONDUCT.*
+  - cspell.config.yml
+ignoreWords:
+  - ANTLR
+  - Authy
+  - Choco
+  - dind
+  - Kito
+  - Kurone
+  - Tkool
+  - tldr
+  - vbguest
+  - wkhtmltopdf
+useGitignore: true
+version: "0.2"

@@ -2,8 +2,8 @@
 
 # Windows auto setup for develop environment
 
-Desktop environment preference for Windows (8.1 to 11)  
-Windows 8.1 〜 11 向けの作業環境セットアップスクリプト
+Desktop environment preference for Windows (10 to 11)  
+Windows 10 〜 11 向けの作業環境セットアップスクリプト
 
 ## Overview
 
@@ -20,8 +20,7 @@ Windows が不安定な時、OS をより手軽に再インストールするた
 ## System requirements
 
 - x86, x64, or ARM64 computer
-- Windows 8.1, 10 20H2 or later, or 11
-  - Windows 8.1 not supported on ARM64 architecture
+- Windows 10 21H2 or later, or 11
 - At least 2 GB of physical RAM.
 - At least 150 GB of free space is required as a system storage.
 - Internet connection
@@ -81,7 +80,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 | **`!`** | **DEPENDENCIES**: Removing this app may cause this setup to stop working correctly. |
 |  `-A`   | without ARM64 Architecture                                                          |
 |  `-M`   | Exclude when using minimal setups                                                   |
-|  `-X`   | without Windows 10 / 11                                                             |
 
 #### Configuration tools
 
@@ -107,14 +105,17 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - [CMake](https://cmake.org)
 - [fnm: Fast Node Manager](https://fnm.vercel.app/)
   - Node.js (via fnm)
-    - v14 LTS Fermium
     - v16 LTS Gallium
-    - v18
+    - v18 LTS Hydrogen
+    - v20
 - [Mono](https://www.mono-project.com/)
 - `(-M)` [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
   - version 2017
   - version 2019
   - version 2022
+- [Rust](https://www.rust-lang.org/)
+  - GNU ABI
+  - Microsoft Visual Studio ABI
 
 #### Documentation
 
@@ -133,7 +134,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - **`!`** [BoxStarter](https://boxstarter.org)
 - **`!`** [Chocolatey](https://chocolatey.org)
 - [Chocolatey `choco://` Protocol support](https://github.com/bcurran3/ChocolateyPackages/tree/master/choco-protocol-support)
-- `(-X)` [PowerShell Package Manager](https://www.powershellgallery.com)
 - [Scoop](https://scoop.sh) (directly install)
 - [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
 
@@ -205,8 +205,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 | :--: | :-------------------------------- |
 | `-A` | without ARM64 Architecture        |
 | `-M` | Exclude when using minimal setups |
-| `-X` | without Windows 10 / 11           |
-| `-8` | without Windows 8.1               |
 
 #### 3D Modeling
 
@@ -273,7 +271,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 #### Remote
 
 - `(-M)` [Amazon Workspaces](https://clients.amazonworkspaces.com/)
-- `(-M)` [FortiClient VPN](https://www.fortinet.com/products/endpoint-security/forticlient)
 - `(-A)` [OpenVPN](https://openvpn.net/)
 - `(-M)` [Real VNC Viewer](https://www.realvnc.com/connect/download/viewer/)
 - `(-M)` [TeamViewer](https://www.teamviewer.com/)
@@ -293,19 +290,17 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Virtualizations
 
-- `(-8)` [Docker Desktop](https://www.docker.com/products/docker-desktop)
-- `(-X)` [Docker Toolbox](https://docs.docker.com/toolbox/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop)
 - `(-M)` [DOSBox-X](https://dosbox-x.com)
 - `(-AM)` [Oracle VM Virtualbox + Extension Pack](https://www.virtualbox.org/)
-- `(-8)` [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/)
-- `(-8)` [Ubuntu 22.04 LTS for WSL2](https://ubuntu.com/download/desktop)
+- [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/)
+- [Ubuntu 22.04 LTS for WSL2](https://ubuntu.com/download/desktop)
 
 #### Web browsers
 
 - [Google Chrome](https://www.google.com/chrome/)
 - [Chromium](https://www.chromium.org/Home)
 - `(-M)` [Insomnia](https://insomnia.rest/)
-- `(-X)` [Microsoft Edge](https://www.microsoft.com/edge)
 - [Mozilla Firefox ESR](https://www.mozilla.org/firefox/)
 - `(-M)` [Tor Browser](https://www.torproject.org/projects/torbrowser.html)
 
@@ -332,17 +327,16 @@ NOTICE: In the Home edition, some features are excluded and installed.
 | :-----: | :---------------------------------------------------------------------------------- |
 | **`!`** | **DEPENDENCIES**: Removing this app may cause this setup to stop working correctly. |
 |  `-M`   | Exclude when using minimal setups                                                   |
-|  `-8`   | without Windows 8.1                                                                 |
 
 - Virtualization features
   - **`!`** Hyper-V
   - **`!`** Virtual Machine Platform
   - **`!`** Hypervisor Platform
-  - **`!`** `(-8)` Windows Subsystem for Linux
+  - **`!`** Windows Subsystem for Linux
 - Network client
   - NFS Client
   - NFS Administration tools
-  - **`!`** `(-8)` OpenSSH (install via the Chocolatey when on Windows 8.1)
+  - **`!`** OpenSSH (install via the Chocolatey when on Windows 8.1)
   - Telnet client
   - TFTP client
 - Languages
@@ -378,7 +372,6 @@ PS> .\additional-setup
 
 ### Apps install
 
-- `(-M)` [Drobo Dashboard](https://www.drobo.com/)
 - [Unity version 2019.4.31f1](https://unity3d.com/) (via Unity Hub)
   - Module: Android Build Support
   - Module: Documentation
@@ -397,17 +390,17 @@ Also, by starting Firefox in this process, if the root store does not exist, it 
 <!-- markdownlint-disable MD033 -->
 <details><summary>list</summary>
 
-| Image                         | Tag                                                                                                       |
-| :---------------------------- | :-------------------------------------------------------------------------------------------------------- |
-| `hello-world`                 | _`latest`_                                                                                                |
-| `alpine`                      | _`latest`_                                                                                                |
-| `busybox`                     | _`latest`_                                                                                                |
-| `debian`                      | _`latest`_                                                                                                |
-| `ubuntu`                      | _`latest`_                                                                                                |
-| `docker`                      | `dind`, `git`, _`latest`_                                                                                 |
-| `node`                        | `14`, `14-alpine`, `14-bullseye-slim`, `16`, `16-alpine` `16-bullseye-slim`, `18`, `18-alpine`, `18-slim` |
-| `gitlab/gitlab-runner`        | _`latest`_                                                                                                |
-| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                              |
+| Image                         | Tag                                                                                              |
+| :---------------------------- | :----------------------------------------------------------------------------------------------- |
+| `hello-world`                 | _`latest`_                                                                                       |
+| `alpine`                      | _`latest`_                                                                                       |
+| `busybox`                     | _`latest`_                                                                                       |
+| `debian`                      | _`latest`_                                                                                       |
+| `ubuntu`                      | _`latest`_                                                                                       |
+| `docker`                      | `dind`, `git`, _`latest`_                                                                        |
+| `node`                        | `16`, `16-alpine` `16-bullseye-slim`, `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim` |
+| `gitlab/gitlab-runner`        | _`latest`_                                                                                       |
+| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                     |
 
 </details>
 <!-- markdownlint-enable MD033 -->

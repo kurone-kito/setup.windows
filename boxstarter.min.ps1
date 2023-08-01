@@ -138,6 +138,7 @@ function Add-DevToolsInstallation()
     # @('insomnia-rest-api-client', 'unity-hub'), # * with desktop shortcut
     @('vim', '--params "/NoContextmenu /NoDesktopShortcuts"'),
     @('vscode', '--params "/NoDesktopIcon"'),
+    @('rust', 'rust-ms'),
     @('mono') # * Can't continue during Visual Studio installation
   )
   <#
@@ -232,7 +233,6 @@ function Add-RemoteClientsInstallation()
   #   @(
   #     'amazon-workspaces', # * with desktop shortcut
   #     'authy-desktop', # * with desktop shortcut
-  #     'forticlientvpn',
   #     'teamviewer' # * with desktop shortcut
   #   )
   # )
@@ -390,10 +390,9 @@ function Install-FNM()
 {
   choco install fnm
   fnm env --use-on-cd | Out-String | Invoke-Expression
-  Install-NodeJS -NodeVersion 14 -NPMVersion 6
-  Install-NodeJS -NodeVersion 16
+  Install-NodeJS -NodeVersion 16 -NPMVersion 8
   Install-NodeJS -NodeVersion 18
-  Install-NodeJS -NodeVersion 19
+  Install-NodeJS -NodeVersion 20
   <#
   .SYNOPSIS
   Install the Node.js via FNM, and install some global packages.
@@ -416,7 +415,6 @@ function Install-NodeJS()
   npm install -g --silent 'agentkeepalive@latest'
   npm install -g --silent "npm@${NPMVersion}"
   npm upgrade -g --silent
-  npm install -g --silent yarn
   <#
   .SYNOPSIS
   Install the Node.js and some global packages.
