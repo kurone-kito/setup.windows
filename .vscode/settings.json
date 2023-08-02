@@ -2,6 +2,10 @@
   "files.watcherExclude": {
     "**/.vagrant/**": true
   },
+  "git.branchProtection": ["master"],
+  "search.exclude": {
+    "**/.vagrant/**": true
+  },
   "yaml.schemas": {
     "https://raw.githubusercontent.com/reviewpad/schemas/main/latest/schema.json": [
       "reviewpad.yml"
