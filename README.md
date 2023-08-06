@@ -336,7 +336,7 @@ NOTICE: In the Home edition, some features are excluded and installed.
 - Network client
   - NFS Client
   - NFS Administration tools
-  - **`!`** OpenSSH (install via the Chocolatey when on Windows 8.1)
+  - **`!`** OpenSSH
   - Telnet client
   - TFTP client
 - Languages
