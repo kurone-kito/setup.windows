@@ -393,6 +393,7 @@ function Install-FNM()
   Install-NodeJS -NodeVersion 16 -NPMVersion 8
   Install-NodeJS -NodeVersion 18
   Install-NodeJS -NodeVersion 19
+  Install-NodeJS -NodeVersion 20
   <#
   .SYNOPSIS
   Install the Node.js via FNM, and install some global packages.
