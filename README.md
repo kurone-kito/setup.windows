@@ -105,7 +105,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - [CMake](https://cmake.org)
 - [fnm: Fast Node Manager](https://fnm.vercel.app/)
   - Node.js (via fnm)
-    - v16 LTS Gallium
     - v18 LTS Hydrogen
     - v20
 - [Mono](https://www.mono-project.com/)
@@ -390,17 +389,17 @@ Also, by starting Firefox in this process, if the root store does not exist, it 
 <!-- markdownlint-disable MD033 -->
 <details><summary>list</summary>
 
-| Image                         | Tag                                                                                              |
-| :---------------------------- | :----------------------------------------------------------------------------------------------- |
-| `hello-world`                 | _`latest`_                                                                                       |
-| `alpine`                      | _`latest`_                                                                                       |
-| `busybox`                     | _`latest`_                                                                                       |
-| `debian`                      | _`latest`_                                                                                       |
-| `ubuntu`                      | _`latest`_                                                                                       |
-| `docker`                      | `dind`, `git`, _`latest`_                                                                        |
-| `node`                        | `16`, `16-alpine` `16-bullseye-slim`, `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim` |
-| `gitlab/gitlab-runner`        | _`latest`_                                                                                       |
-| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                     |
+| Image                         | Tag                                                                          |
+| :---------------------------- | :--------------------------------------------------------------------------- |
+| `hello-world`                 | _`latest`_                                                                   |
+| `alpine`                      | _`latest`_                                                                   |
+| `busybox`                     | _`latest`_                                                                   |
+| `debian`                      | _`latest`_                                                                   |
+| `ubuntu`                      | _`latest`_                                                                   |
+| `docker`                      | `dind`, `git`, _`latest`_                                                    |
+| `node`                        | `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim`                   |
+| `gitlab/gitlab-runner`        | _`latest`_                                                                   |
+| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~ |
 
 </details>
 <!-- markdownlint-enable MD033 -->

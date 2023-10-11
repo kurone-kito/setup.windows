@@ -66,9 +66,6 @@ docker pull ubuntu
 docker pull docker
 docker pull docker:dind
 docker pull docker:git
-docker pull node:16
-docker pull node:16-alpine
-docker pull node:16-bullseye-slim
 docker pull node:18
 docker pull node:18-alpine
 docker pull node:18-slim
