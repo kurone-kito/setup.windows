@@ -107,6 +107,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
   - Node.js (via fnm)
     - v18 LTS Hydrogen
     - v20
+    - v21
 - [Mono](https://www.mono-project.com/)
 - `(-M)` [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
   - version 2017
