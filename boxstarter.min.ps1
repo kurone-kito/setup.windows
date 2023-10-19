@@ -390,9 +390,9 @@ function Install-FNM()
 {
   choco install fnm
   fnm env --use-on-cd | Out-String | Invoke-Expression
-  Install-NodeJS -NodeVersion 16 -NPMVersion 8
-  Install-NodeJS -NodeVersion 18
+  Install-NodeJS -NodeVersion 18 -NPMVersion 9
   Install-NodeJS -NodeVersion 20
+  Install-NodeJS -NodeVersion 21
   <#
   .SYNOPSIS
   Install the Node.js via FNM, and install some global packages.
