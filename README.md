@@ -1,6 +1,6 @@
 <!-- markdownlint-disable MD024 -->
 
-# Windows auto setup for develop environment
+# Windows auto setup for developing environment
 
 Desktop environment preference for Windows (10 to 11)  
 Windows 10 〜 11 向けの作業環境セットアップスクリプト
@@ -22,14 +22,14 @@ Windows が不安定な時、OS をより手軽に再インストールするた
 - x86, x64, or ARM64 computer
 - Windows 10 21H2 or later, or 11
 - At least 2 GB of physical RAM.
-- At least 150 GB of free space is required as a system storage.
+- At least 150 GB of free space is required as system storage.
 - Internet connection
 
 ## Usage
 
 ### A. Quick install (Recommended)
 
-1. Open the follow link **in Microsoft Edge**:  
+1. Open the following link **in Microsoft Edge**:  
    下記のリンクを **Microsoft Edge で**開きます:  
    <https://boxstarter.org/package/url?https://raw.githubusercontent.com/kurone-kito/setup.windows/master/boxstarter.ps1>
    - Or if, for some reason, you only want to install a minimal number of apps, use the URL below instead:  
@@ -372,10 +372,15 @@ PS> .\additional-setup
 
 ### Apps install
 
-- [Unity version 2019.4.31f1](https://unity3d.com/) (via Unity Hub)
-  - Module: Android Build Support
-  - Module: Documentation
-  - Module: Language Pack (Japanese)
+- [Unity Editor](https://unity3d.com/) (via Unity Hub)
+  - version 2019.4.31f1
+    - Module: Android Build Support
+    - Module: Documentation
+    - Module: Language Pack (Japanese)
+  - version 2022.3.6f1
+    - Module: Android Build Support
+    - Module: Documentation
+    - Module: Language Pack (Japanese)
 
 ### Initialize for web-frontend development environment
 
@@ -390,17 +395,17 @@ Also, by starting Firefox in this process, if the root store does not exist, it 
 <!-- markdownlint-disable MD033 -->
 <details><summary>list</summary>
 
-| Image                         | Tag                                                                          |
-| :---------------------------- | :--------------------------------------------------------------------------- |
-| `hello-world`                 | _`latest`_                                                                   |
-| `alpine`                      | _`latest`_                                                                   |
-| `busybox`                     | _`latest`_                                                                   |
-| `debian`                      | _`latest`_                                                                   |
-| `ubuntu`                      | _`latest`_                                                                   |
-| `docker`                      | `dind`, `git`, _`latest`_                                                    |
-| `node`                        | `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim`                   |
-| `gitlab/gitlab-runner`        | _`latest`_                                                                   |
-| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~ |
+| Image                         | Tag                                                                                      |
+| :---------------------------- | :--------------------------------------------------------------------------------------- |
+| `hello-world`                 | _`latest`_                                                                               |
+| `alpine`                      | _`latest`_                                                                               |
+| `busybox`                     | _`latest`_                                                                               |
+| `debian`                      | _`latest`_                                                                               |
+| `ubuntu`                      | _`latest`_                                                                               |
+| `docker`                      | `dind`, `git`, _`latest`_                                                                |
+| `node`                        | `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim`, `21`, `21-alpine`, `21-slim` |
+| `gitlab/gitlab-runner`        | _`latest`_                                                                               |
+| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~             |
 
 </details>
 <!-- markdownlint-enable MD033 -->
@@ -415,8 +420,8 @@ this one.
 長らくメンテナンスをサボっていたため、動作しない可能性が高いです。
 各々で独自の仮想環境を構築し、その上で動作検証をした方がより確実でしょう。
 
-Test require a desktop OS that bash can use. e.g. macOS, Ubuntu desktop.  
-テストには bash が使えるデスクトップ OS、例えば、、macOS や Ubuntu などが必要です。
+The test requires a desktop OS that Bash can use. e.g. macOS, Ubuntu desktop.  
+テストには Bash が使えるデスクトップ OS、例えば、、macOS や Ubuntu などが必要です。
 
 If you are testing on macOS on the ARM64 architecture, please run the setup directly on Parallels, not on this test script.  
 ARM64 アーキテクチャの macOS 上でテストする場合は、このテストスクリプトではなく、Parallels 上で直接セットアップを実行してください。
@@ -427,10 +432,10 @@ ARM64 アーキテクチャの macOS 上でテストする場合は、このテ�
 - [Vagrant](https://www.vagrantup.com)
   - vagrant-reload plugin
 
-Dependencies auto installation has available on only Mac yet.
-In other platform, you should install manually theirs before testing.
+Dependencies auto installation is available on only Mac.
+In other platforms, you should install manually theirs before testing.
 
-### 2. Start to testing environment
+### 2. Start testing environment
 
 ```sh
 ./test win{8.1|10}
