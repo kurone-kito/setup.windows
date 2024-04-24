@@ -457,3 +457,17 @@ Use vagrant.
 ```SH
 vagrant destory -f
 ```
+
+## See also
+
+- [kurone-kito/dotfiles](https://github.com/kurone-kito/dotfiles)
+- [kurone-kito/setup.macos](https://github.com/kurone-kito/setup.macos)
+
+## Contributing
+
+Welcome to contribute to this repository! For more details,
+please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md).
+
+## License
+
+MIT
