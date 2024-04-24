@@ -1,4 +1,7 @@
 {
+  "files.associations": {
+    "LICENSE": "plaintext"
+  },
   "files.watcherExclude": {
     "**/.vagrant/**": true
   },
