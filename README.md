@@ -108,6 +108,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
     - v18 LTS Hydrogen
     - v20
     - v21
+    - v22
 - [Mono](https://www.mono-project.com/)
 - `(-M)` [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
   - version 2017
@@ -395,17 +396,17 @@ Also, by starting Firefox in this process, if the root store does not exist, it 
 <!-- markdownlint-disable MD033 -->
 <details><summary>list</summary>
 
-| Image                         | Tag                                                                                      |
-| :---------------------------- | :--------------------------------------------------------------------------------------- |
-| `hello-world`                 | _`latest`_                                                                               |
-| `alpine`                      | _`latest`_                                                                               |
-| `busybox`                     | _`latest`_                                                                               |
-| `debian`                      | _`latest`_                                                                               |
-| `ubuntu`                      | _`latest`_                                                                               |
-| `docker`                      | `dind`, `git`, _`latest`_                                                                |
-| `node`                        | `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim`, `21`, `21-alpine`, `21-slim` |
-| `gitlab/gitlab-runner`        | _`latest`_                                                                               |
-| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~             |
+| Image                         | Tag                                                                                                                    |
+| :---------------------------- | :--------------------------------------------------------------------------------------------------------------------- |
+| `hello-world`                 | _`latest`_                                                                                                             |
+| `alpine`                      | _`latest`_                                                                                                             |
+| `busybox`                     | _`latest`_                                                                                                             |
+| `debian`                      | _`latest`_                                                                                                             |
+| `ubuntu`                      | _`latest`_                                                                                                             |
+| `docker`                      | `dind`, `git`, _`latest`_                                                                                              |
+| `node`                        | `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim`, `21`, `21-alpine`, `21-slim`, `22`, `22-alpine`, `22-slim` |
+| `gitlab/gitlab-runner`        | _`latest`_                                                                                                             |
+| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                                           |
 
 </details>
 <!-- markdownlint-enable MD033 -->
@@ -457,3 +458,17 @@ Use vagrant.
 ```SH
 vagrant destory -f
 ```
+
+## See also
+
+- [kurone-kito/dotfiles](https://github.com/kurone-kito/dotfiles)
+- [kurone-kito/setup.macos](https://github.com/kurone-kito/setup.macos)
+
+## Contributing
+
+Welcome to contribute to this repository! For more details,
+please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md).
+
+## License
+
+MIT

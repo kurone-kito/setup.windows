@@ -390,9 +390,10 @@ function Install-FNM()
 {
   choco install fnm
   fnm env --use-on-cd | Out-String | Invoke-Expression
-  Install-NodeJS -NodeVersion 18 -NPMVersion 9
+  Install-NodeJS -NodeVersion 18
   Install-NodeJS -NodeVersion 20
   Install-NodeJS -NodeVersion 21
+  Install-NodeJS -NodeVersion 22
   <#
   .SYNOPSIS
   Install the Node.js via FNM, and install some global packages.
@@ -404,17 +405,12 @@ function Install-NodeJS()
   param(
     [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
     [string]
-    $NodeVersion,
-    [string]
-    $NPMVersion = 'latest'
+    $NodeVersion
   )
   fnm install $NodeVersion
   fnm default $NodeVersion
 
-  # https://qiita.com/Qoo_Rus/items/afb52517e0e17b720990
-  npm install -g --silent 'agentkeepalive@latest'
-  npm install -g --silent "npm@${NPMVersion}"
-  npm upgrade -g --silent
+  corepack enable
   <#
   .SYNOPSIS
   Install the Node.js and some global packages.
