@@ -143,6 +143,10 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - [Visual C++ Redistributable Packages](https://docs.microsoft.com/cpp/windows/latest-supported-vc-redist)
 - [AdoptOpenJDK](https://adoptopenjdk.net/)
 - **`!`** [Microsoft .NET Framework Runtime](https://support.microsoft.com/topic/9d23f658-3b97-68ab-d013-aa3c3e7495e0)
+- [Microsoft .NET SDK](https://dotnet.microsoft.com/)
+  - v6
+  - v7
+  - v8
 - [Microsoft .NET Core Runtime](https://dotnet.microsoft.com/download#macos)
 
 #### Testing
@@ -184,6 +188,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Text editors
 
+- [Neovim](https://neovim.io/)
 - [Vim](https://www.vim.org/)
 
 #### Virtualizations
@@ -224,10 +229,6 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 - `(-M)` [Authy Desktop](https://www.authy.com/)
 - `(-M)` [Keybase](https://keybase.io/)
-
-#### Cloud storages
-
-- `(-AM)` [Dropbox](https://www.dropbox.com/)
 
 #### Development
 
@@ -379,6 +380,10 @@ PS> .\additional-setup
     - Module: Documentation
     - Module: Language Pack (Japanese)
   - version 2022.3.6f1
+    - Module: Android Build Support
+    - Module: Documentation
+    - Module: Language Pack (Japanese)
+  - version 2022.3.22f1
     - Module: Android Build Support
     - Module: Documentation
     - Module: Language Pack (Japanese)

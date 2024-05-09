@@ -95,10 +95,6 @@ function Add-CloudStorageClientsInstallation()
 {
   # $global:CHOCO_INSTALLS += ,@('icloud') # * You should install iCloud from store.
   # $global:CHOCO_INSTALLS += ,@('adobe-creative-cloud', '--ignore-checksums') # ! <- depended to GUI interactive
-  # if (-not $IS_ARM64)
-  # {
-  #   $global:CHOCO_INSTALLS += ,@('dropbox') # ! Error on ARM64 (only x86 binary)
-  # }
   <#
   .SYNOPSIS
   Add the queue of cloud storages client to install.
@@ -136,6 +132,7 @@ function Add-DevToolsInstallation()
     @('antlr4', 'awscli', 'cmake', 'mkcert'),
     # @('android-sdk', 'ngrok', 'sublimetext3'),
     # @('insomnia-rest-api-client', 'unity-hub'), # * with desktop shortcut
+    @('neovim', '--params "/NeovimOnPathForAll"'),
     @('vim', '--params "/NoContextmenu /NoDesktopShortcuts"'),
     @('vscode', '--params "/NoDesktopIcon"'),
     @('rust', 'rust-ms'),
@@ -259,8 +256,9 @@ function Add-RuntimesInstallation()
     @(
       'vcredist-all',
       'dotnetfx',
-      'dotnet-runtime',
-      'dotnetcore-runtime',
+      'dotnet',
+      'dotnet-7.0-sdk',
+      'dotnet-6.0-sdk',
       'directx'
     ),
     @('xna31', '--ignore-checksums'),
