@@ -16,13 +16,14 @@ ignorePaths:
   - .github/CODE_OF_CONDUCT.*
   - cspell.config.yml
 ignoreWords:
-  - ANTLR
-  - Authy
-  - Choco
+  - antlr
+  - authy
+  - choco
   - dind
-  - Kito
-  - Kurone
-  - Tkool
+  - izotope
+  - kito
+  - kurone
+  - maxon
   - tldr
   - vbguest
   - wkhtmltopdf
