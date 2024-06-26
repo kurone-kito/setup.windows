@@ -1,5 +1,3 @@
-<!-- markdownlint-disable MD024 -->
-
 # Windows auto setup for developing environment
 
 Desktop environment preference for Windows (10 to 11)  
@@ -7,7 +5,7 @@ Windows 10 〜 11 向けの作業環境セットアップスクリプト
 
 ## Overview
 
-In order to reinstall OS more easily when Windows is unstable, we fully
+To reinstall OS more easily when Windows is unstable, we fully
 automated the installation of some apps. Two tools:
 [Chocolatey](https://chocolatey.org) and
 [BoxStarter](https://boxstarter.org),
@@ -32,22 +30,34 @@ Windows が不安定な時、OS をより手軽に再インストールするた
 1. Open the following link **in Microsoft Edge**:  
    下記のリンクを **Microsoft Edge で**開きます:  
    <https://boxstarter.org/package/url?https://raw.githubusercontent.com/kurone-kito/setup.windows/master/boxstarter.ps1>
-   - Or if, for some reason, you only want to install a minimal number of apps, use the URL below instead:  
-     または諸事情で最小限のアプリのみをインストールしたい場合は、代わりに下記の URL を使用します:  
+   - Or if, for some reason, you only want to install a minimal number of apps,
+     use the URL below instead:  
+     または諸事情で最小限のアプリのみをインストールしたい場合は、
+     代わりに下記の URL を使用します:  
      <https://boxstarter.org/package/url?https://raw.githubusercontent.com/kurone-kito/setup.windows/master/boxstarter.min.ps1>
-2. A confirmation dialog will appear asking permission to download, run ClickOnce, and allow UAC. Please allow all of them.  
-   ダウンロード、ClickOnce の実行、そして UAC の許可を求める確認ダイアログが表示されます。それらにおいて、全て許可してください。
-3. The terminal will start, and the setup will prompt you to enter the password for the current user account. It is required for an automatic reboot during setup; You should enter it correctly and press Enter at the end.  
-   端末が起動し、セットアップで現在のユーザーアカウントのパスワードを入力するよう促されます。これは、セットアップ中に自動で再起動するために必要なものなので、正しく入力し、最後に Enter キーを押してください。
-4. Some time rebooted, the installation is complete; it will wait for you to enter the Enter key to exit.  
-   複数回再起動し、インストールが完了すると、Enter キーの入力待ちとなるため、Enter キーを入力して終了します。
+2. A confirmation dialog will appear asking permission to download,
+   run ClickOnce, and allow UAC. Please allow all of them.  
+   ダウンロード、ClickOnce の実行、そして UAC の許可を求める確認ダイアログが表示されます。
+   それらにおいて、全て許可してください。
+3. The terminal will start, and the setup will prompt you to enter the password
+   for the current user account. It is required for an automatic reboot during
+   setup; You should enter it correctly and press Enter at the end.  
+   端末が起動し、セットアップで現在のユーザーアカウントのパスワードを入力するよう
+   促されます。これは、セットアップ中に自動で再起動するために必要なものなので、
+   正しく入力し、最後に Enter キーを押してください。
+4. Some time rebooted, the installation is complete; it will wait for you to
+   enter the Enter key to exit.  
+   複数回再起動し、インストールが完了すると、Enter キーの入力待ちとなるため、
+   Enter キーを入力して終了します。
 5. Finally, restart Windows manually to complete the setup.  
    手動で Windows を再起動して、セットアップ完了です。
 
 ### B. Classic install
 
-Clone or download and unzip this repository in advance, and run the following command:  
-予めこのリポジトリをクローン、もしくはダウンロードと解凍した上で下記のコマンドを実行します:
+Clone or download and unzip this repository in advance, and run the following
+command:  
+予めこのリポジトリをクローン、もしくはダウンロードと解凍した上で、
+下記のコマンドを実行します:
 
 ```PowerShell
 PS> .\setup
@@ -72,7 +82,6 @@ which may cause unexpected behavior.
 Unless otherwise specified, as a general rule, install via Chocolatey.  
 特筆なき場合、原則として Chocolatey 経由でインストールします。
 
-<!-- markdownlint-disable MD033 -->
 <details><summary>CLI Apps</summary>
 
 |  note   | description                                                                         |
@@ -197,9 +206,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
     - [vagrant-vbguest](https://github.com/dotless-de/vagrant-vbguest)
 
 </details>
-<!-- markdownlint-enable MD033 -->
 
-<!-- markdownlint-disable MD033 -->
 <details><summary>Desktop Apps</summary>
 
 | note | description                       |
@@ -306,9 +313,7 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 - `(-M)` [Tor Browser](https://www.torproject.org/projects/torbrowser.html)
 
 </details>
-<!-- markdownlint-enable MD033 -->
 
-<!-- markdownlint-disable MD033 -->
 <details><summary>Fonts</summary>
 
 - [Cascadia Code](https://github.com/microsoft/cascadia-code)
@@ -355,15 +360,23 @@ NOTICE: In the Home edition, some features are excluded and installed.
   - XPS Viewer
 
 </details>
-<!-- markdownlint-enable MD033 -->
 
 ## Additional setup
 
-Boxstarter, used in our main setup, is not good at setups requiring keystrokes or other operations. For example, it automatically skips after 30 seconds if it accepts keyboard input on any display. To work around this, we have provided an additional setup batch script that does not use Boxstarter.  
-メインのセットアップで使用している Boxstarter はキー入力などの操作を要求するセットアップを不得意としており、例えば何らかの表示をした上でキーボード入力を受け付けると、30 秒で自動的にスキップしてしまう特性があります。これを回避するために、Boxstarter を用いない、追加のセットアップ バッチ スクリプトを用意しました。
+Boxstarter, used in our main setup, is not good at setups requiring keystrokes
+or other operations. For example, it automatically skips after 30 seconds if it
+accepts keyboard input on any display. To work around this, we have provided an
+additional setup batch script that does not use Boxstarter.  
+メインのセットアップで使用している Boxstarter はキー入力などのインタラクションを
+要求するセットアップを不得意としており、例えば何らかの表示をした上で
+キーボード入力を受け付けると、30 秒で自動的にスキップしてしまう特性があります。
+これを回避するために、Boxstarter を用いない、追加のセットアップ バッチ
+スクリプトを用意しました。
 
-Setup will provide voice notification whenever possible if your action is required, so please follow the guidance.  
-ユーザーの行動が必要な場合、セットアップはできる限り音声で通知していますので、ガイダンスに従ってください。
+Setup will provide voice notification whenever possible if your action is
+required, so please follow the guidance.  
+ユーザーの行動が必要な場合、セットアップはできる限り音声で通知していますので、
+ガイダンスに従ってください。
 
 ### Usage
 
@@ -385,15 +398,18 @@ PS> .\additional-setup
 
 ### Initialize for web-frontend development environment
 
-The script creates and installs a local CA in the system root store, and generates locally-trusted certificates using the mkcert.  
-セットアップ スクリプトは mkcert を使用して、システムルートストアにローカル CA を作成してインストールし、ローカルで信頼できる証明書を生成します。
+The script creates and installs a local CA in the system root store, and
+generates locally-trusted certificates using the mkcert.  
+セットアップ スクリプトは mkcert を使用して、システムルートストアにローカル
+CA を作成してインストールし、ローカルで信頼できる証明書を生成します。
 
-Also, by starting Firefox in this process, if the root store does not exist, it will be initialized.  
-また、この工程で Firefox を起動することにより、ルートストアが存在しない場合、初期化します。
+Also, by starting Firefox in this process, if the root store does not exist,
+it will be initialized.  
+また、この工程で Firefox を起動することにより、
+ルートストアが存在しない場合、初期化します。
 
 ### Pulls some docker images
 
-<!-- markdownlint-disable MD033 -->
 <details><summary>list</summary>
 
 | Image                         | Tag                                                                                                                    |
@@ -409,7 +425,6 @@ Also, by starting Firefox in this process, if the root store does not exist, it 
 | `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                                           |
 
 </details>
-<!-- markdownlint-enable MD033 -->
 
 ## Test on Virtualbox
 
@@ -424,8 +439,10 @@ this one.
 The test requires a desktop OS that Bash can use. e.g. macOS, Ubuntu desktop.  
 テストには Bash が使えるデスクトップ OS、例えば、、macOS や Ubuntu などが必要です。
 
-If you are testing on macOS on the ARM64 architecture, please run the setup directly on Parallels, not on this test script.  
-ARM64 アーキテクチャの macOS 上でテストする場合は、このテストスクリプトではなく、Parallels 上で直接セットアップを実行してください。
+If you are testing on macOS on the ARM64 architecture, please run the setup
+directly on Parallels, not on this test script.  
+ARM64 アーキテクチャの macOS 上でテストする場合は、このテストスクリプトではなく、
+Parallels 上で直接セットアップを実行してください。
 
 ### 1. Dependencies
 
