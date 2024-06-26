@@ -26,6 +26,7 @@ ignoreWords:
   - maxon
   - tldr
   - vbguest
+  - vrcx
   - wkhtmltopdf
 useGitignore: true
 version: "0.2"
