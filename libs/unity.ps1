@@ -95,5 +95,6 @@ if ($isSetupUnity -eq $False)
 
 Install-UnityEditor -version '2019.4.31f1' -changeset 'bd5abf232a62'
 Install-UnityEditor -version '2022.3.6f1' -changeset 'b9e6e7e9fa2d'
+Install-UnityEditor -version '2022.3.22f1' -changeset '887be4894c44'
 
 Pop-Location

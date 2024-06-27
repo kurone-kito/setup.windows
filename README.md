@@ -1,5 +1,3 @@
-<!-- markdownlint-disable MD024 -->
-
 # Windows auto setup for developing environment
 
 Desktop environment preference for Windows (10 to 11)  
@@ -7,7 +5,7 @@ Windows 10 〜 11 向けの作業環境セットアップスクリプト
 
 ## Overview
 
-In order to reinstall OS more easily when Windows is unstable, we fully
+To reinstall OS more easily when Windows is unstable, we fully
 automated the installation of some apps. Two tools:
 [Chocolatey](https://chocolatey.org) and
 [BoxStarter](https://boxstarter.org),
@@ -32,22 +30,34 @@ Windows が不安定な時、OS をより手軽に再インストールするた
 1. Open the following link **in Microsoft Edge**:  
    下記のリンクを **Microsoft Edge で**開きます:  
    <https://boxstarter.org/package/url?https://raw.githubusercontent.com/kurone-kito/setup.windows/master/boxstarter.ps1>
-   - Or if, for some reason, you only want to install a minimal number of apps, use the URL below instead:  
-     または諸事情で最小限のアプリのみをインストールしたい場合は、代わりに下記の URL を使用します:  
+   - Or if, for some reason, you only want to install a minimal number of apps,
+     use the URL below instead:  
+     または諸事情で最小限のアプリのみをインストールしたい場合は、
+     代わりに下記の URL を使用します:  
      <https://boxstarter.org/package/url?https://raw.githubusercontent.com/kurone-kito/setup.windows/master/boxstarter.min.ps1>
-2. A confirmation dialog will appear asking permission to download, run ClickOnce, and allow UAC. Please allow all of them.  
-   ダウンロード、ClickOnce の実行、そして UAC の許可を求める確認ダイアログが表示されます。それらにおいて、全て許可してください。
-3. The terminal will start, and the setup will prompt you to enter the password for the current user account. It is required for an automatic reboot during setup; You should enter it correctly and press Enter at the end.  
-   端末が起動し、セットアップで現在のユーザーアカウントのパスワードを入力するよう促されます。これは、セットアップ中に自動で再起動するために必要なものなので、正しく入力し、最後に Enter キーを押してください。
-4. Some time rebooted, the installation is complete; it will wait for you to enter the Enter key to exit.  
-   複数回再起動し、インストールが完了すると、Enter キーの入力待ちとなるため、Enter キーを入力して終了します。
+2. A confirmation dialog will appear asking permission to download,
+   run ClickOnce, and allow UAC. Please allow all of them.  
+   ダウンロード、ClickOnce の実行、そして UAC の許可を求める確認ダイアログが表示されます。
+   それらにおいて、全て許可してください。
+3. The terminal will start, and the setup will prompt you to enter the password
+   for the current user account. It is required for an automatic reboot during
+   setup; You should enter it correctly and press Enter at the end.  
+   端末が起動し、セットアップで現在のユーザーアカウントのパスワードを入力するよう
+   促されます。これは、セットアップ中に自動で再起動するために必要なものなので、
+   正しく入力し、最後に Enter キーを押してください。
+4. Some time rebooted, the installation is complete; it will wait for you to
+   enter the Enter key to exit.  
+   複数回再起動し、インストールが完了すると、Enter キーの入力待ちとなるため、
+   Enter キーを入力して終了します。
 5. Finally, restart Windows manually to complete the setup.  
    手動で Windows を再起動して、セットアップ完了です。
 
 ### B. Classic install
 
-Clone or download and unzip this repository in advance, and run the following command:  
-予めこのリポジトリをクローン、もしくはダウンロードと解凍した上で下記のコマンドを実行します:
+Clone or download and unzip this repository in advance, and run the following
+command:  
+予めこのリポジトリをクローン、もしくはダウンロードと解凍した上で、
+下記のコマンドを実行します:
 
 ```PowerShell
 PS> .\setup
@@ -69,31 +79,33 @@ which may cause unexpected behavior.
 
 ### Apps install
 
-Unless otherwise specified, as a general rule, install via Chocolatey.  
-特筆なき場合、原則として Chocolatey 経由でインストールします。
+Unless otherwise specified, as a general rule, install via Winget.  
+特筆なき場合、原則として Winget 経由でインストールします。
 
-<!-- markdownlint-disable MD033 -->
 <details><summary>CLI Apps</summary>
 
 |  note   | description                                                                         |
 | :-----: | :---------------------------------------------------------------------------------- |
 | **`!`** | **DEPENDENCIES**: Removing this app may cause this setup to stop working correctly. |
 |  `-A`   | without ARM64 Architecture                                                          |
-|  `-M`   | Exclude when using minimal setups                                                   |
+
+#### Benchmark
+
+- [Fastfetch](https://github.com/fastfetch-cli/fastfetch)
 
 #### Configuration tools
 
 - [chezmoi](https://www.chezmoi.io/)
-- [winfetch](https://github.com/kiedtl/winfetch)
 
 #### Convert tools for Media binary
 
-- `(-M)` [FFmpeg](https://www.ffmpeg.org/)
-- `(-M)` [ImageMagick](https://imagemagick.org/index.php)
+- [FFmpeg](https://www.ffmpeg.org/)
+- [ImageMagick](https://imagemagick.org/index.php)
 
 #### Convert tools for Texts
 
-- [jq](https://stedolan.github.io/jq/)
+- **`!`** [jq](https://stedolan.github.io/jq/)
+- **`!`** [yq](https://mikefarah.gitbook.io/yq)
 
 #### Database
 
@@ -101,269 +113,239 @@ Unless otherwise specified, as a general rule, install via Chocolatey.
 
 #### Development
 
-- [ANTLR](https://www.antlr.org/)
-- [CMake](https://cmake.org)
+- [ANTLR](https://www.antlr.org/) (via Chocolatey)
 - [fnm: Fast Node Manager](https://fnm.vercel.app/)
   - Node.js (via fnm)
     - v18 LTS Hydrogen
-    - v20
-    - v21
+    - v20 LTS Iron
     - v22
 - [Mono](https://www.mono-project.com/)
-- `(-M)` [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
-  - version 2017
+- [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
+  - version 2015
   - version 2019
   - version 2022
 - [Rust](https://www.rust-lang.org/)
-  - GNU ABI
   - Microsoft Visual Studio ABI
 
 #### Documentation
 
-- [Graphviz](https://graphviz.org/)
-- `(-A)` [pandoc](https://pandoc.org/)
-- [PlantUML](https://plantuml.com/)
-- [tldr pages](https://tldr.sh)
+- [Tealdeer](https://dbrgn.github.io/tealdeer/)
 - [wkhtmltopdf](https://wkhtmltopdf.org/)
 
 #### Files management
 
-- `(-M)` [7-Zip](https://www.7-zip.org/)
+- [7-Zip](https://www.7-zip.org/)
 
 #### Packages manager
 
-- **`!`** [BoxStarter](https://boxstarter.org)
-- **`!`** [Chocolatey](https://chocolatey.org)
-- [Chocolatey `choco://` Protocol support](https://github.com/bcurran3/ChocolateyPackages/tree/master/choco-protocol-support)
+- **`!`** [BoxStarter](https://boxstarter.org) (via Chocolatey)
+- **`!`** [Chocolatey](https://chocolatey.org) (via Chocolatey)
+  - [Chocolatey `choco://` Protocol support](https://github.com/bcurran3/ChocolateyPackages/tree/master/choco-protocol-support)
+    (via Chocolatey)
+- **`!`** [Windows Package Manager](https://learn.microsoft.com/windows/package-manager/)
+  (via Chocolatey)
 - [Scoop](https://scoop.sh) (directly install)
 - [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD)
 
 #### Runtime
 
 - [Visual C++ Redistributable Packages](https://docs.microsoft.com/cpp/windows/latest-supported-vc-redist)
-- [AdoptOpenJDK](https://adoptopenjdk.net/)
+  (via Chocolatey)
 - **`!`** [Microsoft .NET Framework Runtime](https://support.microsoft.com/topic/9d23f658-3b97-68ab-d013-aa3c3e7495e0)
-- [Microsoft .NET Core Runtime](https://dotnet.microsoft.com/download#macos)
+- [Microsoft .NET SDK](https://dotnet.microsoft.com/)
+  - v6
+  - v8
 
 #### Testing
 
 - [mkcert](https://mkcert.dev/)
-- `(-M)` [ngrok](https://ngrok.com/)
+- [ngrok](https://ngrok.com/)
 
 #### Version control system
 
-- [Apache Subversion](https://subversion.apache.org/)
+- [Apache Subversion](https://subversion.apache.org/) (via Chocolatey)
 - **`!`** [Git](https://git-scm.com/)
   - **`!`** [Git Large File Storage](https://git-lfs.github.com/)
-  - [git-delta: A viewer for git and diff output](https://github.com/dandavison/delta)
+  - **`!`** [git-delta: A viewer for git and diff output](https://github.com/dandavison/delta)
 - [GitHub CLI](https://cli.github.com/)
-- [GLab: GitLab CLI tool](https://glab.readthedocs.io/)
 
 #### Remote
 
 - [awscli](https://aws.amazon.com/cli/)
-- `(-MX)` [OpenSSH](https://www.openssh.com/) (install via the Windows feature when on Windows 10 or 11)
+- [SwitchHosts](https://switchhosts.vercel.app/)
 
 #### Shell
 
 - **`!`** [Microsoft PowerShell](https://microsoft.com/PowerShell)
 - [Microsoft PowerShell Core](https://microsoft.com/PowerShell)
 - [Oh My Posh](https://ohmyposh.dev/)
-- [posh-git](https://dahlbyk.github.io/posh-git/)
-- [sudo](https://github.com/janhebnes/chocolatey-packages/tree/master/Sudo)
+- [posh-git](https://dahlbyk.github.io/posh-git/) (via Chocolatey)
 
 #### Signature
 
 - **`!`** [GnuPG: The GNU Privacy Guard](https://gnupg.org/)
-- `(-M)` [Unbound](https://www.nlnetlabs.nl/projects/unbound/)
 
 #### Text Browsing
 
-- [cheat](https://github.com/cheat/cheat)
-- [ELinks](http://www.elinks.cz/)
+- [cheat](https://github.com/cheat/cheat) (via Chocolatey)
+- [Links](http://links.twibright.com/)
 
 #### Text editors
 
+- [Neovim](https://neovim.io/)
 - [Vim](https://www.vim.org/)
 
 #### Virtualizations
 
 - [act](https://github.com/nektos/act)
-- [GitLab Runner](https://gitlab.com/gitlab-org/gitlab-runner)
 - `(-A)` [Vagrant](https://www.vagrantup.com/)
   - plugins (via Vagrant)
-    - [vagrant-disksize](https://github.com/sprotheroe/vagrant-disksize)
     - [Vagrant Reload Provisioner](https://github.com/aidanns/vagrant-reload)
-    - [vagrant-vbguest](https://github.com/dotless-de/vagrant-vbguest)
 
 </details>
-<!-- markdownlint-enable MD033 -->
 
-<!-- markdownlint-disable MD033 -->
 <details><summary>Desktop Apps</summary>
 
 | note | description                       |
 | :--: | :-------------------------------- |
 | `-A` | without ARM64 Architecture        |
-| `-M` | Exclude when using minimal setups |
 
 #### 3D Modeling
 
-- `(-M)` [Blender](https://www.blender.org/)
-- `(-M)` [FreeCAD](https://www.freecadweb.org/)
+- [Blender](https://www.blender.org/)
+- [FreeCAD](https://www.freecadweb.org/)
 
 #### Audios, Videos, and Broadcasting
 
-- `(-M)` [OBS Studio](https://obsproject.com/)
-- `(-M)` [Reflector 4](https://www.airsquirrels.com/reflector/)
-- `(-M)` [VB-CABLE Virtual Audio Device](https://vb-audio.com/Cable/)
-- `(-AM)` [VoiceMeeter](https://vb-audio.com/Voicemeeter/)
-- `(-M)` [VSTHost](https://www.hermannseib.com/english/vsthost.htm)
+- [Apple iTunes](https://www.apple.com/itunes/)
+- [iZotope Product Portal](https://www.izotope.com/)
+- [OBS Studio](https://obsproject.com/)
+- [Reflector 4](https://www.airsquirrels.com/reflector/)
+- [VB-CABLE Virtual Audio Device](https://vb-audio.com/Cable/)
+- [VoiceMeeter](https://vb-audio.com/Voicemeeter/)
 
 #### Authentication
 
-- `(-M)` [Authy Desktop](https://www.authy.com/)
-- `(-M)` [Keybase](https://keybase.io/)
+- [Authy Desktop](https://www.authy.com/)
+- [Keybase](https://keybase.io/)
 
-#### Cloud storages
+#### Benchmark
 
-- `(-AM)` [Dropbox](https://www.dropbox.com/)
+- [MAXON Cinebench](https://www.maxon.net/ja/cinebench)
+
+#### Configuration tools
+
+- [Microsoft PowerToys](https://learn.microsoft.com/windows/powertoys/)
 
 #### Development
 
-- `(-M)` [Android SDK](https://developer.android.com/)
-- `(-M)` [Unity Hub](https://unity3d.com/)
+- [Android SDK](https://developer.android.com/)
+- [Unity Hub](https://unity3d.com/)
+- [VRChat Creator Companion](https://vcc.docs.vrchat.com/)
 
 #### Devices
 
-- `(-M)` [AutoHotkey](https://www.autohotkey.com/)
-- `(-M)` [scrcpy](https://github.com/Genymobile/scrcpy)
-- `(-M)` [logicool G Hub](https://gaming.logicool.co.jp/innovation/g-hub.html)
-- `(-M)` [Raspberry Pi Imager](https://www.raspberrypi.org/software/)
+- [AutoHotkey](https://www.autohotkey.com/)
+- [logicool G Hub](https://gaming.logicool.co.jp/innovation/g-hub.html)
 
 #### Documents and Office apps
 
-- `(-M)` [Amazon Kindle](https://www.amazon.com/kindle)
+- [Amazon Kindle](https://www.amazon.com/kindle)
 
 #### Games
 
-- `(-M)` [EPIC Games Launcher](https://www.epicgames.com/store/download)
-- `(-M)` [Origin (EA Desktop)](https://www.origin.com/)
-- `(-M)` [Minecraft Java Edition](https://www.minecraft.net/)
-- `(-M)` [Steam](https://store.steampowered.com/)
-- `(-M)` [Stepmania](https://www.stepmania.com/)
+- [Epic Games Launcher](https://www.epicgames.com/store/download)
+- [EA Desktop](https://www.ea.com/ea-app)
+- [Minecraft Java Edition](https://www.minecraft.net/)
+- [Steam](https://store.steampowered.com/)
+- [Stepmania](https://www.stepmania.com/)
 
 #### Memos and Tasks
 
-- `(-M)` [Grammarly](https://www.grammarly.com/)
-- `(-M)` [Notion](https://www.notion.so/)
+- [Grammarly](https://www.grammarly.com/)
+- [Microsoft To Do](https://to-do.microsoft.com/)
+- [Notion](https://www.notion.so/)
 
-#### Messaging and Socials
+#### Messaging
 
-- `(-M)` [Discord](https://discord.com/)
-- `(-M)` [Gitter](https://gitter.im/)
-- `(-M)` [Mattermost / with CLI tools](https://mattermost.com/)
-- `(-M)` [Zoom](https://zoom.us/)
+- [Discord](https://discord.com/)
+- [Facebook Messenger](https://www.messenger.com/)
+- [Skype](https://www.skype.com/)
+- [Slack](https://slack.com/)
+- [Zoom](https://zoom.us/)
 
 #### Packages manager
 
-- `(-M)` [Chocolatey GUI](https://github.com/chocolatey/ChocolateyGUI)
+- [Chocolatey GUI](https://github.com/chocolatey/ChocolateyGUI)
+- [WingetUI](https://www.marticliment.com/wingetui/)
 
 #### Remote
 
-- `(-M)` [Amazon Workspaces](https://clients.amazonworkspaces.com/)
-- `(-A)` [OpenVPN](https://openvpn.net/)
-- `(-M)` [Real VNC Viewer](https://www.realvnc.com/connect/download/viewer/)
-- `(-M)` [TeamViewer](https://www.teamviewer.com/)
+- [Real VNC Viewer](https://www.realvnc.com/connect/download/viewer/)
+- [TeamViewer](https://www.teamviewer.com/)
+- [Windows Terminal](https://github.com/microsoft/terminal)
 
 #### Runtime
 
 - [Microsoft DirectX](https://www.microsoft.com/download/details.aspx?id=35)
-- Microsoft XNA Framework
-  - [v3.1](https://www.microsoft.com/download/details.aspx?id=15163)
-  - [v4.0](https://www.microsoft.com/download/details.aspx?id=20914)
-- `(-M)` [RPG Tkool VX / Ace RTP](https://tkool.jp)
+
+#### Social
+
+- [Facebook](https://www.facebook.com/)
+- [Instagram](https://www.instagram.com/)
+- [Threads by Instagram](https://www.threads.net/)
+- [VRCX](https://github.com/vrcx-team/VRCX/tree/master)
+- [X/Twitter](https://x.com/)
+
+#### Storage
+
+- [Adobe Creative Cloud](https://www.adobe.com/creativecloud.html)
+- [iCloud](https://www.apple.com/icloud/)
 
 #### Text editors
 
-- `(-M)` [Sublime Text](https://www.sublimetext.com/)
+- [Sublime Text](https://www.sublimetext.com/)
 - [Visual Studio Code](https://code.visualstudio.com/)
 
 #### Virtualizations
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop)
-- `(-M)` [DOSBox-X](https://dosbox-x.com)
-- `(-AM)` [Oracle VM Virtualbox + Extension Pack](https://www.virtualbox.org/)
+- `(-A)` [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- [DOSBox-X](https://dosbox-x.com)
+- `(-A)` [Oracle VM Virtualbox + Extension Pack](https://www.virtualbox.org/)
 - [Windows Subsystem for Linux](https://docs.microsoft.com/windows/wsl/)
-- [Ubuntu 22.04 LTS for WSL2](https://ubuntu.com/download/desktop)
+- [Ubuntu 24.04 LTS for WSL2](https://ubuntu.com/download/desktop)
 
 #### Web browsers
 
 - [Google Chrome](https://www.google.com/chrome/)
-- [Chromium](https://www.chromium.org/Home)
-- `(-M)` [Insomnia](https://insomnia.rest/)
 - [Mozilla Firefox ESR](https://www.mozilla.org/firefox/)
-- `(-M)` [Tor Browser](https://www.torproject.org/projects/torbrowser.html)
+- [Tor Browser](https://www.torproject.org/projects/torbrowser.html)
 
 </details>
-<!-- markdownlint-enable MD033 -->
 
-<!-- markdownlint-disable MD033 -->
 <details><summary>Fonts</summary>
 
-- [Cascadia Code](https://github.com/microsoft/cascadia-code)
-- [Fira Code: free monospaced font with programming ligatures](https://github.com/tonsky/FiraCode)
-- [白源: HackGen Nerd](https://github.com/yuru7/HackGen)
-- [Lato](https://fonts.google.com/specimen/Lato)
+- [白源: HackGen Nerd](https://github.com/yuru7/HackGen) (via Chocolatey)
+- [Lato](https://fonts.google.com/specimen/Lato) (via Chocolatey)
 
 </details>
-<!-- markdownlint-enable MD033 -->
-
-<!-- markdownlint-disable MD033 -->
-<details><summary>Windows features</summary>
-
-NOTICE: In the Home edition, some features are excluded and installed.
-
-|  note   | description                                                                         |
-| :-----: | :---------------------------------------------------------------------------------- |
-| **`!`** | **DEPENDENCIES**: Removing this app may cause this setup to stop working correctly. |
-|  `-M`   | Exclude when using minimal setups                                                   |
-
-- Virtualization features
-  - **`!`** Hyper-V
-  - **`!`** Virtual Machine Platform
-  - **`!`** Hypervisor Platform
-  - **`!`** Windows Subsystem for Linux
-- Network client
-  - NFS Client
-  - NFS Administration tools
-  - **`!`** OpenSSH
-  - Telnet client
-  - TFTP client
-- Languages
-  - en-US
-  - `(-M)` es-ES
-  - `(-M)` fr-FR
-  - ja-JP
-  - `(-M)` zh-CN
-- Others
-  - **`!`** .NET Framework 3.5
-  - Microsoft Defender Application Guard
-  - TIFF IFilter
-  - Windows Developer Mode
-  - Windows Feature Experience Pack
-  - XPS Viewer
-
-</details>
-<!-- markdownlint-enable MD033 -->
 
 ## Additional setup
 
-Boxstarter, used in our main setup, is not good at setups requiring keystrokes or other operations. For example, it automatically skips after 30 seconds if it accepts keyboard input on any display. To work around this, we have provided an additional setup batch script that does not use Boxstarter.  
-メインのセットアップで使用している Boxstarter はキー入力などの操作を要求するセットアップを不得意としており、例えば何らかの表示をした上でキーボード入力を受け付けると、30 秒で自動的にスキップしてしまう特性があります。これを回避するために、Boxstarter を用いない、追加のセットアップ バッチ スクリプトを用意しました。
+Boxstarter, used in our main setup, is not good at setups requiring keystrokes
+or other operations. For example, it automatically skips after 30 seconds if it
+accepts keyboard input on any display. To work around this, we have provided an
+additional setup batch script that does not use Boxstarter.  
+メインのセットアップで使用している Boxstarter はキー入力などのインタラクションを
+要求するセットアップを不得意としており、例えば何らかの表示をした上で
+キーボード入力を受け付けると、30 秒で自動的にスキップしてしまう特性があります。
+これを回避するために、Boxstarter を用いない、追加のセットアップ バッチ
+スクリプトを用意しました。
 
-Setup will provide voice notification whenever possible if your action is required, so please follow the guidance.  
-ユーザーの行動が必要な場合、セットアップはできる限り音声で通知していますので、ガイダンスに従ってください。
+Setup will provide voice notification whenever possible if your action is
+required, so please follow the guidance.  
+ユーザーの行動が必要な場合、セットアップはできる限り音声で通知していますので、
+ガイダンスに従ってください。
 
 ### Usage
 
@@ -382,34 +364,39 @@ PS> .\additional-setup
     - Module: Android Build Support
     - Module: Documentation
     - Module: Language Pack (Japanese)
+  - version 2022.3.22f1
+    - Module: Android Build Support
+    - Module: Documentation
+    - Module: Language Pack (Japanese)
 
 ### Initialize for web-frontend development environment
 
-The script creates and installs a local CA in the system root store, and generates locally-trusted certificates using the mkcert.  
-セットアップ スクリプトは mkcert を使用して、システムルートストアにローカル CA を作成してインストールし、ローカルで信頼できる証明書を生成します。
+The script creates and installs a local CA in the system root store, and
+generates locally-trusted certificates using the mkcert.  
+セットアップ スクリプトは mkcert を使用して、システムルートストアにローカル
+CA を作成してインストールし、ローカルで信頼できる証明書を生成します。
 
-Also, by starting Firefox in this process, if the root store does not exist, it will be initialized.  
-また、この工程で Firefox を起動することにより、ルートストアが存在しない場合、初期化します。
+Also, by starting Firefox in this process, if the root store does not exist,
+it will be initialized.  
+また、この工程で Firefox を起動することにより、
+ルートストアが存在しない場合、初期化します。
 
 ### Pulls some docker images
 
-<!-- markdownlint-disable MD033 -->
 <details><summary>list</summary>
 
-| Image                         | Tag                                                                                                                    |
-| :---------------------------- | :--------------------------------------------------------------------------------------------------------------------- |
-| `hello-world`                 | _`latest`_                                                                                                             |
-| `alpine`                      | _`latest`_                                                                                                             |
-| `busybox`                     | _`latest`_                                                                                                             |
-| `debian`                      | _`latest`_                                                                                                             |
-| `ubuntu`                      | _`latest`_                                                                                                             |
-| `docker`                      | `dind`, `git`, _`latest`_                                                                                              |
-| `node`                        | `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim`, `21`, `21-alpine`, `21-slim`, `22`, `22-alpine`, `22-slim` |
-| `gitlab/gitlab-runner`        | _`latest`_                                                                                                             |
-| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                                           |
+| Image                         | Tag                                                                                      |
+| :---------------------------- | :--------------------------------------------------------------------------------------- |
+| `hello-world`                 | _`latest`_                                                                               |
+| `alpine`                      | _`latest`_                                                                               |
+| `busybox`                     | _`latest`_                                                                               |
+| `debian`                      | _`latest`_                                                                               |
+| `ubuntu`                      | _`latest`_                                                                               |
+| `docker`                      | `dind`, `git`, _`latest`_                                                                |
+| `node`                        | `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim`, `22`, `22-alpine`, `22-slim` |
+| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~             |
 
 </details>
-<!-- markdownlint-enable MD033 -->
 
 ## Test on Virtualbox
 
@@ -424,8 +411,10 @@ this one.
 The test requires a desktop OS that Bash can use. e.g. macOS, Ubuntu desktop.  
 テストには Bash が使えるデスクトップ OS、例えば、、macOS や Ubuntu などが必要です。
 
-If you are testing on macOS on the ARM64 architecture, please run the setup directly on Parallels, not on this test script.  
-ARM64 アーキテクチャの macOS 上でテストする場合は、このテストスクリプトではなく、Parallels 上で直接セットアップを実行してください。
+If you are testing on macOS on the ARM64 architecture, please run the setup
+directly on Parallels, not on this test script.  
+ARM64 アーキテクチャの macOS 上でテストする場合は、このテストスクリプトではなく、
+Parallels 上で直接セットアップを実行してください。
 
 ### 1. Dependencies
 
