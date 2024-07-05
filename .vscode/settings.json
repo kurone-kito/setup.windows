@@ -1,4 +1,11 @@
 {
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.md": "${capture}.*.md",
+    ".gitattributes": ".gitignore",
+    ".markdownlint.yml": ".markdownlint-cli2.yaml"
+  },
   "files.associations": {
     "LICENSE": "plaintext"
   },
