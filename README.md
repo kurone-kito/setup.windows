@@ -304,6 +304,7 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Text editors
 
+- [Cursor](https://www.cursor.so/)
 - [Sublime Text](https://www.sublimetext.com/)
 - [Visual Studio Code](https://code.visualstudio.com/)
 

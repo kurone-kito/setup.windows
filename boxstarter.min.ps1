@@ -210,6 +210,7 @@ Install-WingetApps 9NBLGGH5R558 # Microsoft To Do
 # Install-WingetApps StepMania.StepMania
 
 ### IDE tools
+Install-WingetApps CursorAI,Inc.Cursor
 Install-WingetApps SublimeHQ.SublimeText.4
 Install-WingetApps XP9KHM4BK9FZ7Q # Visual Studio Code
 
