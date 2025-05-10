@@ -1,4 +1,4 @@
 .coderabbit.yaml export-ignore
-.gitattributes export-ignore
+.git* export-ignore
 .github/** export-ignore
-.gitignore export-ignore
+.imgbotconfig export-ignore
