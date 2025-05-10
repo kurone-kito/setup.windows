@@ -4,7 +4,8 @@
   "explorer.fileNesting.patterns": {
     "*.md": "${capture}.*.md",
     ".gitattributes": ".gitignore",
-    ".markdownlint.*": ".markdownlint-cli2.*"
+    ".markdownlint.yml": ".markdownlint-cli2.yaml",
+    "boxstarter.ps1": "boxstarter.min.ps1"
   },
   "files.associations": {
     "LICENSE": "plaintext"
