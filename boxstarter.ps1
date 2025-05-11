@@ -258,7 +258,7 @@ Install-WingetApps TorProject.TorBrowser
 if (Get-Command fnm -ErrorAction SilentlyContinue | Out-Null)
 {
   fnm env --use-on-cd | Out-String | Invoke-Expression
-  @(18, 20, 22) | ForEach-Object { fnm install $_; fnm default $_ }
+  @(18, 20, 22, 23, 24) | ForEach-Object { fnm install $_; fnm default $_ }
 }
 
 ### git-vrc
