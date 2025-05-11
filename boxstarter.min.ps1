@@ -165,7 +165,7 @@ Install-WingetApps TwibrightLabs.Links
 # Install-WingetApps FreeCAD.FreeCAD
 
 ### Audio & Broadcasting
-# Install-WingetApps 9PB2MZ1ZMB1S # iTunes
+# Install-WingetApps 9PFHDD62MXS1 # Apple Music
 # Install-WingetApps XPFFH613W8V6LV # OBS Studio
 # Install-WingetApps iZotope.ProductPortal
 # Install-WingetApps VB-Audio.Voicemeeter
@@ -174,7 +174,6 @@ Install-WingetApps TwibrightLabs.Links
 # choco install vb-cable
 
 ### Authentication tools
-Install-WingetApps Twilio.Authy
 # Install-WingetApps Keybase.Keybase
 
 ### Benchmark tools
@@ -210,6 +209,7 @@ Install-WingetApps 9NBLGGH5R558 # Microsoft To Do
 # Install-WingetApps StepMania.StepMania
 
 ### IDE tools
+Install-WingetApps CursorAI,Inc.Cursor
 Install-WingetApps SublimeHQ.SublimeText.4
 Install-WingetApps XP9KHM4BK9FZ7Q # Visual Studio Code
 

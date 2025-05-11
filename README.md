@@ -217,7 +217,7 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Audios, Videos, and Broadcasting
 
-- [Apple iTunes](https://www.apple.com/itunes/)
+- [Apple Music](https://www.apple.com/apple-music/)
 - [iZotope Product Portal](https://www.izotope.com/)
 - [OBS Studio](https://obsproject.com/)
 - [Reflector 4](https://www.airsquirrels.com/reflector/)
@@ -226,7 +226,6 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Authentication
 
-- [Authy Desktop](https://www.authy.com/)
 - [Keybase](https://keybase.io/)
 
 #### Benchmark
@@ -304,6 +303,7 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Text editors
 
+- [Cursor](https://www.cursor.so/)
 - [Sublime Text](https://www.sublimetext.com/)
 - [Visual Studio Code](https://code.visualstudio.com/)
 
