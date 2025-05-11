@@ -66,7 +66,7 @@ function Install-UnityEditor
     return
   }
 
-  $opts = '-- --headless install -v {0} -c {1} -m android -m documentation -m language-ja --cm' `
+  $opts = '-- --headless install -v {0} -c {1} -m android -m documentation -m ios -m language-ja --cm' `
     -f $version, $changeset
   Start-Process $UnityHub -ArgumentList $opts -NoNewWindow -Wait
 
