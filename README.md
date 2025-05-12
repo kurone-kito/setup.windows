@@ -116,7 +116,6 @@ Unless otherwise specified, as a general rule, install via Winget.
 - [ANTLR](https://www.antlr.org/) (via Chocolatey)
 - [fnm: Fast Node Manager](https://fnm.vercel.app/)
   - Node.js (via fnm)
-    - v18 LTS Hydrogen
     - v20 LTS Iron
     - v22 LTS Jod
     - v23
@@ -387,16 +386,16 @@ it will be initialized.
 
 <details><summary>list</summary>
 
-| Image                         | Tag                                                                                                                                                  |
-| :---------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hello-world`                 | _`latest`_                                                                                                                                           |
-| `alpine`                      | _`latest`_                                                                                                                                           |
-| `busybox`                     | _`latest`_                                                                                                                                           |
-| `debian`                      | _`latest`_                                                                                                                                           |
-| `ubuntu`                      | _`latest`_                                                                                                                                           |
-| `docker`                      | `dind`, `git`, _`latest`_                                                                                                                            |
-| `node`                        | `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim`, `22`, `22-alpine`, `22-slim`, `23`, `23-alpine`, `23-slim`, `24`, `24-alpine`, `24-slim` |
-| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                                                                         |
+| Image                         | Tag                                                                                                                    |
+| :---------------------------- | :--------------------------------------------------------------------------------------------------------------------- |
+| `hello-world`                 | _`latest`_                                                                                                             |
+| `alpine`                      | _`latest`_                                                                                                             |
+| `busybox`                     | _`latest`_                                                                                                             |
+| `debian`                      | _`latest`_                                                                                                             |
+| `ubuntu`                      | _`latest`_                                                                                                             |
+| `docker`                      | `dind`, `git`, _`latest`_                                                                                              |
+| `node`                        | `20`, `20-alpine`, `20-slim`, `22`, `22-alpine`, `22-slim`, `23`, `23-alpine`, `23-slim`, `24`, `24-alpine`, `24-slim` |
+| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                                           |
 
 </details>
 
