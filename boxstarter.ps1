@@ -165,7 +165,7 @@ Install-WingetApps 9PP3C07GTVRH # Blender
 Install-WingetApps FreeCAD.FreeCAD
 
 ### Audio & Broadcasting
-Install-WingetApps 9PB2MZ1ZMB1S # iTunes
+Install-WingetApps 9PFHDD62MXS1 # Apple Music
 Install-WingetApps XPFFH613W8V6LV # OBS Studio
 Install-WingetApps iZotope.ProductPortal
 Install-WingetApps VB-Audio.Voicemeeter
@@ -174,7 +174,6 @@ choco install reflector-4
 choco install vb-cable
 
 ### Authentication tools
-Install-WingetApps Twilio.Authy
 Install-WingetApps Keybase.Keybase
 
 ### Benchmark tools
@@ -210,6 +209,7 @@ Install-WingetApps Valve.Steam
 Install-WingetApps StepMania.StepMania
 
 ### IDE tools
+Install-WingetApps CursorAI,Inc.Cursor
 Install-WingetApps SublimeHQ.SublimeText.4
 Install-WingetApps XP9KHM4BK9FZ7Q # Visual Studio Code
 
@@ -258,7 +258,7 @@ Install-WingetApps TorProject.TorBrowser
 if (Get-Command fnm -ErrorAction SilentlyContinue | Out-Null)
 {
   fnm env --use-on-cd | Out-String | Invoke-Expression
-  @(18, 20, 22) | ForEach-Object { fnm install $_; fnm default $_ }
+  @(20, 22, 23, 24) | ForEach-Object { fnm install $_; fnm default $_ }
 }
 
 ### git-vrc

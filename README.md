@@ -116,9 +116,10 @@ Unless otherwise specified, as a general rule, install via Winget.
 - [ANTLR](https://www.antlr.org/) (via Chocolatey)
 - [fnm: Fast Node Manager](https://fnm.vercel.app/)
   - Node.js (via fnm)
-    - v18 LTS Hydrogen
     - v20 LTS Iron
-    - v22
+    - v22 LTS Jod
+    - v23
+    - v24
 - [Mono](https://www.mono-project.com/)
 - [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
   - version 2015
@@ -206,9 +207,9 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 <details><summary>Desktop Apps</summary>
 
-| note | description                       |
-| :--: | :-------------------------------- |
-| `-A` | without ARM64 Architecture        |
+| note | description                |
+| :--: | :------------------------- |
+| `-A` | without ARM64 Architecture |
 
 #### 3D Modeling
 
@@ -217,7 +218,7 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Audios, Videos, and Broadcasting
 
-- [Apple iTunes](https://www.apple.com/itunes/)
+- [Apple Music](https://www.apple.com/apple-music/)
 - [iZotope Product Portal](https://www.izotope.com/)
 - [OBS Studio](https://obsproject.com/)
 - [Reflector 4](https://www.airsquirrels.com/reflector/)
@@ -226,7 +227,6 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Authentication
 
-- [Authy Desktop](https://www.authy.com/)
 - [Keybase](https://keybase.io/)
 
 #### Benchmark
@@ -304,6 +304,7 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Text editors
 
+- [Cursor](https://www.cursor.so/)
 - [Sublime Text](https://www.sublimetext.com/)
 - [Visual Studio Code](https://code.visualstudio.com/)
 
@@ -385,16 +386,16 @@ it will be initialized.
 
 <details><summary>list</summary>
 
-| Image                         | Tag                                                                                      |
-| :---------------------------- | :--------------------------------------------------------------------------------------- |
-| `hello-world`                 | _`latest`_                                                                               |
-| `alpine`                      | _`latest`_                                                                               |
-| `busybox`                     | _`latest`_                                                                               |
-| `debian`                      | _`latest`_                                                                               |
-| `ubuntu`                      | _`latest`_                                                                               |
-| `docker`                      | `dind`, `git`, _`latest`_                                                                |
-| `node`                        | `18`, `18-alpine`, `18-slim`, `20`, `20-alpine`, `20-slim`, `22`, `22-alpine`, `22-slim` |
-| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~             |
+| Image                         | Tag                                                                                                                    |
+| :---------------------------- | :--------------------------------------------------------------------------------------------------------------------- |
+| `hello-world`                 | _`latest`_                                                                                                             |
+| `alpine`                      | _`latest`_                                                                                                             |
+| `busybox`                     | _`latest`_                                                                                                             |
+| `debian`                      | _`latest`_                                                                                                             |
+| `ubuntu`                      | _`latest`_                                                                                                             |
+| `docker`                      | `dind`, `git`, _`latest`_                                                                                              |
+| `node`                        | `20`, `20-alpine`, `20-slim`, `22`, `22-alpine`, `22-slim`, `23`, `23-alpine`, `23-slim`, `24`, `24-alpine`, `24-slim` |
+| `ghcr.io/catthehacker/ubuntu` | `act-22.04`, `act-latest`, ~~`ubuntu:full-20.04`~~, ~~`ubuntu:full-latest`~~                                           |
 
 </details>
 

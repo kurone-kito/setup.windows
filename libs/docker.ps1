@@ -66,15 +66,18 @@ docker pull ubuntu
 docker pull docker
 docker pull docker:dind
 docker pull docker:git
-docker pull node:18
-docker pull node:18-alpine
-docker pull node:18-slim
 docker pull node:20
 docker pull node:20-alpine
 docker pull node:20-slim
 docker pull node:22
 docker pull node:22-alpine
 docker pull node:22-slim
+docker pull node:23
+docker pull node:23-alpine
+docker pull node:23-slim
+docker pull node:24
+docker pull node:24-alpine
+docker pull node:24-slim
 docker pull ghcr.io/catthehacker/ubuntu:act-22.04
 docker pull ghcr.io/catthehacker/ubuntu:act-latest
 

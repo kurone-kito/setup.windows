@@ -1,4 +1,4 @@
-# Contributing for project
+# Contributing to this project
 
 Language: **🇬🇧** | [🇯🇵](./CONTRIBUTING.ja.md) | [🇨🇳](./CONTRIBUTING.zh.md)
 

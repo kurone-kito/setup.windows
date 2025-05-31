@@ -1,32 +1,38 @@
+allowCompoundWords: true
 dictionaries:
   - cpp
   - en_US
   - en-gb
   - fonts
   - git
-language: en,eo,ja
-languageSettings:
-  - allowCompoundWords: true
-    caseSensitive: false
-    enabled: true
-    languageId: "*"
-    locale: en,eo,ja
+  - lorem-ipsum
+  - markdown
+  - misc
+  - softwareTerms
+enableGlobDot: true
+features:
+  weighted-suggestions: true
+globRoot: ${cwd}
 ignorePaths:
+  - .*ignore
   - .git
   - .github/CODE_OF_CONDUCT.*
+  - .vscode/extensions.json
   - cspell.config.yml
-ignoreWords:
+language: en,eo,ja
+useGitignore: true
+version: "0.2"
+words:
   - antlr
-  - authy
   - choco
   - dind
+  - imgbotconfig
   - izotope
   - kito
-  - kurone
+  - kuron
+  - kuroné
   - maxon
   - tldr
   - vbguest
   - vrcx
   - wkhtmltopdf
-useGitignore: true
-version: "0.2"
