@@ -359,14 +359,17 @@ PS> .\additional-setup
   - version 2019.4.31f1
     - Module: Android Build Support
     - Module: Documentation
+    - Module: iOS Build Support
     - Module: Language Pack (Japanese)
   - version 2022.3.6f1
     - Module: Android Build Support
     - Module: Documentation
+    - Module: iOS Build Support
     - Module: Language Pack (Japanese)
   - version 2022.3.22f1
     - Module: Android Build Support
     - Module: Documentation
+    - Module: iOS Build Support
     - Module: Language Pack (Japanese)
 
 ### Initialize for web-frontend development environment
