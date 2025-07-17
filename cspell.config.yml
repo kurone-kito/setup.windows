@@ -19,7 +19,7 @@ ignorePaths:
   - .github/CODE_OF_CONDUCT.*
   - .vscode/extensions.json
   - cspell.config.yml
-language: en,eo,ja
+language: en,ja
 useGitignore: true
 version: "0.2"
 words:
