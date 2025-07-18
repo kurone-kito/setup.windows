@@ -72,9 +72,6 @@ docker pull node:20-slim
 docker pull node:22
 docker pull node:22-alpine
 docker pull node:22-slim
-docker pull node:23
-docker pull node:23-alpine
-docker pull node:23-slim
 docker pull node:24
 docker pull node:24-alpine
 docker pull node:24-slim
