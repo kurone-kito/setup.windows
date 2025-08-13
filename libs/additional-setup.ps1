@@ -5,7 +5,7 @@ The entrypoint of the setup script.
 Set-StrictMode -Version Latest
 Push-Location $PSScriptRoot
 
-Write-Host 'Launched the additonal setup script. Continue...'
+Write-Host 'Launched the additional setup script. Continue...'
 
 ./mkcert.ps1
 ./unity.ps1

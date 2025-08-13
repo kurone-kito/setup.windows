@@ -72,16 +72,13 @@ docker pull node:20-slim
 docker pull node:22
 docker pull node:22-alpine
 docker pull node:22-slim
-docker pull node:23
-docker pull node:23-alpine
-docker pull node:23-slim
 docker pull node:24
 docker pull node:24-alpine
 docker pull node:24-slim
 docker pull ghcr.io/catthehacker/ubuntu:act-22.04
 docker pull ghcr.io/catthehacker/ubuntu:act-latest
 
-# ! Commented out because the container is too lerge!
+# ! Commented out because the container is too large!
 # docker pull ghcr.io/catthehacker/ubuntu:full-20.04
 # docker pull ghcr.io/catthehacker/ubuntu:full-latest
 

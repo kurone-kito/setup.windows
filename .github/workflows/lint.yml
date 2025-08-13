@@ -1,0 +1,15 @@
+name: Linting workflow
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run cspell
+        uses: streetsidesoftware/cspell-action@v7
+      - name: Run markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v20

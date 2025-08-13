@@ -8,6 +8,8 @@ dictionaries:
   - lorem-ipsum
   - markdown
   - misc
+  - npm
+  - shell
   - softwareTerms
 enableGlobDot: true
 features:
@@ -19,20 +21,47 @@ ignorePaths:
   - .github/CODE_OF_CONDUCT.*
   - .vscode/extensions.json
   - cspell.config.yml
-language: en,eo,ja
+  - test
+ignoreRegExpList:
+  - '\b[0-9A-Z]{12,14}\b'
+  - Install-WingetApps .*\.
+language: en,ja
 useGitignore: true
 version: "0.2"
 words:
+  - alsa
+  - apic
   - antlr
+  - audioin
+  - biosapic
   - choco
   - dind
+  - dsound
+  - ghub
+  - hkcu
+  - hklm
+  - hpet
+  - hwvirtex
+  - iexplore
   - imgbotconfig
+  - ioapic
   - izotope
   - kito
   - kuron
   - kuroné
+  - modifyvm
+  - mswin
   - maxon
+  - nprocessors
   - tldr
+  - usbxhci
+  - useb
   - vbguest
+  - vboxsvga
+  - vcredist
+  - vrchat
   - vrcx
+  - vtxux
+  - vtxvpid
   - wkhtmltopdf
+  - wkhtmltox
