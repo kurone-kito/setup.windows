@@ -11,9 +11,14 @@
     "LICENSE": "plaintext"
   },
   "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
     "**/.vagrant/**": true
   },
   "git.branchProtection": ["master"],
+  "material-icon-theme.files.associations": {
+    ".imgbotconfig": "robots"
+  },
   "search.exclude": {
     "**/.vagrant/**": true
   },
