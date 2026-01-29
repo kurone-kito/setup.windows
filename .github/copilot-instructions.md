@@ -1,6 +1,6 @@
 # Guidelines for AI Agents
 
-This project is a generic project template.
+This project is a setup the dev environment for Windows.
 
 When contributing to this repository using AI agents, adhere to the
 following guidelines to ensure high-quality contributions that align with

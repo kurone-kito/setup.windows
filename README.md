@@ -1,5 +1,7 @@
 # Windows auto setup for developing environment
 
+![GitHub repo size](https://img.shields.io/github/repo-size/kurone-kito/setup.windows)
+
 Desktop environment preference for Windows (10 to 11)  
 Windows 10 〜 11 向けの作業環境セットアップスクリプト
 
