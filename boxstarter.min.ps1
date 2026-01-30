@@ -60,7 +60,6 @@ choco feature enable -n=useRememberedArgumentsForUpgrades
 
 ### Package managers
 choco install choco-protocol-support
-choco install winget-cli
 Install-WingetApps 9NBLGGH4NNS1 # App Installer
 # Install-WingetApps Chocolatey.ChocolateyGUI
 # Install-WingetApps SomePythonThings.WingetUIStore
@@ -71,7 +70,18 @@ Install-WingetApps 9N1W692FV4S1 # Japanese Language Pack
 Install-WingetApps Microsoft.DirectX
 Install-WingetApps Microsoft.XNARedist
 Install-WingetApps Microsoft.DotNet.Framework.DeveloperPack_4
-choco install vcredist-all
+Install-WingetApps Microsoft.VCRedist.2005.x86
+Install-WingetApps Microsoft.VCRedist.2005.x64
+Install-WingetApps Microsoft.VCRedist.2008.x86
+Install-WingetApps Microsoft.VCRedist.2008.x64
+Install-WingetApps Microsoft.VCRedist.2010.x86
+Install-WingetApps Microsoft.VCRedist.2010.x64
+Install-WingetApps Microsoft.VCRedist.2012.x86
+Install-WingetApps Microsoft.VCRedist.2012.x64
+Install-WingetApps Microsoft.VCRedist.2013.x86
+Install-WingetApps Microsoft.VCRedist.2013.x64
+Install-WingetApps Microsoft.VCRedist.2015+.x86
+Install-WingetApps Microsoft.VCRedist.2015+.x64
 
 ### Conversion for texts
 Install-WingetApps stedolan.jq
@@ -164,14 +174,15 @@ Install-WingetApps TwibrightLabs.Links
 # Install-WingetApps 9PP3C07GTVRH # Blender
 # Install-WingetApps FreeCAD.FreeCAD
 
+### AI
+# Install-WingetApps Ollama.Ollama
+
 ### Audio & Broadcasting
 # Install-WingetApps 9PFHDD62MXS1 # Apple Music
 # Install-WingetApps XPFFH613W8V6LV # OBS Studio
 # Install-WingetApps iZotope.ProductPortal
+# Install-WingetApps Squirrels.Reflector.4
 # Install-WingetApps VB-Audio.Voicemeeter
-# choco install autohotkey # ! vb-cable dependeds it but automate installation is not working
-# choco install reflector-4
-# choco install vb-cable
 
 ### Authentication tools
 # Install-WingetApps Keybase.Keybase

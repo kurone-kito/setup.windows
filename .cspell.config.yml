@@ -53,6 +53,7 @@ words:
   - mswin
   - maxon
   - nprocessors
+  - ollama
   - tldr
   - usbxhci
   - useb
