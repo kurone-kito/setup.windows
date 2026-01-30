@@ -215,6 +215,10 @@ Unless otherwise specified, as a general rule, install via Winget.
 - [Blender](https://www.blender.org/)
 - [FreeCAD](https://www.freecadweb.org/)
 
+#### AI
+
+- [Ollama](https://ollama.com/)
+
 #### Audios, Videos, and Broadcasting
 
 - [Apple Music](https://www.apple.com/apple-music/)

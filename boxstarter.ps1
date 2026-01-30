@@ -164,6 +164,9 @@ Install-WingetApps TwibrightLabs.Links
 Install-WingetApps 9PP3C07GTVRH # Blender
 Install-WingetApps FreeCAD.FreeCAD
 
+### AI
+Install-WingetApps Ollama.Ollama
+
 ### Audio & Broadcasting
 Install-WingetApps 9PFHDD62MXS1 # Apple Music
 Install-WingetApps XPFFH613W8V6LV # OBS Studio
