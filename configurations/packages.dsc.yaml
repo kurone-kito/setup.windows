@@ -1,0 +1,1005 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+# ============================================================================
+# setup.windows — WinGet Configuration (DSC)
+# Full desktop setup: development, gaming, VRChat, and daily use
+# ============================================================================
+properties:
+  configurationVersion: 0.2.0
+
+  ####################################################################
+  # Assertions — prerequisites
+  ####################################################################
+  assertions:
+    - resource: Microsoft.Windows.Developer/OsVersion
+      directives:
+        description: Require Windows 10 22H2 (build 19045) or later
+        allowPrerelease: true
+      settings:
+        MinVersion: "10.0.19045"
+
+  ####################################################################
+  # Resources — packages and minimal settings
+  ####################################################################
+  resources:
+    # ================================================================
+    # Settings required for installation flow
+    # ================================================================
+    - resource: PSDscResources/Registry
+      id: edge.hideFirstRun
+      directives:
+        description: Hide Edge first-run experience to prevent interruptions
+        securityContext: current
+      settings:
+        Key: HKCU:\SOFTWARE\Policies\Microsoft\Edge
+        ValueName: HideFirstRunExperience
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    # ================================================================
+    # Package managers & dependencies
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.appInstaller
+      directives:
+        description: App Installer (winget)
+      settings:
+        id: "9NBLGGH4NNS1"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.unigetui
+      directives:
+        description: UniGetUI (formerly WingetUI)
+      settings:
+        id: MartiCliment.UniGetUI
+        source: winget
+
+    # ================================================================
+    # Runtimes & language packs
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.langEn
+      directives:
+        description: English Language Pack
+      settings:
+        id: "9PDSCC711RVF"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.langJa
+      directives:
+        description: Japanese Language Pack
+      settings:
+        id: "9N1W692FV4S1"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.directx
+      directives:
+        description: DirectX
+      settings:
+        id: Microsoft.DirectX
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.xna
+      directives:
+        description: XNA Redistributable
+      settings:
+        id: Microsoft.XNARedist
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.dotnetFx4
+      directives:
+        description: .NET Framework 4 Developer Pack
+      settings:
+        id: Microsoft.DotNet.Framework.DeveloperPack_4
+        source: winget
+
+    # Visual C++ Redistributable packages (replaces choco vcredist-all)
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2005x86
+      directives:
+        description: Visual C++ 2005 Redistributable (x86)
+      settings:
+        id: Microsoft.VCRedist.2005.x86
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2005x64
+      directives:
+        description: Visual C++ 2005 Redistributable (x64)
+      settings:
+        id: Microsoft.VCRedist.2005.x64
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2008x86
+      directives:
+        description: Visual C++ 2008 Redistributable (x86)
+      settings:
+        id: Microsoft.VCRedist.2008.x86
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2008x64
+      directives:
+        description: Visual C++ 2008 Redistributable (x64)
+      settings:
+        id: Microsoft.VCRedist.2008.x64
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2010x86
+      directives:
+        description: Visual C++ 2010 Redistributable (x86)
+      settings:
+        id: Microsoft.VCRedist.2010.x86
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2010x64
+      directives:
+        description: Visual C++ 2010 Redistributable (x64)
+      settings:
+        id: Microsoft.VCRedist.2010.x64
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2012x86
+      directives:
+        description: Visual C++ 2012 Redistributable (x86)
+      settings:
+        id: Microsoft.VCRedist.2012.x86
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2012x64
+      directives:
+        description: Visual C++ 2012 Redistributable (x64)
+      settings:
+        id: Microsoft.VCRedist.2012.x64
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2013x86
+      directives:
+        description: Visual C++ 2013 Redistributable (x86)
+      settings:
+        id: Microsoft.VCRedist.2013.x86
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2013x64
+      directives:
+        description: Visual C++ 2013 Redistributable (x64)
+      settings:
+        id: Microsoft.VCRedist.2013.x64
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2015x86
+      directives:
+        description: Visual C++ 2015-2022 Redistributable (x86)
+      settings:
+        id: Microsoft.VCRedist.2015+.x86
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2015x64
+      directives:
+        description: Visual C++ 2015-2022 Redistributable (x64)
+      settings:
+        id: Microsoft.VCRedist.2015+.x64
+        source: winget
+
+    # TODO: Microsoft.VCRedist.2015+.arm64
+    # (Required to determine the architecture of the system)
+
+    # ================================================================
+    # Conversion for texts
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.jq
+      directives:
+        description: jq — JSON processor
+      settings:
+        id: jqlang.jq
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.yq
+      directives:
+        description: yq — YAML processor
+      settings:
+        id: MikeFarah.yq
+        source: winget
+
+    # ================================================================
+    # Downloads / VCS
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.git
+      directives:
+        description: Git
+      settings:
+        id: Git.Git
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.delta
+      directives:
+        description: git-delta — syntax-highlighting pager for git
+      settings:
+        id: dandavison.delta
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.gitLfs
+      directives:
+        description: Git LFS
+      settings:
+        id: GitHub.GitLFS
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.svn
+      directives:
+        description: Slik Subversion (replaces choco svn)
+      settings:
+        id: Slik.Subversion
+        source: winget
+
+    # ================================================================
+    # Signature / Keys
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.gnupg
+      directives:
+        description: GnuPG
+      settings:
+        id: GnuPG.GnuPG
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.fnm
+      directives:
+        description: Fast Node Manager (fnm)
+      settings:
+        id: Schniz.fnm
+        source: winget
+
+    # ================================================================
+    # Text editors
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vim
+      directives:
+        description: Vim
+      settings:
+        id: vim.vim
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.neovim
+      directives:
+        description: Neovim
+      settings:
+        id: Neovim.Neovim
+        source: winget
+
+    # ================================================================
+    # CLI — Benchmark
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.fastfetch
+      directives:
+        description: Fastfetch
+      settings:
+        id: Fastfetch-cli.Fastfetch
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.pstop
+      directives:
+        description: pstop — system information tool
+      settings:
+        id: marlocarlo.pstop
+        source: winget
+
+    # ================================================================
+    # CLI — Binary tools
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.7zip
+      directives:
+        description: 7-Zip
+      settings:
+        id: 7zip.7zip
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.ffmpeg
+      directives:
+        description: FFmpeg
+      settings:
+        id: Gyan.FFmpeg
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.imagemagick
+      directives:
+        description: ImageMagick
+      settings:
+        id: ImageMagick.ImageMagick
+        source: winget
+
+    # ================================================================
+    # CLI — Configuration
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.chezmoi
+      directives:
+        description: chezmoi — dotfiles manager
+      settings:
+        id: twpayne.chezmoi
+        source: winget
+
+    # ================================================================
+    # CLI — Database
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.sqlite
+      directives:
+        description: SQLite
+      settings:
+        id: SQLite.SQLite
+        source: winget
+
+    # ================================================================
+    # CLI — Development
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.dotnet8
+      directives:
+        description: .NET SDK 8 (LTS — EOL Nov 2026)
+      settings:
+        id: Microsoft.DotNet.SDK.8
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.dotnet10
+      directives:
+        description: .NET SDK 10 (LTS — EOL Nov 2028)
+      settings:
+        id: Microsoft.DotNet.SDK.10
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.rust
+      directives:
+        description: Rust (MSVC)
+      settings:
+        id: Rustlang.Rust.MSVC
+        source: winget
+
+    # ================================================================
+    # CLI — Documentation / cheat sheets
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.tealdeer
+      directives:
+        description: tealdeer — fast tldr client (replaces choco cheat)
+      settings:
+        id: dbrgn.tealdeer
+        source: winget
+
+    # ================================================================
+    # CLI — Files
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.fzf
+      directives:
+        description: fzf — fuzzy finder
+      settings:
+        id: junegunn.fzf
+        source: winget
+
+    # ================================================================
+    # CLI — Games
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.steamcmd
+      directives:
+        description: SteamCMD
+      settings:
+        id: Valve.SteamCMD
+        source: winget
+
+    # ================================================================
+    # CLI — GitHub / CI
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.ghCli
+      directives:
+        description: GitHub CLI
+      settings:
+        id: GitHub.cli
+        source: winget
+
+    # NOTE: nektos/act is installed conditionally (non-ARM64) in post-install.ps1
+
+    # ================================================================
+    # CLI — Remote
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.awscli
+      directives:
+        description: AWS CLI
+      settings:
+        id: Amazon.AWSCLI
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.mkcert
+      directives:
+        description: mkcert — local CA for development
+      settings:
+        id: FiloSottile.mkcert
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.ngrok
+      directives:
+        description: ngrok
+      settings:
+        id: Ngrok.Ngrok
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.terraform
+      directives:
+        description: Terraform
+      settings:
+        id: Hashicorp.Terraform
+        source: winget
+
+    # ================================================================
+    # CLI — Shell
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.pwsh
+      directives:
+        description: PowerShell 7
+      settings:
+        id: "9MZ1SNWT0N5D"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.ohMyPosh
+      directives:
+        description: Oh My Posh
+      settings:
+        id: "XP8K0HKJFRXGCK"
+        source: msstore
+
+    # ================================================================
+    # CLI — Virtualization
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.multipass
+      directives:
+        description: Multipass — Ubuntu VMs (replaces choco multipass)
+      settings:
+        id: "XPFM0TP2CXZ4PN"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.wslUbuntu
+      directives:
+        description: Ubuntu 24.04 LTS (WSL)
+      settings:
+        id: "9NZ3KLHXDJP5"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vagrant
+      directives:
+        description: Vagrant
+      settings:
+        id: Hashicorp.Vagrant
+        source: winget
+
+    # ================================================================
+    # CLI — Web browsers
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.links
+      directives:
+        description: Links — text web browser
+      settings:
+        id: TwibrightLabs.Links
+        source: winget
+
+    # ================================================================
+    # GUI — 3D tools
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.blender
+      directives:
+        description: Blender
+      settings:
+        id: "9PP3C07GTVRH"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.freecad
+      directives:
+        description: FreeCAD
+      settings:
+        id: FreeCAD.FreeCAD
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vroid
+      directives:
+        description: VRoid Studio
+      settings:
+        id: pixivInc.VRoidStudio
+        source: winget
+
+    # ================================================================
+    # GUI — AI
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.ollama
+      directives:
+        description: Ollama
+      settings:
+        id: Ollama.Ollama
+        source: winget
+
+    # ================================================================
+    # GUI — Audio & Broadcasting
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.appleMusic
+      directives:
+        description: Apple Music
+      settings:
+        id: "9PFHDD62MXS1"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.obs
+      directives:
+        description: OBS Studio
+      settings:
+        id: "XPFFH613W8V6LV"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.izotope
+      directives:
+        description: iZotope Product Portal
+      settings:
+        id: iZotope.ProductPortal
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.voicemeeter
+      directives:
+        description: VoiceMeeter
+      settings:
+        id: VB-Audio.Voicemeeter
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.autohotkey
+      directives:
+        description: AutoHotkey (replaces choco autohotkey)
+      settings:
+        id: AutoHotkey.AutoHotkey
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.reflector4
+      directives:
+        description: Reflector 4 (replaces choco reflector-4)
+      settings:
+        id: Squirrels.Reflector.4
+        source: winget
+
+    # ================================================================
+    # GUI — Authentication
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.keybase
+      directives:
+        description: Keybase
+      settings:
+        id: Keybase.Keybase
+        source: winget
+
+    # ================================================================
+    # GUI — Benchmark
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.cinebench
+      directives:
+        description: CineBench
+      settings:
+        id: "9PGZKJC81Q7J"
+        source: msstore
+
+    # ================================================================
+    # GUI — Cloud storages
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.adobeCC
+      directives:
+        description: Adobe Creative Cloud
+      settings:
+        id: "XPDLPKWG9SW2WD"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.icloud
+      directives:
+        description: iCloud
+      settings:
+        id: "9PKTQ5699M62"
+        source: msstore
+
+    # ================================================================
+    # GUI — Configuration
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.powertoys
+      directives:
+        description: Microsoft PowerToys
+      settings:
+        id: "XP89DCGQ3K6VLD"
+        source: msstore
+
+    # ================================================================
+    # GUI — Development
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.androidStudio
+      directives:
+        description: Android Studio
+      settings:
+        id: Google.AndroidStudio
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.unityHub
+      directives:
+        description: Unity Hub
+      settings:
+        id: Unity.UnityHub
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcc
+      directives:
+        description: VRChat Creator Companion
+      settings:
+        id: VRChat.CreatorCompanion
+        source: winget
+
+    # ================================================================
+    # GUI — Devices
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.ghub
+      directives:
+        description: Logitech G HUB
+      settings:
+        id: Logitech.GHUB
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.lgs
+      directives:
+        description: Logitech Gaming Software
+      settings:
+        id: Logitech.LGS
+        source: winget
+
+    # ================================================================
+    # GUI — Documentation
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.grammarly
+      directives:
+        description: Grammarly
+      settings:
+        id: "XPDDXX9QW8N9D7"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.todo
+      directives:
+        description: Microsoft To Do
+      settings:
+        id: "9NBLGGH5R558"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.kindle
+      directives:
+        description: Amazon Kindle
+      settings:
+        id: Amazon.Kindle
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.notion
+      directives:
+        description: Notion
+      settings:
+        id: Notion.Notion
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.obsidian
+      directives:
+        description: Obsidian
+      settings:
+        id: Obsidian.Obsidian
+        source: winget
+
+    # ================================================================
+    # GUI — Games
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.eaDesktop
+      directives:
+        description: EA Desktop
+      settings:
+        id: ElectronicArts.EADesktop
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.epicGames
+      directives:
+        description: Epic Games Launcher
+      settings:
+        id: EpicGames.EpicGamesLauncher
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.minecraft
+      directives:
+        description: Minecraft Launcher
+      settings:
+        id: Mojang.MinecraftLauncher
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.steam
+      directives:
+        description: Steam
+      settings:
+        id: Valve.Steam
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.stepmania
+      directives:
+        description: StepMania
+      settings:
+        id: StepMania.StepMania
+        source: winget
+
+    # ================================================================
+    # GUI — IDE / Editors
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.cursor
+      directives:
+        description: Cursor AI
+      settings:
+        id: Anysphere.Cursor
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.sublimeText
+      directives:
+        description: Sublime Text 4
+      settings:
+        id: SublimeHQ.SublimeText.4
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vscode
+      directives:
+        description: Visual Studio Code
+      settings:
+        id: "XP9KHM4BK9FZ7Q"
+        source: msstore
+
+    # ================================================================
+    # GUI — Messaging
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.slack
+      directives:
+        description: Slack
+      settings:
+        id: "9WZDNCRDK3WP"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.discord
+      directives:
+        description: Discord
+      settings:
+        id: "XPDC2RH70K22MN"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.zoom
+      directives:
+        description: Zoom
+      settings:
+        id: "XP99J3KP4XZ4VV"
+        source: msstore
+
+    # ================================================================
+    # GUI — Office
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.onenote
+      directives:
+        description: Microsoft OneNote
+      settings:
+        id: "XPFFZHVGQWWLHB"
+        source: msstore
+
+    # ================================================================
+    # GUI — Remote
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.teamviewer
+      directives:
+        description: TeamViewer
+      settings:
+        id: TeamViewer.TeamViewer
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.rdp
+      directives:
+        description: Microsoft Remote Desktop
+      settings:
+        id: "9WZDNCRFJ3PS"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.realvnc
+      directives:
+        description: RealVNC Viewer
+      settings:
+        id: "XP99DVCPGKTXNJ"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.switchhosts
+      directives:
+        description: SwitchHosts
+      settings:
+        id: oldj.switchhosts
+        source: winget
+
+    # ================================================================
+    # GUI — Social
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.facebook
+      directives:
+        description: Facebook
+      settings:
+        id: "9WZDNCRFJ2WL"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.instagram
+      directives:
+        description: Instagram
+      settings:
+        id: "9NBLGGH5L9XT"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.threads
+      directives:
+        description: Threads by Instagram
+      settings:
+        id: "9MXBP1FB84CQ"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.x
+      directives:
+        description: X (formerly Twitter)
+      settings:
+        id: "9WZDNCRFJ140"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vrcx
+      directives:
+        description: VRCX
+      settings:
+        id: VRCX.VRCX
+        source: winget
+
+    # ================================================================
+    # GUI — Terminal
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.windowsTerminal
+      directives:
+        description: Windows Terminal
+      settings:
+        id: "9N0DX20HK701"
+        source: msstore
+
+    # ================================================================
+    # GUI — Videos
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.clipchamp
+      directives:
+        description: Clipchamp
+      settings:
+        id: "9P1J8S7CCWWT"
+        source: msstore
+
+    # ================================================================
+    # GUI — Virtualization (conditional — non-ARM64 only handled in post-install)
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.dosbox
+      directives:
+        description: DOSBox-X
+      settings:
+        id: joncampbell123.DOSBox-X
+        source: winget
+
+    # TODO: Docker.DockerDesktop
+    # NOTE: Docker Desktop, VirtualBox, and nektos/act are conditionally
+    # installed in post-install.ps1 (non-ARM64 only)
+
+    # ================================================================
+    # GUI — Web browsers
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.chrome
+      directives:
+        description: Google Chrome
+      settings:
+        id: Google.Chrome
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.firefoxEsr
+      directives:
+        description: Firefox ESR
+      settings:
+        id: Mozilla.Firefox.ESR
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.torBrowser
+      directives:
+        description: Tor Browser
+      settings:
+        id: TorProject.TorBrowser
+        source: winget

@@ -21,48 +21,34 @@ ignorePaths:
   - .github/CODE_OF_CONDUCT.*
   - .vscode/extensions.json
   - cspell.config.yml
-  - test
 ignoreRegExpList:
   - '\b[0-9A-Z]{12,14}\b'
-  - Install-WingetApps .*\.
 language: en,ja
 useGitignore: true
 version: "0.2"
 words:
-  - alsa
-  - apic
   - antlr
-  - audioin
-  - biosapic
+  - chezmoi
   - choco
   - dind
-  - dsound
+  - dosbox
+  - fastfetch
+  - fnm
   - ghub
   - hkcu
   - hklm
-  - hpet
-  - hwvirtex
-  - iexplore
   - imgbotconfig
-  - ioapic
   - izotope
+  - jqlang
   - kito
   - kuron
   - kuroné
-  - modifyvm
-  - mswin
-  - maxon
-  - nprocessors
   - ollama
+  - posh
+  - psscriptanalyzer
+  - tealdeer
   - tldr
-  - usbxhci
-  - useb
-  - vbguest
-  - vboxsvga
+  - unigetui
   - vcredist
   - vrchat
   - vrcx
-  - vtxux
-  - vtxvpid
-  - wkhtmltopdf
-  - wkhtmltox
