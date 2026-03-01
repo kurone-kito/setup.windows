@@ -1,0 +1,442 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+properties:
+  assertions:
+    - resource: Microsoft.Windows.Developer/OsVersion
+      directives:
+        description: Require Windows 10 22H2 (build 19045) or later
+        allowPrerelease: true
+      settings:
+        MinVersion: "10.0.19045"
+  configurationVersion: 0.2.0
+  resources:
+    - resource: PSDscResources/Registry
+      id: windows11-native-nvme-driver-1
+      directives:
+        description: Windows11 Native NVMe Driver 1
+        securityContext: elevated
+      settings:
+        Ensure: "Present"
+        Key: "HKLM:\\SYSTEM\\CurrentControlSet\\Policies\\Microsoft\\FeatureManagement\\Overrides"
+        ValueData: "1"
+        ValueName: "156965516"
+        ValueType: "DWord"
+
+    - resource: PSDscResources/Registry
+      id: windows11-native-nvme-driver-2
+      directives:
+        description: Windows11 Native NVMe Driver 2
+        securityContext: elevated
+      settings:
+        Ensure: "Present"
+        Key: "HKLM:\\SYSTEM\\CurrentControlSet\\Policies\\Microsoft\\FeatureManagement\\Overrides"
+        ValueData: "1"
+        ValueName: "735209102"
+        ValueType: "DWord"
+
+    - resource: PSDscResources/Registry
+      id: windows11-native-nvme-driver-3
+      directives:
+        description: Windows11 Native NVMe Driver 3
+        securityContext: elevated
+      settings:
+        Ensure: "Present"
+        Key: "HKLM:\\SYSTEM\\CurrentControlSet\\Policies\\Microsoft\\FeatureManagement\\Overrides"
+        ValueData: "1"
+        ValueName: "1853569164"
+        ValueType: "DWord"
+
+    # =======================================================================
+    # Install the package managers
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: mise-en-place-mise
+      directives:
+        description: mise-en-place (mise)
+      settings:
+        id: jdx.mise
+        source: winget
+
+    # =======================================================================
+    # Install the CLI AI agent tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: github-copilot-cli
+      directives:
+        description: GitHub Copilot CLI
+      settings:
+        id: GitHub.Copilot
+        source: winget
+
+    # =======================================================================
+    # Install the CLI benchmark tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: fastfetch
+      directives:
+        description: Fastfetch
+      settings:
+        id: Fastfetch-cli.Fastfetch
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pstop-htop-for-windows
+      directives:
+        description: pstop (htop for Windows)
+      settings:
+        id: marlocarlo.pstop
+        source: winget
+
+    # =======================================================================
+    # Install the CLI configuration tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: chezmoi
+      directives:
+        description: chezmoi
+      settings:
+        id: twpayne.chezmoi
+        source: winget
+
+    # =======================================================================
+    # Install the CLI conversion tools for binaries
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: chafa
+      directives:
+        description: Chafa
+      settings:
+        id: hpjansson.Chafa
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: imagemagick
+      directives:
+        description: ImageMagick
+      settings:
+        id: ImageMagick.ImageMagick
+        source: winget
+
+    # =======================================================================
+    # Install the CLI data processing tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: jq
+      directives:
+        description: jq
+      settings:
+        id: jqlang.jq
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: mysql
+      directives:
+        description: MySQL
+      settings:
+        id: Oracle.MySQL
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: sqlite
+      directives:
+        description: SQLite
+      settings:
+        id: SQLite.SQLite
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: yq-mikefarah
+      directives:
+        description: yq (mikefarah)
+      settings:
+        id: MikeFarah.yq
+        source: winget
+
+    # =======================================================================
+    # Install the CLI development tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ast-grep
+      directives:
+        description: ast-grep
+      settings:
+        id: ast-grep.ast-grep
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: biome
+      directives:
+        description: BiomeJS
+      settings:
+        id: BiomeJS.Biome
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: cloc
+      directives:
+        description: Cloc
+      settings:
+        id: AlDanial.Cloc
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: direnv
+      directives:
+        description: direnv
+      settings:
+        id: direnv.direnv
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: dprint
+      directives:
+        description: dprint
+      settings:
+        id: dprint.dprint
+        source: winget
+
+    # =======================================================================
+    # Install the CLI file tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: 7-zip
+      directives:
+        description: 7-Zip
+      settings:
+        id: 7zip.7zip
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: gnuwin32-coreutils
+      directives:
+        description: GnuWin32 CoreUtils
+      settings:
+        id: GnuWin32.File
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: gnupg
+      directives:
+        description: GnuPG
+      settings:
+        id: GnuPG.GnuPG
+        source: winget
+
+    # =======================================================================
+    # Install the CLI file and folder management tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: bat-modern-cat-replacement
+      directives:
+        description: bat (modern cat replacement)
+      settings:
+        id: sharkdp.bat
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: eza-modern-ls-replacement
+      directives:
+        description: eza (modern ls replacement)
+      settings:
+        id: eza-community.eza
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: fd-modern-find-replacement
+      directives:
+        description: fd (modern find replacement)
+      settings:
+        id: sharkdp.fd
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: fzf
+      directives:
+        description: fzf
+      settings:
+        id: junegunn.fzf
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ripgrep-modern-grep-replacement
+      directives:
+        description: Ripgrep (modern grep replacement)
+      settings:
+        id: BurntSushi.ripgrep.MSVC
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: yazi
+      directives:
+        description: yazi
+      settings:
+        id: sxyazi.yazi
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: zoxide-modern-cd-replacement
+      directives:
+        description: zoxide (modern cd replacement)
+      settings:
+        id: ajeetdsouza.zoxide
+        source: winget
+
+    # =======================================================================
+    # Install the CLI Git tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ghq
+      directives:
+        description: ghq
+      settings:
+        id: x-motemen.ghq
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: git
+      directives:
+        description: Git
+      settings:
+        id: Git.Git
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: git-lfs
+      directives:
+        description: Git LFS
+      settings:
+        id: GitHub.GitLFS
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: git-sizer
+      directives:
+        description: git-sizer
+      settings:
+        id: GitHub.git-sizer
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: github-cli
+      directives:
+        description: GitHub CLI
+      settings:
+        id: GitHub.cli
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: worktrunk
+      directives:
+        description: Worktrunk
+      settings:
+        id: max-sixty.worktrunk
+        source: winget
+
+    # =======================================================================
+    # Install the CLI remote tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: amazon-aws-cli
+      directives:
+        description: Amazon AWS CLI
+      settings:
+        id: Amazon.AWSCLI
+        source: winget
+
+    # =======================================================================
+    # Install the CLI SCM utilities
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: lazygit
+      directives:
+        description: Lazygit
+      settings:
+        id: JesseDuffield.lazygit
+        source: winget
+
+    # =======================================================================
+    # Install the CLI session management tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: psmux-tmux-for-windows
+      directives:
+        description: psmux (tmux for Windows)
+      settings:
+        id: marlocarlo.psmux
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: zellij
+      directives:
+        description: Zellij
+      settings:
+        id: Zellij.Zellij
+        source: winget
+
+    # =======================================================================
+    # Install the CLI shell tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: powershell-v7
+      directives:
+        description: PowerShell v7
+      settings:
+        id: Microsoft.PowerShell
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: starship
+      directives:
+        description: Starship
+      settings:
+        id: Starship.Starship
+        source: winget
+
+    # =======================================================================
+    # Install the CLI text browsing tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: delta
+      directives:
+        description: delta
+      settings:
+        id: dandavison.delta
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: glow
+      directives:
+        description: glow
+      settings:
+        id: charmbracelet.glow
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: tealdeer
+      directives:
+        description: tealdeer
+      settings:
+        id: dbrgn.tealdeer
+        source: winget
+
+    # =======================================================================
+    # Install the CLI text editing tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: microsoft-edit
+      directives:
+        description: Microsoft Edit
+      settings:
+        id: Microsoft.Edit
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: neovim
+      directives:
+        description: Neovim
+      settings:
+        id: Neovim.Neovim
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: vim
+      directives:
+        description: Vim
+      settings:
+        id: vim.vim
+        source: winget
+
+    # =======================================================================
+    # Install the GUI developer tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: microsoft-visual-studio-code
+      directives:
+        description: Microsoft Visual Studio Code
+      settings:
+        id: "XP9KHM4BK9FZ7Q"
+        source: msstore
+
+    # =======================================================================
+    # Install the GUI remote tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: httpie
+      directives:
+        description: HTTPie
+      settings:
+        id: HTTPie.HTTPie
+        source: winget
+
+    # =======================================================================
+    # Install the GUI SCM apps
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: github-desktop
+      directives:
+        description: GitHub Desktop
+      settings:
+        id: GitHub.GitHubDesktop
+        source: winget
+
+    # =======================================================================
+    # Install the GUI Text editor apps
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: obsidian
+      directives:
+        description: Obsidian
+      settings:
+        id: Obsidian.Obsidian
+        source: winget

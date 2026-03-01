@@ -5,11 +5,43 @@ on:
 permissions:
   contents: read
 jobs:
-  lint:
-    runs-on: ubuntu-slim
+  lint-docs:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - name: Run cspell
         uses: streetsidesoftware/cspell-action@v8
       - name: Run markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v22
+
+  lint-powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          $results = Invoke-ScriptAnalyzer -Path . -Recurse -ReportSummary
+          $results | Format-Table -AutoSize
+          if ($results | Where-Object Severity -eq 'Error') {
+            Write-Error 'PSScriptAnalyzer found errors.'
+            exit 1
+          }
+
+  validate-dsc:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate DSC YAML syntax
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Path configurations -Filter '*.dsc.yaml'
+          foreach ($f in $files) {
+            Write-Host "Validating $($f.Name)..."
+            $content = Get-Content $f.FullName -Raw
+            # Basic YAML parse check
+            $null = ConvertFrom-Yaml $content -ErrorAction Stop
+            Write-Host "  OK" -ForegroundColor Green
+          }
+        continue-on-error: true
