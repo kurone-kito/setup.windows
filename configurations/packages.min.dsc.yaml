@@ -1,0 +1,352 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+# ============================================================================
+# setup.windows — WinGet Configuration (DSC) — Minimal variant
+# Lightweight developer setup: excludes gaming, heavy GUI apps, and media apps
+# ============================================================================
+properties:
+  configurationVersion: 0.2.0
+
+  ####################################################################
+  # Assertions — prerequisites
+  ####################################################################
+  assertions:
+    - resource: Microsoft.Windows.Developer/OsVersion
+      directives:
+        description: Require Windows 10 22H2 (build 19045) or later
+        allowPrerelease: true
+      settings:
+        MinVersion: "10.0.19045"
+
+  ####################################################################
+  # Resources — packages and minimal settings
+  ####################################################################
+  resources:
+    # ================================================================
+    # Settings required for installation flow
+    # ================================================================
+    - resource: PSDscResources/Registry
+      id: edge.hideFirstRun
+      directives:
+        description: Hide Edge first-run experience to prevent interruptions
+        securityContext: current
+      settings:
+        Key: HKCU:\SOFTWARE\Policies\Microsoft\Edge
+        ValueName: HideFirstRunExperience
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    # ================================================================
+    # Package managers & dependencies
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.appInstaller
+      directives:
+        description: App Installer (winget)
+      settings:
+        id: "9NBLGGH4NNS1"
+        source: msstore
+
+    # ================================================================
+    # Runtimes & language packs
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.langEn
+      directives:
+        description: English Language Pack
+      settings:
+        id: "9PDSCC711RVF"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.langJa
+      directives:
+        description: Japanese Language Pack
+      settings:
+        id: "9N1W692FV4S1"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.directx
+      directives:
+        description: DirectX
+      settings:
+        id: Microsoft.DirectX
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.dotnetFx4
+      directives:
+        description: .NET Framework 4 Developer Pack
+      settings:
+        id: Microsoft.DotNet.Framework.DeveloperPack_4
+        source: winget
+
+    # Visual C++ Redistributables (essential subset)
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2015x86
+      directives:
+        description: Visual C++ 2015-2022 Redistributable (x86)
+      settings:
+        id: Microsoft.VCRedist.2015+.x86
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vcredist2015x64
+      directives:
+        description: Visual C++ 2015-2022 Redistributable (x64)
+      settings:
+        id: Microsoft.VCRedist.2015+.x64
+        source: winget
+
+    # ================================================================
+    # Conversion for texts
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.jq
+      directives:
+        description: jq — JSON processor
+      settings:
+        id: jqlang.jq
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.yq
+      directives:
+        description: yq — YAML processor
+      settings:
+        id: MikeFarah.yq
+        source: winget
+
+    # ================================================================
+    # Downloads / VCS
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.git
+      directives:
+        description: Git
+      settings:
+        id: Git.Git
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.delta
+      directives:
+        description: git-delta — syntax-highlighting pager for git
+      settings:
+        id: dandavison.delta
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.gitLfs
+      directives:
+        description: Git LFS
+      settings:
+        id: GitHub.GitLFS
+        source: winget
+
+    # ================================================================
+    # Signature / Keys
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.gnupg
+      directives:
+        description: GnuPG
+      settings:
+        id: GnuPG.GnuPG
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.fnm
+      directives:
+        description: Fast Node Manager (fnm)
+      settings:
+        id: Schniz.fnm
+        source: winget
+
+    # ================================================================
+    # Text editors
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vim
+      directives:
+        description: Vim
+      settings:
+        id: vim.vim
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.neovim
+      directives:
+        description: Neovim
+      settings:
+        id: Neovim.Neovim
+        source: winget
+
+    # ================================================================
+    # CLI tools
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.fastfetch
+      directives:
+        description: Fastfetch
+      settings:
+        id: Fastfetch-cli.Fastfetch
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.7zip
+      directives:
+        description: 7-Zip
+      settings:
+        id: 7zip.7zip
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.ffmpeg
+      directives:
+        description: FFmpeg
+      settings:
+        id: Gyan.FFmpeg
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.chezmoi
+      directives:
+        description: chezmoi — dotfiles manager
+      settings:
+        id: twpayne.chezmoi
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.sqlite
+      directives:
+        description: SQLite
+      settings:
+        id: SQLite.SQLite
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vsBuildTools2022
+      directives:
+        description: Visual Studio 2022 Build Tools
+      settings:
+        id: Microsoft.VisualStudio.2022.BuildTools
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.dotnet8
+      directives:
+        description: .NET SDK 8 (LTS)
+      settings:
+        id: Microsoft.DotNet.SDK.8
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.dotnet10
+      directives:
+        description: .NET SDK 10 (LTS)
+      settings:
+        id: Microsoft.DotNet.SDK.10
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.rust
+      directives:
+        description: Rust (MSVC)
+      settings:
+        id: Rustlang.Rust.MSVC
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.tealdeer
+      directives:
+        description: tealdeer — fast tldr client
+      settings:
+        id: dbrgn.tealdeer
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.fzf
+      directives:
+        description: fzf — fuzzy finder
+      settings:
+        id: junegunn.fzf
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.ghCli
+      directives:
+        description: GitHub CLI
+      settings:
+        id: GitHub.cli
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.mkcert
+      directives:
+        description: mkcert — local CA for development
+      settings:
+        id: FiloSottile.mkcert
+        source: winget
+
+    # ================================================================
+    # Shell
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.pwsh
+      directives:
+        description: PowerShell 7
+      settings:
+        id: "9MZ1SNWT0N5D"
+        source: msstore
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.ohMyPosh
+      directives:
+        description: Oh My Posh
+      settings:
+        id: "XP8K0HKJFRXGCK"
+        source: msstore
+
+    # ================================================================
+    # GUI — Development
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.vscode
+      directives:
+        description: Visual Studio Code
+      settings:
+        id: "XP9KHM4BK9FZ7Q"
+        source: msstore
+
+    # ================================================================
+    # GUI — Terminal
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.windowsTerminal
+      directives:
+        description: Windows Terminal
+      settings:
+        id: "9N0DX20HK701"
+        source: msstore
+
+    # ================================================================
+    # GUI — Web browsers
+    # ================================================================
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.chrome
+      directives:
+        description: Google Chrome
+      settings:
+        id: Google.Chrome
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.firefoxEsr
+      directives:
+        description: Firefox ESR
+      settings:
+        id: Mozilla.Firefox.ESR
+        source: winget
