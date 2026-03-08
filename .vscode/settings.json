@@ -11,18 +11,19 @@
     "LICENSE": "plaintext"
   },
   "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
     "**/.vagrant/**": true
   },
   "git.branchProtection": ["master"],
+  "material-icon-theme.files.associations": {
+    ".imgbotconfig": "robots"
+  },
   "search.exclude": {
     "**/.vagrant/**": true
   },
   "yaml.schemas": {
-    "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/packages/cspell-types/cspell.schema.json": [
-      "cspell.config.yml"
-    ],
-    "https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json": [
-      ".coderabbit.yaml"
-    ]
+    "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/packages/cspell-types/cspell.schema.json": ".cspell.config.yml",
+    "https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json": ".coderabbit.yaml"
   }
 }

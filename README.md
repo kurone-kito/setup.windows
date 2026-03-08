@@ -1,5 +1,7 @@
 # Windows auto setup for developing environment
 
+![GitHub repo size](https://img.shields.io/github/repo-size/kurone-kito/setup.windows)
+
 Desktop environment preference for Windows (10 to 11)  
 Windows 10 〜 11 向けの作業環境セットアップスクリプト
 
@@ -215,13 +217,16 @@ Unless otherwise specified, as a general rule, install via Winget.
 - [Blender](https://www.blender.org/)
 - [FreeCAD](https://www.freecadweb.org/)
 
+#### AI
+
+- [Ollama](https://ollama.com/)
+
 #### Audios, Videos, and Broadcasting
 
 - [Apple Music](https://www.apple.com/apple-music/)
 - [iZotope Product Portal](https://www.izotope.com/)
 - [OBS Studio](https://obsproject.com/)
 - [Reflector 4](https://www.airsquirrels.com/reflector/)
-- [VB-CABLE Virtual Audio Device](https://vb-audio.com/Cable/)
 - [VoiceMeeter](https://vb-audio.com/Voicemeeter/)
 
 #### Authentication
@@ -244,7 +249,6 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Devices
 
-- [AutoHotkey](https://www.autohotkey.com/)
 - [logicool G Hub](https://gaming.logicool.co.jp/innovation/g-hub.html)
 
 #### Documents and Office apps
