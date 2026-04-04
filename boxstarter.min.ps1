@@ -83,61 +83,83 @@ Install-WingetApps Microsoft.VCRedist.2013.x64
 Install-WingetApps Microsoft.VCRedist.2015+.x86
 Install-WingetApps Microsoft.VCRedist.2015+.x64
 
+### Configuration tools
+# Install-WingetApps Bitwarden.Bitwarden
+# Install-WingetApps Bitwarden.CLI
+Install-WingetApps twpayne.chezmoi
+
 ### Conversion for texts
 Install-WingetApps stedolan.jq
 Install-WingetApps MikeFarah.yq
 
 ### Downloads
-Install-WingetApps Git.Git
 Install-WingetApps dandavison.delta
+Install-WingetApps Git.Git
+Install-WingetApps GitHub.cli
 Install-WingetApps GitHub.GitLFS
+Install-WingetApps jdx.mise
+Install-WingetApps x-motemen.ghq
 
 ### Fonts
 choco install font-hackgen
 choco install font-hackgen-nerd
-choco install lato
+
+### Remote tools
+# Install-WingetApps Tailscale.Tailscale
 
 ### Signature
 Install-WingetApps GnuPG.GnuPG
-Install-WingetApps Schniz.fnm
 
 ### Text editors
 Install-WingetApps vim.vim
 Install-WingetApps Neovim.Neovim
 
+### TUI
+Install-WingetApps marlocarlo.psmux
+Install-WingetApps Zellij.Zellij
+
 ###########################################################################
 ### install CLI applications
 
+### AI
+Install-WingetApps GitHub.Copilot
+
 ### Benchmark tools
 Install-WingetApps Fastfetch-cli.Fastfetch
+Install-WingetApps marlocarlo.pstop
 
 ### Binary tools
 Install-WingetApps 7zip.7zip
 Install-WingetApps Gyan.FFmpeg
+Install-WingetApps hpjansson.Chafa
 Install-WingetApps ImageMagick.ImageMagick
+Install-WingetApps wez.atomicparsley
 
-### Configuration tools
-Install-WingetApps twpayne.chezmoi
+### Conversion for texts
+Install-WingetApps Apple.Pkl
+Install-WingetApps dprint.dprint
 
 ### Database tools
 Install-WingetApps SQLite.SQLite
 
 ### Development tools
-Install-WingetApps Microsoft.BuildTools2015
-Install-WingetApps Microsoft.VisualStudio.2019.BuildTools
-Install-WingetApps Microsoft.VisualStudio.2022.BuildTools
-Install-WingetApps Microsoft.DotNet.SDK.6
-Install-WingetApps Microsoft.DotNet.SDK.8
-Install-WingetApps Rustlang.Rust.MSVC
-choco install antlr4
-
-### Documentation tools
-Install-WingetApps wkhtmltopdf.wkhtmltox
-choco install cheat
+Install-WingetApps AlDanial.Cloc
+Install-WingetApps anatawa12.vrc-get
+Install-WingetApps ast-grep.ast-grep
+Install-WingetApps direnv.direnv
+Install-WingetApps dprint.dprint
+Install-WingetApps Rustlang.Rustup
+Install-WingetApps tree-sitter.tree-sitter-cli
 
 ### Files
+Install-WingetApps ajeetdsouza.zoxide
+Install-WingetApps eza-community.eza
+Install-WingetApps GnuWin32.File
+Install-WingetApps JesseDuffield.lazygit
 Install-WingetApps junegunn.fzf
-choco install svn
+Install-WingetApps sharkdp.bat
+Install-WingetApps sharkdp.fd
+Install-WingetApps sxyazi.yazi
 
 ### Games
 # Install-WingetApps Valve.SteamCMD
@@ -151,21 +173,32 @@ Install-WingetApps GitHub.cli
 
 ### Remote tools
 # Install-WingetApps Amazon.AWSCLI
+Install-WingetApps BurntSushi.ripgrep.MSVC
 Install-WingetApps FiloSottile.mkcert
+Install-WingetApps HTTPie.HTTPie
+# Install-WingetApps Adembc.Lazyssh
 # Install-WingetApps Ngrok.Ngrok
+Install-WingetApps oldj.switchhosts
 # choco install tor
 
-### Shell
-Install-WingetApps 9MZ1SNWT0N5D # Microsoft.PowerShell
-Install-WingetApps XP8K0HKJFRXGCK # Oh My Posh
-choco install poshgit
+### Text browsers
+Install-WingetApps charmbracelet.glow
+Install-WingetApps dbrgn.tealdeer
+Install-WingetApps TwibrightLabs.Links
+
+### Text editors
+Install-WingetApps Microsoft.Edit
+
+### TUI
+Install-WingetApps JesseDuffield.Lazydocker
+Install-WingetApps ScaryRawr.SL
 
 ### Virtualization tools
-Install-WingetApps 9NZ3KLHXDJP5 # Ubuntu 24.04 LTS
+Install-WingetApps Canonical.Multipass
+Install-WingetApps Hashicorp.Terraform
 Install-WingetApps Hashicorp.Vagrant
-
-### Web browsers
-Install-WingetApps TwibrightLabs.Links
+Install-WingetApps Microsoft.WSL
+Install-WingetApps wagoodman.dive
 
 ###########################################################################
 ### install GUI applications
@@ -173,16 +206,23 @@ Install-WingetApps TwibrightLabs.Links
 ### 3D tools
 # Install-WingetApps 9PP3C07GTVRH # Blender
 # Install-WingetApps FreeCAD.FreeCAD
+# Install-WingetApps pixivInc.VRoidStudio
 
 ### AI
+# Install-WingetApps 9NT1R1C2HH7J # ChatGPT
+# Install-WingetApps XPDNX7G06BLH2G # DeepL
+# Install-WingetApps 9WZDNCRD29V9 # Microsoft 365 Copilot
+# Install-WingetApps XP8JNQFBQH6PVF # Perplexity
+# Install-WingetApps Anthropic.Claude
 # Install-WingetApps Ollama.Ollama
+# Install-WingetApps OpenAI.Codex
 
 ### Audio & Broadcasting
 # Install-WingetApps 9PFHDD62MXS1 # Apple Music
 # Install-WingetApps XPFFH613W8V6LV # OBS Studio
+# Install-WingetApps XP9CPXZ6PMX1LX # Voicemeeter
 # Install-WingetApps iZotope.ProductPortal
 # Install-WingetApps Squirrels.Reflector.4
-# Install-WingetApps VB-Audio.Voicemeeter
 
 ### Authentication tools
 # Install-WingetApps Keybase.Keybase
@@ -198,13 +238,16 @@ Install-WingetApps 9PGZKJC81Q7J # CineBench
 Install-WingetApps XP89DCGQ3K6VLD # Microsoft.PowerToys
 
 ### Development tools
+# Install-WingetApps anatawa12.ALCOM
 # Install-WingetApps Google.AndroidStudio
 # Install-WingetApps Unity.UnityHub
 # Install-WingetApps VRChat.CreatorCompanion
 
 ### Devices
+Install-WingetApps 9NP83LWLPZ9K # Apple Device
 # Install-WingetApps Logitech.GHUB
-# Install-WingetApps Logitech.LGS
+# Install-WingetApps Logitech.OnboardMemoryManager
+# Install-WingetApps Yamaha.SteinbergUSBDriver
 
 ### Documentation tools
 Install-WingetApps XPDDXX9QW8N9D7 # Grammarly
@@ -235,10 +278,10 @@ Install-WingetApps 9WZDNCRDK3WP # Slack
 Install-WingetApps XPFFZHVGQWWLHB # Microsoft OneNote
 
 ### Remote tools
-# Install-WingetApps TeamViewer.TeamViewer
 # Install-WingetApps 9WZDNCRFJ3PS # Microsoft Remote Desktop
 # Install-WingetApps XP99DVCPGKTXNJ # RealVNC Viewer
 Install-WingetApps oldj.switchhosts
+# Install-WingetApps TeamViewer.TeamViewer
 
 ### Social apps
 # Install-WingetApps 9WZDNCRFJ2WL # Facebook
@@ -254,6 +297,7 @@ Install-WingetApps 9N0DX20HK701 # Windows Terminal
 # Install-WingetApps joncampbell123.DOSBox-X
 # if (!$IS_ARM64) {
 #   Install-WingetApps Docker.DockerDesktop
+#   Install-WingetApps nektos.act
 #   Install-WingetApps Oracle.VirtualBox
 # }
 

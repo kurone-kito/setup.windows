@@ -91,22 +91,34 @@ Unless otherwise specified, as a general rule, install via Winget.
 | **`!`** | **DEPENDENCIES**: Removing this app may cause this setup to stop working correctly. |
 |  `-A`   | without ARM64 Architecture                                                          |
 
+#### AI
+
+- [GitHub Copilot CLI](https://github.com/features/copilot/cli)
+
 #### Benchmark
 
 - [Fastfetch](https://github.com/fastfetch-cli/fastfetch)
+- [pstop](https://crates.io/crates/pstop)
 
 #### Configuration tools
 
-- [chezmoi](https://www.chezmoi.io/)
+- **`!`** [Bitwarden](https://bitwarden.com/)
+- **`!`** [chezmoi](https://www.chezmoi.io/)
 
 #### Convert tools for Media binary
 
+- [AtomicParsley](http://atomicparsley.sourceforge.net/)
+- [Chafa](https://github.com/hpjansson/chafa)
 - [FFmpeg](https://www.ffmpeg.org/)
 - [ImageMagick](https://imagemagick.org/index.php)
 
 #### Convert tools for Texts
 
+- [cloc](https://github.com/AlDanial/cloc)
+- [dprint](https://dprint.dev/)
 - **`!`** [jq](https://stedolan.github.io/jq/)
+- [pkl](https://pkl-lang.org/)
+- [ripgrep](https://github.com/BurntSushi/ripgrep)
 - **`!`** [yq](https://mikefarah.gitbook.io/yq)
 
 #### Database
@@ -115,17 +127,11 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Development
 
-- [ANTLR](https://www.antlr.org/) (via Chocolatey)
 - [fnm: Fast Node Manager](https://fnm.vercel.app/)
   - Node.js (via fnm)
     - v20 LTS Iron
     - v22 LTS Jod
     - v24
-- [Mono](https://www.mono-project.com/)
-- [Microsoft Visual Studio Build Tools](https://www.visualstudio.com/)
-  - version 2015
-  - version 2019
-  - version 2022
 - [Rust](https://www.rust-lang.org/)
   - Microsoft Visual Studio ABI
 
@@ -144,6 +150,7 @@ Unless otherwise specified, as a general rule, install via Winget.
 - **`!`** [Chocolatey](https://chocolatey.org) (via Chocolatey)
   - [Chocolatey `choco://` Protocol support](https://github.com/bcurran3/ChocolateyPackages/tree/master/choco-protocol-support)
     (via Chocolatey)
+- **!** [mise-en-place](https://mise.jdx.dev/)
 - **`!`** [Windows Package Manager](https://learn.microsoft.com/windows/package-manager/)
   (via Chocolatey)
 - [Scoop](https://scoop.sh) (directly install)
@@ -166,6 +173,7 @@ Unless otherwise specified, as a general rule, install via Winget.
 #### Version control system
 
 - [Apache Subversion](https://subversion.apache.org/) (via Chocolatey)
+- **!** [ghq](https://github.com/x-motemen/ghq)
 - **`!`** [Git](https://git-scm.com/)
   - **`!`** [Git Large File Storage](https://git-lfs.github.com/)
   - **`!`** [git-delta: A viewer for git and diff output](https://github.com/dandavison/delta)
@@ -174,7 +182,9 @@ Unless otherwise specified, as a general rule, install via Winget.
 #### Remote
 
 - [awscli](https://aws.amazon.com/cli/)
+- [httpie](https://httpie.io/)
 - [SwitchHosts](https://switchhosts.vercel.app/)
+- [TailScale](https://tailscale.com/)
 
 #### Shell
 
@@ -182,6 +192,7 @@ Unless otherwise specified, as a general rule, install via Winget.
 - [Microsoft PowerShell Core](https://microsoft.com/PowerShell)
 - [Oh My Posh](https://ohmyposh.dev/)
 - [posh-git](https://dahlbyk.github.io/posh-git/) (via Chocolatey)
+- **`!`** [Starship](https://starship.rs/)
 
 #### Signature
 
@@ -190,16 +201,29 @@ Unless otherwise specified, as a general rule, install via Winget.
 #### Text Browsing
 
 - [cheat](https://github.com/cheat/cheat) (via Chocolatey)
+- [glow](https://github.com/charmbracelet/glow)
 - [Links](http://links.twibright.com/)
+- [tealdeer](https://tealdeer-rs.github.io/tealdeer/)
 
 #### Text editors
 
+- [Microsoft Edit](https://github.com/microsoft/edit)
 - [Neovim](https://neovim.io/)
 - [Vim](https://www.vim.org/)
+
+#### TUI
+
+- **`!`** [psmux](https://psmux.pages.dev/)
+- [sl](https://scaryrawr.github.io/sl/)
+- **`!`** [zellij](https://zellij.dev)
 
 #### Virtualizations
 
 - [act](https://github.com/nektos/act)
+- [dive](https://github.com/wagoodman/dive)
+- [lazydocker](https://github.com/jesseduffield/lazydocker)
+- [Multipass](https://multipass.run/)
+- [Terraform](https://www.terraform.io/)
 - `(-A)` [Vagrant](https://www.vagrantup.com/)
   - plugins (via Vagrant)
     - [Vagrant Reload Provisioner](https://github.com/aidanns/vagrant-reload)
@@ -216,10 +240,17 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 - [Blender](https://www.blender.org/)
 - [FreeCAD](https://www.freecadweb.org/)
+- [VRoid Studio](https://vroid.com/)
 
 #### AI
 
+- [Claude](https://claude.ai/)
+- [DeepL](https://deepl.com/)
+- [Microsoft 365 Copilot](https://www.microsoft.com/microsoft-365-copilot)
 - [Ollama](https://ollama.com/)
+- [OpenAI ChatGPT](https://chatgpt.com/)
+- [OpenAI Codex](https://openai.com/codex/)
+- [Perplexity AI](https://perplexity.ai/)
 
 #### Audios, Videos, and Broadcasting
 
@@ -243,6 +274,7 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Development
 
+- [ALCOM](https://vrc-get.anatawa12.com/ja/alcom/)
 - [Android SDK](https://developer.android.com/)
 - [Unity Hub](https://unity3d.com/)
 - [VRChat Creator Companion](https://vcc.docs.vrchat.com/)
@@ -257,7 +289,6 @@ Unless otherwise specified, as a general rule, install via Winget.
 
 #### Games
 
-- [Epic Games Launcher](https://www.epicgames.com/store/download)
 - [EA Desktop](https://www.ea.com/ea-app)
 - [Minecraft Java Edition](https://www.minecraft.net/)
 - [Steam](https://store.steampowered.com/)
