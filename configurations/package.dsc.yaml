@@ -1,0 +1,2090 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+properties:
+  assertions:
+    - resource: Microsoft.Windows.Developer/OsVersion
+      directives:
+        description: Require Windows 10 22H2 (build 19045) or later
+        allowPrerelease: true
+      settings:
+        MinVersion: "10.0.19045"
+  configurationVersion: 0.2.0
+  resources:
+    - resource: PSDscResources/Registry
+      id: windows11-native-nvme-driver-1
+      directives:
+        description: Windows11 Native NVMe Driver 1
+        securityContext: elevated
+      settings:
+        Ensure: "Present"
+        Key: "HKLM:\\SYSTEM\\CurrentControlSet\\Policies\\Microsoft\\FeatureManagement\\Overrides"
+        ValueData: "1"
+        ValueName: "156965516"
+        ValueType: "DWord"
+
+    - resource: PSDscResources/Registry
+      id: windows11-native-nvme-driver-2
+      directives:
+        description: Windows11 Native NVMe Driver 2
+        securityContext: elevated
+      settings:
+        Ensure: "Present"
+        Key: "HKLM:\\SYSTEM\\CurrentControlSet\\Policies\\Microsoft\\FeatureManagement\\Overrides"
+        ValueData: "1"
+        ValueName: "735209102"
+        ValueType: "DWord"
+
+    - resource: PSDscResources/Registry
+      id: windows11-native-nvme-driver-3
+      directives:
+        description: Windows11 Native NVMe Driver 3
+        securityContext: elevated
+      settings:
+        Ensure: "Present"
+        Key: "HKLM:\\SYSTEM\\CurrentControlSet\\Policies\\Microsoft\\FeatureManagement\\Overrides"
+        ValueData: "1"
+        ValueName: "1853569164"
+        ValueType: "DWord"
+
+    - resource: PSDscResources/Registry
+      id: windows11-native-nvme-driver-fallback-in-minimal-safe-mode
+      directives:
+        description: Windows11 Native NVMe Driver fallback in minimal safe mode
+        securityContext: elevated
+      settings:
+        Ensure: "Present"
+        Key: "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\Minimal\\{75416E63-5912-4DFA-AE8F-3EFACCAFFB14}"
+        ValueData:
+          - Storage Disks
+        ValueName: ""
+        ValueType: "String"
+
+    - resource: PSDscResources/Registry
+      id: windows11-native-nvme-driver-fallback-in-with-networking-safe-mode
+      directives:
+        description: Windows11 Native NVMe Driver fallback in with networking safe mode
+        securityContext: elevated
+      settings:
+        Ensure: "Present"
+        Key: "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\Network\\{75416E63-5912-4DFA-AE8F-3EFACCAFFB14}"
+        ValueData:
+          - Storage Disks
+        ValueName: ""
+        ValueType: "String"
+
+    # =======================================================================
+    # Windows Optional Features
+    # Resource: PSDscResources/WindowsOptionalFeature
+    #
+    # IMPORTANT NOTES:
+    # - Known issue: winget configure may fail with "Class not registered"
+    #   error for WindowsOptionalFeature resources.
+    #   See: https://github.com/microsoft/winget-cli/issues/4264
+    #   Workaround: enable features manually via PowerShell:
+    #     Enable-WindowsOptionalFeature -Online -FeatureName <Name>
+    # - Some features (WSL, Hyper-V, Sandbox, NetFx3) require a reboot.
+    #   You may need to re-run the configuration after restart.
+    # - NetFx3 may require access to Windows Update or installation media
+    #   as a feature source.
+    #
+    # Edition legend:
+    #   [All]  = Windows 10/11, all editions (Home/Pro/Enterprise/Education)
+    #   [Pro+] = Windows 10/11, Pro/Enterprise/Education only
+    #   [Ent+] = Windows 10/11, Enterprise/Education only
+    # =======================================================================
+
+    # -----------------------------------------------------------------------
+    # Developer Essentials [All]
+    # NOTE: The Microsoft.WSL WinGet package (already included below) installs
+    # the WSL application. These optional features enable the underlying
+    # platform components required for WSL2.
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-wsl
+    #   directives:
+    #     description: Windows Subsystem for Linux [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Microsoft-Windows-Subsystem-Linux
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-virtual-machine-platform
+    #   directives:
+    #     description: Virtual Machine Platform - required for WSL2 [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: VirtualMachinePlatform
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-hypervisor-platform
+    #   directives:
+    #     description: Windows Hypervisor Platform - for 3rd-party hypervisors like VirtualBox [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: HypervisorPlatform
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Developer Essentials [Pro+]
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-hyper-v
+    #   directives:
+    #     description: Hyper-V - full virtualization platform [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Microsoft-Hyper-V-All
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-containers
+    #   directives:
+    #     description: Windows Containers [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Containers
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-windows-sandbox
+    #   directives:
+    #     description: Windows Sandbox - isolated desktop environment [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Containers-DisposableClientVM
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Web Development - IIS [All]
+    # To use IIS, uncomment IIS-WebServerRole and the sub-features you need.
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis
+    #   directives:
+    #     description: Internet Information Services [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-WebServerRole
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-web-server
+    #   directives:
+    #     description: IIS - World Wide Web Services [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-WebServer
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-management-console
+    #   directives:
+    #     description: IIS - Management Console [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-ManagementConsole
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-management-tools
+    #   directives:
+    #     description: IIS - Web Management Tools [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-WebServerManagementTools
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-common-http
+    #   directives:
+    #     description: IIS - Common HTTP Features [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-CommonHttpFeatures
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-default-document
+    #   directives:
+    #     description: IIS - Default Document [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-DefaultDocument
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-static-content
+    #   directives:
+    #     description: IIS - Static Content [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-StaticContent
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-http-errors
+    #   directives:
+    #     description: IIS - HTTP Errors [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-HttpErrors
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-http-logging
+    #   directives:
+    #     description: IIS - HTTP Logging [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-HttpLogging
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-http-compression
+    #   directives:
+    #     description: IIS - Static Content Compression [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-HttpCompressionStatic
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-request-filtering
+    #   directives:
+    #     description: IIS - Request Filtering [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-RequestFiltering
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-aspnet45
+    #   directives:
+    #     description: IIS - ASP.NET 4.x [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-ASPNET45
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-net-extensibility
+    #   directives:
+    #     description: IIS - .NET Extensibility 4.x [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-NetFxExtensibility45
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-websockets
+    #   directives:
+    #     description: IIS - WebSocket Protocol [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-WebSockets
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-iis-cgi
+    #   directives:
+    #     description: IIS - CGI [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: IIS-CGI
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Networking [All]
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-nfs
+    #   directives:
+    #     description: Services for NFS [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: NFS-Administration
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-simple-tcp
+    #   directives:
+    #     description: Simple TCPIP Services (echo, daytime, etc.) [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: SimpleTCP
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-smb-direct
+    #   directives:
+    #     description: SMB Direct (RDMA support) [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: SmbDirect
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # .NET & WCF [All]
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-netfx3
+    #   directives:
+    #     description: .NET Framework 3.5 (includes 2.0 and 3.0) [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: NetFx3
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-netfx4-aspnet45
+    #   directives:
+    #     description: .NET Framework 4.x Advanced Services (ASP.NET 4.5) [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: NetFx4Extended-ASPNET45
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-wcf-services
+    #   directives:
+    #     description: WCF Services [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: WCF-Services45
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-wcf-http-activation
+    #   directives:
+    #     description: WCF HTTP Activation [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: WCF-HTTP-Activation45
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-wcf-tcp-activation
+    #   directives:
+    #     description: WCF TCP Activation [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: WCF-TCP-Activation45
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-wcf-pipe-activation
+    #   directives:
+    #     description: WCF Named Pipe Activation [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: WCF-Pipe-Activation45
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-wcf-msmq-activation
+    #   directives:
+    #     description: WCF MSMQ Activation [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: WCF-MSMQ-Activation45
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-wcf-tcp-port-sharing
+    #   directives:
+    #     description: WCF TCP Port Sharing [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: WCF-TCP-PortSharing45
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Printing [All]
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-print-to-pdf
+    #   directives:
+    #     description: Microsoft Print to PDF [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Printing-PrintToPDFServices-Features
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-xps-services
+    #   directives:
+    #     description: XPS Services [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Printing-XPSServices-Features
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Security [Pro+]
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-application-guard
+    #   directives:
+    #     description: Microsoft Defender Application Guard [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Windows-Defender-ApplicationGuard
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Media [All]
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-windows-media-player
+    #   directives:
+    #     description: Windows Media Player [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: WindowsMediaPlayer
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-media-playback
+    #   directives:
+    #     description: Media Features (media playback) [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: MediaPlayback
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Other [All]
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-windows-search
+    #   directives:
+    #     description: Windows Search [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: SearchEngine-Client-Package
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-work-folders
+    #   directives:
+    #     description: Work Folders Client [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: WorkFolders-Client
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-tiff-ifilter
+    #   directives:
+    #     description: Windows TIFF IFilter [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: TIFFIFilter
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-ad-lds
+    #   directives:
+    #     description: Active Directory Lightweight Directory Services [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: DirectoryServices-ADAM-Client
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-data-center-bridging
+    #   directives:
+    #     description: Data Center Bridging [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: DataCenterBridging
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Legacy / Security Risk [All]
+    # WARNING: These features have known security implications.
+    # Enable only if required for specific compatibility needs.
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-telnet-client
+    #   directives:
+    #     description: Telnet Client - unencrypted, prefer SSH [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: TelnetClient
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-tftp
+    #   directives:
+    #     description: TFTP Client - unencrypted file transfer [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: TFTP
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-smb1
+    #   directives:
+    #     description: SMB 1.0/CIFS File Sharing Support - deprecated, security risk [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: SMB1Protocol
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-powershell-v2
+    #   directives:
+    #     description: Windows PowerShell 2.0 - legacy, security risk (bypasses AMSI) [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: MicrosoftWindowsPowerShellV2Root
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-directplay
+    #   directives:
+    #     description: Legacy Components (DirectPlay) - for older games [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: LegacyComponents
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Enterprise/Education Only [Ent+]
+    # These features are for kiosk, embedded, or IoT scenarios.
+    # They are NOT available on Home or Pro editions.
+    # -----------------------------------------------------------------------
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-device-lockdown
+    #   directives:
+    #     description: Device Lockdown [Ent+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Client-DeviceLockdown
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-shell-launcher
+    #   directives:
+    #     description: Shell Launcher - kiosk mode [Ent+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Client-EmbeddedShellLauncher
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-unbranded-boot
+    #   directives:
+    #     description: Unbranded Boot - hide Windows branding on boot [Ent+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Client-EmbeddedBootExp
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-custom-logon
+    #   directives:
+    #     description: Custom Logon - custom logon experience [Ent+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Client-EmbeddedLogon
+    #     Ensure: Present
+
+    # - resource: PSDscResources/WindowsOptionalFeature
+    #   id: feature-keyboard-filter
+    #   directives:
+    #     description: Keyboard Filter - block key combinations [Ent+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: Client-KeyboardFilter
+    #     Ensure: Present
+
+    # =======================================================================
+    # Windows Capabilities
+    # Resource: ComputerManagementDsc/WindowsCapability
+    #
+    # These are "Features on Demand" (FoD) managed via Add-WindowsCapability,
+    # distinct from WindowsOptionalFeature above.
+    # Capability names use the format: Name~~~~Version (e.g., ~~~~0.0.1.0)
+    #
+    # IMPORTANT NOTES:
+    # - Requires internet access (Windows Update) to download capability
+    #   packages unless an offline source is configured.
+    # - ComputerManagementDsc module is automatically downloaded from
+    #   PSGallery by winget configure.
+    # - Some capabilities may require a reboot after installation.
+    #
+    # Edition legend:
+    #   [All]  = Windows 10/11, all editions (Home/Pro/Enterprise/Education)
+    #   [Pro+] = Windows 10/11, Pro/Enterprise/Education only
+    #
+    # Version legend:
+    #   [Win10/11] = Available on both (default, not annotated)
+    #   [Win11]    = Windows 11 only
+    #   [Win10]    = Windows 10 only (removed or replaced in Win11)
+    # =======================================================================
+
+    # -----------------------------------------------------------------------
+    # SSH Tools [All]
+    # -----------------------------------------------------------------------
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-openssh-client
+    #   directives:
+    #     description: OpenSSH Client - pre-installed on Win10 1809+ / Win11 [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "OpenSSH.Client~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-openssh-server
+    #   directives:
+    #     description: OpenSSH Server [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "OpenSSH.Server~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Developer / Admin Tools [All]
+    # -----------------------------------------------------------------------
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-powershell-ise
+    #   directives:
+    #     description: Windows PowerShell ISE [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Microsoft.Windows.PowerShell.ISE~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-steps-recorder
+    #   directives:
+    #     description: Steps Recorder (Problem Steps Recorder) [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "App.StepsRecorder~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-directx-graphics-tools
+    #   directives:
+    #     description: Graphics Tools for DirectX development [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Tools.Graphics.DirectX~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-print-management
+    #   directives:
+    #     description: Print Management Console [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Print.Management.Console~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Legacy / Deprecated Tools [All]
+    # WARNING: These capabilities are deprecated or removed in newer builds.
+    # -----------------------------------------------------------------------
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-wmic
+    #   directives:
+    #     description: WMIC (WMI Command-line) - deprecated in Win11 [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "WMIC~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-internet-explorer
+    #   directives:
+    #     description: Internet Explorer mode [Win10]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Browser.InternetExplorer~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-wordpad
+    #   directives:
+    #     description: WordPad - removed as built-in, now optional [Win11]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Microsoft.Windows.WordPad~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-notepad-system
+    #   directives:
+    #     description: Legacy system Notepad (replaced by Store version) [Win11]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Microsoft.Windows.Notepad.System~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # Media & Display [All]
+    # -----------------------------------------------------------------------
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-windows-media-player
+    #   directives:
+    #     description: Windows Media Player Legacy [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Media.WindowsMediaPlayer~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-wireless-display
+    #   directives:
+    #     description: Wireless Display (Miracast) [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "App.WirelessDisplay.Connect~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-xps-viewer
+    #   directives:
+    #     description: XPS Viewer [All]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "XPS.Viewer~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # -----------------------------------------------------------------------
+    # RSAT - Remote Server Administration Tools [Pro+]
+    # These tools are for managing Windows Server from a client workstation.
+    # NOT available on Home edition.
+    # -----------------------------------------------------------------------
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-active-directory
+    #   directives:
+    #     description: RSAT - Active Directory DS-LDS Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-bitlocker
+    #   directives:
+    #     description: RSAT - BitLocker Recovery Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.BitLocker.Recovery.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-certificate-services
+    #   directives:
+    #     description: RSAT - Certificate Services Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.CertificateServices.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-dhcp
+    #   directives:
+    #     description: RSAT - DHCP Server Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.DHCP.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-dns
+    #   directives:
+    #     description: RSAT - DNS Server Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.Dns.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-failover-cluster
+    #   directives:
+    #     description: RSAT - Failover Clustering Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.FailoverCluster.Management.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-file-services
+    #   directives:
+    #     description: RSAT - File Services Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.FileServices.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-group-policy
+    #   directives:
+    #     description: RSAT - Group Policy Management Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.GroupPolicy.Management.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-ipam
+    #   directives:
+    #     description: RSAT - IP Address Management (IPAM) Client [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.IPAM.Client.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-lldp
+    #   directives:
+    #     description: RSAT - Data Center Bridging LLDP Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.LLDP.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-network-controller
+    #   directives:
+    #     description: RSAT - Network Controller Management Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.NetworkController.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-network-load-balancing
+    #   directives:
+    #     description: RSAT - Network Load Balancing Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.NetworkLoadBalancing.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-remote-access
+    #   directives:
+    #     description: RSAT - Remote Access Management Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.RemoteAccess.Management.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-remote-desktop
+    #   directives:
+    #     description: RSAT - Remote Desktop Services Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.RemoteDesktop.Services.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-server-manager
+    #   directives:
+    #     description: RSAT - Server Manager [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.ServerManager.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-shielded-vm
+    #   directives:
+    #     description: RSAT - Shielded VM Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.Shielded.VM.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-storage-migration
+    #   directives:
+    #     description: RSAT - Storage Migration Service Management Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.StorageMigrationService.Management.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-storage-replica
+    #   directives:
+    #     description: RSAT - Storage Replica Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.StorageReplica.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-system-insights
+    #   directives:
+    #     description: RSAT - System Insights Management Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.SystemInsights.Management.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-volume-activation
+    #   directives:
+    #     description: RSAT - Volume Activation Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.VolumeActivation.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # - resource: ComputerManagementDsc/WindowsCapability
+    #   id: cap-rsat-wsus
+    #   directives:
+    #     description: RSAT - Windows Server Update Services Tools [Pro+]
+    #     securityContext: elevated
+    #   settings:
+    #     Name: "Rsat.WSUS.Tools~~~~0.0.1.0"
+    #     Ensure: Present
+
+    # =======================================================================
+    # Install the package managers
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: app-installer
+      directives:
+        description: App Installer
+      settings:
+        id: "9NBLGGH4NNS1"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: chocolatey
+      directives:
+        description: Chocolatey
+      settings:
+        id: Chocolatey.Chocolatey
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: mise-en-place-mise
+      directives:
+        description: mise-en-place (mise)
+      settings:
+        id: jdx.mise
+        source: winget
+
+    # =======================================================================
+    # Install the language pack
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: english-language-pack
+      directives:
+        description: English Language Pack
+      settings:
+        id: "9PDSCC711RVF"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: japanese-language-pack
+      directives:
+        description: Japanese Language Pack
+      settings:
+        id: "9N1W692FV4S1"
+        source: msstore
+
+    # =======================================================================
+    # Install the runtimes
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2005-x86
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2005 (x86)
+      settings:
+        id: Microsoft.VCRedist.2005.x86
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2005-x64
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2005 (x64)
+      settings:
+        id: Microsoft.VCRedist.2005.x64
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2008-x86
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2008 (x86)
+      settings:
+        id: Microsoft.VCRedist.2008.x86
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2008-x64
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2008 (x64)
+      settings:
+        id: Microsoft.VCRedist.2008.x64
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2010-x86
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2010 (x86)
+      settings:
+        id: Microsoft.VCRedist.2010.x86
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2010-x64
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2010 (x64)
+      settings:
+        id: Microsoft.VCRedist.2010.x64
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2012-x86
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2012 (x86)
+      settings:
+        id: Microsoft.VCRedist.2012.x86
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2012-x64
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2012 (x64)
+      settings:
+        id: Microsoft.VCRedist.2012.x64
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2013-x86
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2013 (x86)
+      settings:
+        id: Microsoft.VCRedist.2013.x86
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2013-x64
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2013 (x64)
+      settings:
+        id: Microsoft.VCRedist.2013.x64
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2015-x86
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2015+ (x86)
+      settings:
+        id: Microsoft.VCRedist.2015+.x86
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visual-c-redistributable-for-visual-studio-2015-x64
+      directives:
+        description: Visual C++ Redistributable for Visual Studio 2015+ (x64)
+      settings:
+        id: Microsoft.VCRedist.2015+.x64
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: directx-end-user-runtimes
+      directives:
+        description: DirectX End-User Runtimes
+      settings:
+        id: Microsoft.DirectX
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: directx-xna-framework-redistributable
+      directives:
+        description: DirectX XNA Framework Redistributable
+      settings:
+        id: Microsoft.XNARedist
+        source: winget
+
+    # =======================================================================
+    # Install the CLI AI agent tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: claude-code
+      directives:
+        description: Claude Code
+      settings:
+        id: Anthropic.ClaudeCode
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: codex-cli
+      directives:
+        description: Codex CLI
+      settings:
+        id: OpenAI.Codex
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: github-copilot-cli
+      directives:
+        description: GitHub Copilot CLI
+      settings:
+        id: GitHub.Copilot
+        source: winget
+
+    # =======================================================================
+    # Install the CLI benchmark tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: fastfetch
+      directives:
+        description: Fastfetch
+      settings:
+        id: Fastfetch-cli.Fastfetch
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pstop-htop-for-windows
+      directives:
+        description: pstop (htop for Windows)
+      settings:
+        id: marlocarlo.pstop
+        source: winget
+
+    # =======================================================================
+    # Install the CLI configuration tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: windows-advanced-configuration
+      directives:
+        description: Windows Advanced configuration
+      settings:
+        id: "9N8MHTPHNGVV"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: bitwarden-cli
+      directives:
+        description: Bitwarden CLI
+      settings:
+        id: Bitwarden.CLI
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: chezmoi
+      directives:
+        description: chezmoi
+      settings:
+        id: twpayne.chezmoi
+        source: winget
+
+    # =======================================================================
+    # Install the CLI conversion tools for binaries
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: atomicparsley
+      directives:
+        description: AtomicParsley
+      settings:
+        id: wez.atomicparsley
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: chafa
+      directives:
+        description: Chafa
+      settings:
+        id: hpjansson.Chafa
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ffmpeg
+      directives:
+        description: FFmpeg
+      settings:
+        id: Gyan.FFmpeg
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: imagemagick
+      directives:
+        description: ImageMagick
+      settings:
+        id: ImageMagick.ImageMagick
+        source: winget
+
+    # =======================================================================
+    # Install the CLI data processing tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: apple-pkl
+      directives:
+        description: Apple Pkl
+      settings:
+        id: Apple.Pkl
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: jq
+      directives:
+        description: jq
+      settings:
+        id: jqlang.jq
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: sqlite
+      directives:
+        description: SQLite
+      settings:
+        id: SQLite.SQLite
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: yq-mikefarah
+      directives:
+        description: yq (mikefarah)
+      settings:
+        id: MikeFarah.yq
+        source: winget
+
+    # =======================================================================
+    # Install the CLI development tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ast-grep
+      directives:
+        description: ast-grep
+      settings:
+        id: ast-grep.ast-grep
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: cloc
+      directives:
+        description: Cloc
+      settings:
+        id: AlDanial.Cloc
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: direnv
+      directives:
+        description: direnv
+      settings:
+        id: direnv.direnv
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: dprint
+      directives:
+        description: dprint
+      settings:
+        id: dprint.dprint
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: rustup-rust-toolchain-installer
+      directives:
+        description: Rustup (Rust toolchain installer)
+      settings:
+        id: Rustlang.Rustup
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: tree-sitter
+      directives:
+        description: tree-sitter
+      settings:
+        id: tree-sitter.tree-sitter-cli
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: vrc-get
+      directives:
+        description: vrc-get
+      settings:
+        id: anatawa12.vrc-get
+        source: winget
+
+    # =======================================================================
+    # Install the CLI file tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: 7-zip
+      directives:
+        description: 7-Zip
+      settings:
+        id: 7zip.7zip
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: gnuwin32-coreutils
+      directives:
+        description: GnuWin32 CoreUtils
+      settings:
+        id: GnuWin32.File
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: gnupg
+      directives:
+        description: GnuPG
+      settings:
+        id: GnuPG.GnuPG
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: microsoft-oscdimg
+      directives:
+        description: Microsoft OSCDIMG
+      settings:
+        id: Microsoft.OSCDIMG
+        source: winget
+
+    # =======================================================================
+    # Install the CLI file and folder management tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: bat-modern-cat-replacement
+      directives:
+        description: bat (modern cat replacement)
+      settings:
+        id: sharkdp.bat
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: eza-modern-ls-replacement
+      directives:
+        description: eza (modern ls replacement)
+      settings:
+        id: eza-community.eza
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: fd-modern-find-replacement
+      directives:
+        description: fd (modern find replacement)
+      settings:
+        id: sharkdp.fd
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: fzf
+      directives:
+        description: fzf
+      settings:
+        id: junegunn.fzf
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ripgrep-modern-grep-replacement
+      directives:
+        description: Ripgrep (modern grep replacement)
+      settings:
+        id: BurntSushi.ripgrep.MSVC
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: yazi
+      directives:
+        description: yazi
+      settings:
+        id: sxyazi.yazi
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: zoxide-modern-cd-replacement
+      directives:
+        description: zoxide (modern cd replacement)
+      settings:
+        id: ajeetdsouza.zoxide
+        source: winget
+
+    # =======================================================================
+    # Install the CLI Games
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: sl
+      directives:
+        description: sl
+      settings:
+        id: ScaryRawr.SL
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: steam-cmd
+      directives:
+        description: Steam CMD
+      settings:
+        id: Valve.SteamCMD
+        source: winget
+
+    # =======================================================================
+    # Install the CLI Git tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ghq
+      directives:
+        description: ghq
+      settings:
+        id: x-motemen.ghq
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: git
+      directives:
+        description: Git
+      settings:
+        id: Git.Git
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: git-lfs
+      directives:
+        description: Git LFS
+      settings:
+        id: GitHub.GitLFS
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: git-sizer
+      directives:
+        description: git-sizer
+      settings:
+        id: GitHub.git-sizer
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: github-cli
+      directives:
+        description: GitHub CLI
+      settings:
+        id: GitHub.cli
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: worktrunk
+      directives:
+        description: Worktrunk
+      settings:
+        id: max-sixty.worktrunk
+        source: winget
+
+    # =======================================================================
+    # Install the CLI remote tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: amazon-aws-cli
+      directives:
+        description: Amazon AWS CLI
+      settings:
+        id: Amazon.AWSCLI
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: mkcert
+      directives:
+        description: mkcert
+      settings:
+        id: FiloSottile.mkcert
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: lazyssh
+      directives:
+        description: lazyssh
+      settings:
+        id: Adembc.Lazyssh
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ngrok
+      directives:
+        description: Ngrok
+      settings:
+        id: Ngrok.Ngrok
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: yt-dlp
+      directives:
+        description: yt-dlp
+      settings:
+        id: yt-dlp.yt-dlp
+        source: winget
+
+    # =======================================================================
+    # Install the CLI SCM utilities
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: lazygit
+      directives:
+        description: Lazygit
+      settings:
+        id: JesseDuffield.lazygit
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: lazyjj
+      directives:
+        description: LazyJJ
+      settings:
+        id: Cretezy.lazyjj
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: jujutsu-jj
+      directives:
+        description: Jujutsu (jj)
+      settings:
+        id: jj-vcs.jj
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: subversion-svn
+      directives:
+        description: Subversion (svn)
+      settings:
+        id: Slik.Subversion
+        source: winget
+
+    # =======================================================================
+    # Install the CLI session management tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: psmux-tmux-for-windows
+      directives:
+        description: psmux (tmux for Windows)
+      settings:
+        id: marlocarlo.psmux
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: zellij
+      directives:
+        description: Zellij
+      settings:
+        id: Zellij.Zellij
+        source: winget
+
+    # =======================================================================
+    # Install the CLI shell tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: powershell-v7
+      directives:
+        description: PowerShell v7
+      settings:
+        id: "9MZ1SNWT0N5D"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: starship
+      directives:
+        description: Starship
+      settings:
+        id: Starship.Starship
+        source: winget
+
+    # =======================================================================
+    # Install the CLI text browsing tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: delta
+      directives:
+        description: delta
+      settings:
+        id: dandavison.delta
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: glow
+      directives:
+        description: glow
+      settings:
+        id: charmbracelet.glow
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: tealdeer
+      directives:
+        description: tealdeer
+      settings:
+        id: dbrgn.tealdeer
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: links
+      directives:
+        description: links
+      settings:
+        id: TwibrightLabs.Links
+        source: winget
+
+    # =======================================================================
+    # Install the CLI text editing tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: microsoft-edit
+      directives:
+        description: Microsoft Edit
+      settings:
+        id: Microsoft.Edit
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: neovim
+      directives:
+        description: Neovim
+      settings:
+        id: Neovim.Neovim
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: vim
+      directives:
+        description: Vim
+      settings:
+        id: vim.vim
+        source: winget
+
+    # =======================================================================
+    # Install the CLI virtualization tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: dive
+      directives:
+        description: dive
+      settings:
+        id: wagoodman.dive
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: multipass
+      directives:
+        description: Multipass
+      settings:
+        id: Canonical.Multipass
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: terraform
+      directives:
+        description: Terraform
+      settings:
+        id: Hashicorp.Terraform
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: vagrant
+      directives:
+        description: Vagrant
+      settings:
+        id: Hashicorp.Vagrant
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: microsoft-wsl
+      directives:
+        description: Microsoft WSL
+      settings:
+        id: Microsoft.WSL
+        source: winget
+
+    # =======================================================================
+    # Install the GUI 3D modeling tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: blender
+      directives:
+        description: Blender
+      settings:
+        id: "9PP3C07GTVRH"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: freecad
+      directives:
+        description: FreeCAD
+      settings:
+        id: FreeCAD.FreeCAD
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: vroid-studio
+      directives:
+        description: VRoid Studio
+      settings:
+        id: pixivInc.VRoidStudio
+        source: winget
+
+    # =======================================================================
+    # Install the GUI AI agent tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: chatgpt
+      directives:
+        description: ChatGPT
+      settings:
+        id: "9NT1R1C2HH7J"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: codex
+      directives:
+        description: Codex
+      settings:
+        id: "9PLM9XGG6VKS"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: deepl-translator
+      directives:
+        description: DeepL Translator
+      settings:
+        id: "XPDNX7G06BLH2G"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: microsoft-365-copilot
+      directives:
+        description: Microsoft 365 Copilot
+      settings:
+        id: "9WZDNCRD29V9"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: perplexity-ai
+      directives:
+        description: Perplexity AI
+      settings:
+        id: "XP8JNQFBQH6PVF"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: claude
+      directives:
+        description: Claude
+      settings:
+        id: Anthropic.Claude
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ollama
+      directives:
+        description: Ollama
+      settings:
+        id: Ollama.Ollama
+        source: winget
+
+    # =======================================================================
+    # Install the GUI audio and broadcasting tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: amazon-prime-video
+      directives:
+        description: Amazon Prime Video
+      settings:
+        id: "9P6RC76MSMMJ"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: apple-music
+      directives:
+        description: Apple Music
+      settings:
+        id: "9PFHDD62MXS1"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: obs-studio
+      directives:
+        description: OBS Studio
+      settings:
+        id: "XPFFH613W8V6LV"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: voicemeeter-with-banana-and-potato
+      directives:
+        description: Voicemeeter with Banana and Potato
+      settings:
+        id: "XP9CPXZ6PMX1LX"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: izotope-product-portal
+      directives:
+        description: iZotope Product Portal
+      settings:
+        id: iZotope.ProductPortal
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: squirrels-reflector-4
+      directives:
+        description: Squirrels Reflector 4
+      settings:
+        id: Squirrels.Reflector.4
+        source: winget
+
+    # =======================================================================
+    # Install the GUI benchmark tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: cinebench
+      directives:
+        description: Cinebench
+      settings:
+        id: "9PGZKJC81Q7J"
+        source: msstore
+
+    # =======================================================================
+    # Install the GUI cloud storage tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: adobe-creative-cloud
+      directives:
+        description: Adobe Creative Cloud
+      settings:
+        id: "XPDLPKWG9SW2WD"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: apple-icloud
+      directives:
+        description: Apple iCloud
+      settings:
+        id: "9PKTQ5699M62"
+        source: msstore
+
+    # =======================================================================
+    # Install the GUI configuration tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: bitwarden
+      directives:
+        description: Bitwarden
+      settings:
+        id: "9PJSDV0VPK04"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: microsoft-pc-manager
+      directives:
+        description: Microsoft PC Manager
+      settings:
+        id: "9PM860492SZD"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: microsoft-powertoys
+      directives:
+        description: Microsoft PowerToys
+      settings:
+        id: "XP89DCGQ3K6VLD"
+        source: msstore
+
+    # =======================================================================
+    # Install the GUI developer tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: alcom
+      directives:
+        description: ALCOM
+      settings:
+        id: anatawa12.ALCOM
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: android-studio
+      directives:
+        description: Android Studio
+      settings:
+        id: Google.AndroidStudio
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: microsoft-visual-studio-code
+      directives:
+        description: Microsoft Visual Studio Code
+      settings:
+        id: "XP9KHM4BK9FZ7Q"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: unity-hub
+      directives:
+        description: Unity Hub
+      settings:
+        id: Unity.UnityHub
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: vrchat-creator-companion
+      directives:
+        description: VRChat Creator Companion
+      settings:
+        id: VRChat.CreatorCompanion
+        source: winget
+
+    # =======================================================================
+    # Install the GUI device drivers
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: apple-device
+      directives:
+        description: Apple Device
+      settings:
+        id: "9NP83LWLPZ9K"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: logitech-g-hub
+      directives:
+        description: Logitech G HUB
+      settings:
+        id: Logitech.GHUB
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: logitech-onboard-memory-manager
+      directives:
+        description: Logitech Onboard Memory Manager
+      settings:
+        id: Logitech.OnboardMemoryManager
+        source: winget
+
+    # =======================================================================
+    # Install the GUI documentation tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: grammarly
+      directives:
+        description: Grammarly
+      settings:
+        id: "XPDDXX9QW8N9D7"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: microsoft-to-do
+      directives:
+        description: Microsoft To Do
+      settings:
+        id: "9NBLGGH5R558"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: notion
+      directives:
+        description: Notion
+      settings:
+        id: "XPDBVSS44R0L9H"
+        source: msstore
+
+    # =======================================================================
+    # Install the GUI games
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ea-desktop
+      directives:
+        description: EA Desktop
+      settings:
+        id: ElectronicArts.EADesktop
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: minecraft-launcher
+      directives:
+        description: Minecraft Launcher
+      settings:
+        id: Mojang.MinecraftLauncher
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: steam
+      directives:
+        description: Steam
+      settings:
+        id: Valve.Steam
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: stepmania
+      directives:
+        description: StepMania
+      settings:
+        id: StepMania.StepMania
+        source: winget
+
+    # =======================================================================
+    # Install the GUI messaging tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: discord
+      directives:
+        description: Discord
+      settings:
+        id: "XPDC2RH70K22MN"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: line
+      directives:
+        description: LINE
+      settings:
+        id: "XPFCC4CD725961"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: slack
+      directives:
+        description: Slack
+      settings:
+        id: "9WZDNCRDK3WP"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: zoom-workplace
+      directives:
+        description: Zoom Workplace
+      settings:
+        id: "XP99J3KP4XZ4VV"
+        source: msstore
+
+    # =======================================================================
+    # Install the GUI remote tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: realvnc-viewer
+      directives:
+        description: RealVNC Viewer
+      settings:
+        id: "XP99DVCPGKTXNJ"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: httpie
+      directives:
+        description: HTTPie
+      settings:
+        id: HTTPie.HTTPie
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: tailscale
+      directives:
+        description: Tailscale
+      settings:
+        id: Tailscale.Tailscale
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: teamviewer
+      directives:
+        description: TeamViewer
+      settings:
+        id: TeamViewer.TeamViewer
+        source: winget
+
+    # =======================================================================
+    # Install the GUI SCM apps
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: github-desktop
+      directives:
+        description: GitHub Desktop
+      settings:
+        id: GitHub.GitHubDesktop
+        source: winget
+
+    # =======================================================================
+    # Install the GUI social apps
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: facebook
+      directives:
+        description: Facebook
+      settings:
+        id: "9WZDNCRFJ2WL"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: instagram
+      directives:
+        description: Instagram
+      settings:
+        id: "9NBLGGH5L9XT"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: threads-by-instagram
+      directives:
+        description: Threads by Instagram
+      settings:
+        id: "9MXBP1FB84CQ"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: keybase
+      directives:
+        description: Keybase
+      settings:
+        id: Keybase.Keybase
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: vrcx
+      directives:
+        description: VRCX
+      settings:
+        id: VRCX.VRCX
+        source: winget
+
+    # =======================================================================
+    # Install the GUI Virtualization tools
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: docker-desktop
+      directives:
+        description: Docker Desktop
+      settings:
+        id: "XP8CBJ40XLBWKX"
+        source: msstore
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: act
+      directives:
+        description: act
+      settings:
+        id: nektos.act
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: dosbox-x
+      directives:
+        description: DOSBox-X
+      settings:
+        id: joncampbell123.DOSBox-X
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: virtualbox
+      directives:
+        description: VirtualBox
+      settings:
+        id: Oracle.VirtualBox
+        source: winget
+
+    # =======================================================================
+    # Install the GUI browser
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: amazon-kindle
+      directives:
+        description: Amazon Kindle
+      settings:
+        id: Amazon.Kindle
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: firefox-esr
+      directives:
+        description: Firefox ESR
+      settings:
+        id: Mozilla.Firefox.ESR
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: google-chrome
+      directives:
+        description: Google Chrome
+      settings:
+        id: Google.Chrome
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: tor-browser
+      directives:
+        description: Tor Browser
+      settings:
+        id: TorProject.TorBrowser
+        source: winget
