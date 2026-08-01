@@ -34,9 +34,33 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Install powershell-yaml
+        shell: pwsh
+        run: Install-Module -Name powershell-yaml -RequiredVersion 0.4.12 -Force -Scope CurrentUser -Repository PSGallery
       - name: Install Pester
         shell: pwsh
         run: Install-Module -Name Pester -RequiredVersion 6.0.1 -Force -Scope CurrentUser -Repository PSGallery
       - name: Run Pester tests
         shell: pwsh
         run: Invoke-Pester -Path ./tests/powershell -CI
+  configuration-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install powershell-yaml
+        shell: pwsh
+        run: Install-Module -Name powershell-yaml -RequiredVersion 0.4.12 -Force -Scope CurrentUser -Repository PSGallery
+      - name: Regenerate import.json and unapplied-resources list
+        shell: pwsh
+        run: |
+          ./scripts/Build-Configurations.ps1 -DscPath ./configurations/packages.dsc.yaml
+          ./scripts/Build-Configurations.ps1 -DscPath ./configurations/packages.min.dsc.yaml
+      - name: Fail on drift between dsc.yaml and its generated files
+        run: |
+          git diff --exit-code -- \
+            configurations/packages.import.json \
+            configurations/packages.unapplied.json \
+            configurations/packages.min.import.json \
+            configurations/packages.min.unapplied.json
