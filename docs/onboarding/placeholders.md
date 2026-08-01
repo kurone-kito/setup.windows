@@ -117,15 +117,15 @@ For the full fallback order and policy matrix, see
 After Step 1A and Step 1C, you should have final values for these seven
 placeholders:
 
-| Placeholder                      | Meaning                                                   | Example                            |
-| -------------------------------- | --------------------------------------------------------- | ---------------------------------- |
-| `setup.windows`                  | Repository short name used in worktree examples           | `my-app`                           |
-| `setup-windows`      | Hidden issue-body marker prefix                           | `my-app`                           |
-| `kurone-kito`       | Single JSON-escaped login allowed to post trusted markers | `trusted-user-a`                   |
-| `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md"`      | Auto-fix plus validate command row                        | `npm run lint:fix && npm run lint` |
-| `npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"` | Non-mutating verify command row                           | `npm run lint && npm run test`     |
+| Placeholder                                                                                                                                                                                                                         | Meaning                                                   | Example                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------- |
+| `setup.windows`                                                                                                                                                                                                                     | Repository short name used in worktree examples           | `my-app`                           |
+| `setup-windows`                                                                                                                                                                                                                     | Hidden issue-body marker prefix                           | `my-app`                           |
+| `kurone-kito`                                                                                                                                                                                                                       | Single JSON-escaped login allowed to post trusted markers | `trusted-user-a`                   |
+| `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md"`                                                                                                                                                    | Auto-fix plus validate command row                        | `npm run lint:fix && npm run lint` |
+| `npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"`                                             | Non-mutating verify command row                           | `npm run lint && npm run test`     |
 | `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"` | Post-fix validate command row                             | `npm run lint:fix && npm test`     |
-| `true`       | Dependency install command, or `true` when unnecessary    | `npm install`                      |
+| `true`                                                                                                                                                                                                                              | Dependency install command, or `true` when unnecessary    | `npm install`                      |
 
 ### No-op substitution
 
@@ -135,7 +135,8 @@ apply to the target project. For example:
 - no dependency install step →
   `true = true`
 - no relevant auto-fix command →
-  `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md" = true`
+  `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2
+  "**/*.md" = true`
 
 Keep `true` safe to rerun across retries, takeovers,
 and recreated worktrees.
