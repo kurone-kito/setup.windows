@@ -157,13 +157,15 @@ if ((Test-Path $DockerDesktop) -and -not (Test-Path 'C:\vagrant')) {
 
   Start-Process $DockerDesktop
   $retries = 0
+  $dockerReady = $false
   do {
     Start-Sleep 5
     $retries++
     docker version 2>$null | Out-Null
-  } until ($? -or $retries -ge 60)
+    $dockerReady = $LASTEXITCODE -eq 0
+  } until ($dockerReady -or $retries -ge 60)
 
-  if ($?) {
+  if ($dockerReady) {
     $images = @(
       'hello-world', 'alpine', 'busybox', 'debian', 'ubuntu',
       'docker', 'docker:dind', 'docker:git',

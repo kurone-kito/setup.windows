@@ -18,9 +18,12 @@
     'PSUseProcessBlockForPipelineCommand',
 
     # The flagged names (libs/.lib.psm1's Invoke-SelfWithPrivileges,
-    # Join-PSOptions; libs/post-install.ps1's Test-CommandExists) are exported
-    # / widely dot-sourced; renaming is a breaking API change for anything
-    # that calls them, out of scope for this lint/CI-infrastructure issue.
+    # Join-PSOptions; libs/post-install.ps1's Test-CommandExists) have no
+    # call sites anywhere in this repository as of the DSC migration (issue
+    # #63) -- libs/.lib.psm1 itself is currently dead code (tracked
+    # separately for #70's cleanup pass), and Test-CommandExists is a
+    # private helper used only within its own file. Renaming them is
+    # out of scope for this lint/CI-infrastructure issue regardless.
     'PSUseSingularNouns'
 
     # PSAvoidUsingInvokeExpression is intentionally NOT excluded here (flagged

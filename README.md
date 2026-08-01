@@ -16,7 +16,7 @@ setup.cmd                        ← single entry point
             ├─ Phase 0: OS support check        (libs/os-guard.ps1)
             ├─ Phase 1: Environment detection
             ├─ Phase 2: winget configure (DSC)   (configurations/packages.dsc.yaml)
-            ├─ Phase 3: Chocolatey (fonts, vb-cable, posh-git)
+            ├─ Phase 3: Chocolatey (fonts, vb-cable) + posh-git (PowerShellGet)
             ├─ Phase 4: Architecture-conditional packages
             ├─ Phase 5: Post-install             (libs/post-install.ps1)
             │    ├─ fnm → Node.js 20/22/24/25

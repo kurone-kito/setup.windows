@@ -17,7 +17,7 @@ setup.cmd                        ← 唯一のエントリーポイント
             ├─ Phase 0: OS サポート確認          (libs/os-guard.ps1)
             ├─ Phase 1: 環境検出
             ├─ Phase 2: winget configure (DSC)   (configurations/packages.dsc.yaml)
-            ├─ Phase 3: Chocolatey（フォント、vb-cable、posh-git）
+            ├─ Phase 3: Chocolatey（フォント、vb-cable）+ posh-git（PowerShellGet）
             ├─ Phase 4: アーキテクチャ依存パッケージ
             ├─ Phase 5: インストール後セットアップ (libs/post-install.ps1)
             │    ├─ fnm → Node.js 20/22/24/25

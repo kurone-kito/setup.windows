@@ -52,7 +52,7 @@ function Test-OsSupport {
   }
   elseif ($build -ge 10240 -and $build -lt 19045) {
     # Windows 10 older than 22H2
-    Write-Error '[OS] Windows 10 (build $build) is too old. Please update to 22H2 (build 19045) or upgrade to Windows 11.'
+    Write-Error "[OS] Windows 10 (build $build) is too old. Please update to 22H2 (build 19045) or upgrade to Windows 11."
     return @{ Supported = $false; Tier = 99; IsServer = $false }
   }
   else {
@@ -71,5 +71,3 @@ function Test-OsSupport {
   Hashtable with Supported (bool), Tier (int), IsServer (bool)
   #>
 }
-
-Export-ModuleMember -Function Test-OsSupport
