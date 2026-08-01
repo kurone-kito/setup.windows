@@ -11,7 +11,7 @@ boxstarter.ps1's Phase 2 -- do not add Export-ModuleMember here.
 Set-StrictMode -Version Latest
 
 function Test-ConfigurationStrategy {
-  if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+  if (-not (Get-Command winget -CommandType Application -ErrorAction SilentlyContinue)) {
     return @{
       Route  = 'unsupported'
       Reason = 'winget was not found on PATH. The import.json route also depends on winget, so no route can run.'
@@ -21,7 +21,8 @@ function Test-ConfigurationStrategy {
   $wingetVersion = (winget --version | Select-Object -First 1) -replace '^v', ''
 
   winget configure --help *> $null
-  $configureAvailable = $LASTEXITCODE -eq 0
+  $configureExitCode = $LASTEXITCODE
+  $configureAvailable = $configureExitCode -eq 0
 
   if ($configureAvailable) {
     return @{
@@ -32,7 +33,7 @@ function Test-ConfigurationStrategy {
 
   return @{
     Route  = 'import'
-    Reason = "winget $wingetVersion does not recognize the 'configure' subcommand (winget configure --help exited $LASTEXITCODE)."
+    Reason = "winget $wingetVersion does not recognize the 'configure' subcommand (winget configure --help exited $configureExitCode)."
   }
   <#
   .SYNOPSIS

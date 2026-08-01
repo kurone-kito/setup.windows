@@ -36,7 +36,7 @@ $ARCH -like 'ARM64*' `
 $strategy = Test-ConfigurationStrategy
 Write-Host "[Phase 2] Configuration route: $($strategy.Route) -- $($strategy.Reason)" -ForegroundColor Cyan
 if ($strategy.Route -eq 'unsupported') {
-  Write-Error 'Unsupported winget capability. Aborting setup.'
+  Write-Error "Unsupported winget capability: $($strategy.Reason) Aborting setup."
   return
 }
 
