@@ -1,4 +1,4 @@
-# Guidelines for AI Agents
+# Guidelines for Gemini / Antigravity CLI
 
 This project sets up the dev environment for Windows.
 
@@ -19,14 +19,14 @@ the project's standards and practices:
 
 This repository uses an Issue-Driven Development workflow for autonomous
 and semi-autonomous contribution loops. Before starting IDD work, open
-[`.github/instructions/idd-overview-core.instructions.md`](instructions/idd-overview-core.instructions.md)
+[`.github/instructions/idd-overview-core.instructions.md`](.github/instructions/idd-overview-core.instructions.md)
 for the shared claim/marker/safety-gate definitions, then follow
-[`docs/idd-workflow.md`](../docs/idd-workflow.md) as the phase-by-phase
-entry point (Discover → Claim → Work → PR Submit → CI Wait → Review
-Triage → Review Fix → Merge → Cleanup → Loop). Phase routing is manual:
-when a phase changes, open the routing target the current phase file
-names — this repository does not auto-route between phase files.
+[`docs/idd-workflow.md`](docs/idd-workflow.md) as the phase-by-phase entry
+point (Discover → Claim → Work → PR Submit → CI Wait → Review Triage →
+Review Fix → Merge → Cleanup → Loop). Phase routing is manual: when a
+phase changes, open the routing target the current phase file names —
+this repository does not auto-route between phase files.
 
-See [`docs/idd-policy.md`](../docs/idd-policy.md) for this repository's
+See [`docs/idd-policy.md`](docs/idd-policy.md) for this repository's
 recorded IDD policy decisions (merge policy, review policy, claim
 timing, CI wait, helper runtime, and related settings).
