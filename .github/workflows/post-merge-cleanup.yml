@@ -1,0 +1,171 @@
+# Trust model: this workflow triggers on `pull_request_target`, which runs
+# with base-repository permissions and secrets even for pull requests from
+# forks. That is safe here only because all of the following hold, and any
+# future edit to this file must preserve them:
+#   - No unreviewed PR-head content is ever checked out: the sole
+#     `actions/checkout` step below carries no `ref:` override, so it
+#     resolves to the `pull_request_target` default -- the base branch's
+#     tip at event time. Because the job only proceeds after an explicit
+#     merged check (see the `Verify merged` step for workflow_dispatch,
+#     and the job-level `if:` for the pull_request_target trigger), that
+#     tip already includes this PR's own merge -- it is never the PR's
+#     own head SHA, and never content that has not already passed
+#     through the merge decision.
+#   - No PR-head code, workflow, or action is ever executed: under this
+#     repository's `ephemeral-npx` helper-runtime profile, the cleanup
+#     logic (`idd-audit-pr-cleanup`) runs from the pinned upstream npm
+#     tarball below, never from a checked-out copy -- so a PR editing its
+#     own copy of that script (if one even existed in this repository,
+#     which it does not) could not affect this workflow. The PR number is
+#     passed as `env:`-sourced numeric data, never interpolated into the
+#     script body.
+#   - The `cleanup` job only runs when
+#     `github.event.pull_request.merged == true`, or via an explicit,
+#     human-triggered `workflow_dispatch` that re-verifies merged status
+#     itself before doing anything else -- never against an open or
+#     unmerged pull request.
+#   - `permissions:` stays least-privilege: `contents: read`,
+#     `issues: write`, `pull-requests: write` -- no `contents: write` and
+#     no elevated or secret-bearing scopes.
+# If a future change adds a `ref:` override on the checkout step, downloads
+# or executes PR-head content, widens `permissions:`, or removes the
+# merged-only guard, re-review this trust model before merging that change.
+#
+# Note: this file is read from the base branch for `pull_request_target`,
+# so it cannot run for the PR that first introduces it -- that PR's own
+# F4 cleanup must be done through the normal IDD flow instead. This
+# workflow only takes effect for PRs merged after it lands on `master`.
+name: Post-merge cleanup
+on:
+  pull_request_target:
+    types:
+      - closed
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to clean up
+        required: true
+        type: number
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+concurrency:
+  group: post-merge-cleanup-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: false
+jobs:
+  cleanup:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Verify merged (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          MERGED=$(gh pr view "$PR_NUMBER" --json merged -q '.merged')
+          if [ "$MERGED" != "true" ]; then
+            echo "::error::PR #${PR_NUMBER} is not merged; refusing to run F4 cleanup via manual dispatch."
+            exit 1
+          fi
+      - name: Run F4 cleanup (server-side fallback)
+        id: cleanup
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          set +e
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::error::PR_NUMBER is empty"
+            exit 1
+          fi
+          JSON=$(npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/4e8c7043edcb00dd8447dee83e7a17e5b2604d5d \
+            idd-audit-pr-cleanup \
+            --pr "$PR_NUMBER" \
+            --apply \
+            --skip-claim-check \
+            --format json 2>cleanup-stderr.log)
+          HELPER_EXIT=$?
+          set -e
+          # Prefer the helper's JSON report when it is parseable, even on
+          # non-zero exit (the helper writes the report then exits 1 when
+          # failed.length > 0, so the report is still authoritative).
+          PARSED_STATUS=""
+          if [ -n "$JSON" ]; then
+            PARSED_STATUS=$(printf '%s' "$JSON" | jq -r '.status // ""' 2>/dev/null || echo "")
+          fi
+          if [ -n "$PARSED_STATUS" ]; then
+            printf '%s\n' "$JSON" > cleanup-report.json
+            STATUS="$PARSED_STATUS"
+            APPLIED=$(printf '%s' "$JSON" | jq -r '(.applied // []) | length')
+            FAILED=$(printf '%s' "$JSON" | jq -r '(.failed // []) | length')
+            SKIPPED=$(printf '%s' "$JSON" | jq -r '(.skipped // []) | length')
+            BLOCKED=$(printf '%s' "$JSON" | jq -r '[(.skipped // [])[] | select(.isMinimized==false and .viewerCanMinimize==false)] | length')
+            if [ "$HELPER_EXIT" -ne 0 ]; then
+              echo "::warning::idd-audit-pr-cleanup exited $HELPER_EXIT but emitted a valid JSON report; using helper status \"$STATUS\""
+            fi
+          else
+            echo "::warning::idd-audit-pr-cleanup exited $HELPER_EXIT with no parseable JSON; posting helper-error evidence"
+            echo "::group::idd-audit-pr-cleanup stderr"
+            cat cleanup-stderr.log || true
+            echo "::endgroup::"
+            STATUS="helper-error"
+            APPLIED=0
+            FAILED=0
+            SKIPPED=0
+            BLOCKED=0
+          fi
+          {
+            echo "pr_number=$PR_NUMBER"
+            echo "status=$STATUS"
+            echo "applied=$APPLIED"
+            echo "failed=$FAILED"
+            echo "skipped=$SKIPPED"
+            echo "blocked=$BLOCKED"
+          } >> "$GITHUB_OUTPUT"
+      - name: Post cleanup evidence comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.cleanup.outputs.pr_number }}
+          STATUS: ${{ steps.cleanup.outputs.status }}
+          APPLIED: ${{ steps.cleanup.outputs.applied }}
+          FAILED: ${{ steps.cleanup.outputs.failed }}
+          SKIPPED: ${{ steps.cleanup.outputs.skipped }}
+          BLOCKED: ${{ steps.cleanup.outputs.blocked }}
+        run: |
+          # Avoid duplicate evidence comments. Workflow-level concurrency
+          # only serialises this workflow's own runs; an agent F4 (or a
+          # maintainer rerunning workflow_dispatch on the same PR) can
+          # still have posted an evidence comment outside this run. Skip
+          # if any <!-- idd-cleanup-evidence: ... --> comment is already
+          # on the PR.
+          EXISTING=$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --jq '.[] | select(.body | startswith("<!-- idd-cleanup-evidence:")) | .id' \
+            | head -n1)
+          if [ -n "$EXISTING" ]; then
+            echo "::notice::PR #${PR_NUMBER} already has an idd-cleanup-evidence comment (id: ${EXISTING}); skipping workflow post."
+            exit 0
+          fi
+          BODY=$(printf '%s\n\n%s\n\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n' \
+            "<!-- idd-cleanup-evidence: ${STATUS} applied:${APPLIED} failed:${FAILED} skipped:${SKIPPED} viewer-cannot-minimize:${BLOCKED} -->" \
+            "**F4 Cleanup Evidence** (server-side fallback via \`post-merge-cleanup.yml\`)" \
+            "| Field              | Value |" \
+            "| ------------------ | ----- |" \
+            "| Status             | ${STATUS} |" \
+            "| Applied            | ${APPLIED} |" \
+            "| Failed             | ${FAILED} |" \
+            "| Skipped            | ${SKIPPED} |" \
+            "| Permission-blocked | ${BLOCKED} |" \
+            "| Posted by          | post-merge-cleanup workflow |" \
+          )
+          printf '%s' "$BODY" | gh pr comment "$PR_NUMBER" --body-file -

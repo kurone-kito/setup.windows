@@ -43,5 +43,11 @@
   },
   "worktreeGuard": {
     "enabled": true
+  },
+  "ciGate": {
+    "externalChecks": {
+      "waivable": [{ "selector": "idd-advisory-convergence" }]
+    },
+    "externalCheckWaivers": { "mode": "maintainer-authorized" }
   }
 }
