@@ -150,13 +150,22 @@ of transaction and its geographic-region requirement, but
 prompt or authentication -- no token, login, or secret was configured
 for this probe.
 
-**Recommendation: achievable without additional dependencies.**
+**Recommendation: achievable without additional dependencies.** This
+scopes to what was actually tested here -- the `winget` CLI itself.
 Both the `winget` and `msstore` sources are queryable non-interactively
 on a stock `windows-latest` runner, with the same flags
 `scripts/Test-PackageIds.ps1` already uses -- no third-party action,
-no extra install step. Wiring `Test-PackageIds.ps1` into an actual CI
-job (matrix over both profiles, on `windows-latest`) is a reasonable
-follow-up, but is a separate decision left to a future issue, per
+no extra install step for `winget`. Running `Test-PackageIds.ps1`
+itself would still need its existing `powershell-yaml` 0.4.12
+prerequisite provisioned the same way the `pester` and
+`configuration-drift` jobs already do
+(`Install-Module -Name powershell-yaml -RequiredVersion 0.4.12 ...`,
+`.github/workflows/lint.yml`) -- not a new dependency this
+investigation introduces, just one worth naming explicitly rather than
+letting "no additional dependencies" read as covering the whole
+script. Wiring `Test-PackageIds.ps1` into an actual CI job (matrix
+over both profiles, on `windows-latest`) is a reasonable follow-up,
+but is a separate decision left to a future issue, per
 issue #69's own scope.
 
 ## Removed files and their relocation
