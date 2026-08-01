@@ -115,6 +115,9 @@ jobs:
             fi
           else
             echo "::warning::idd-audit-pr-cleanup exited $HELPER_EXIT with no parseable JSON; posting helper-error evidence"
+            echo "::group::idd-audit-pr-cleanup stderr"
+            cat cleanup-stderr.log || true
+            echo "::endgroup::"
             STATUS="helper-error"
             APPLIED=0
             FAILED=0
