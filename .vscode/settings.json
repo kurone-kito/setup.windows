@@ -23,6 +23,7 @@
     "**/.vagrant/**": true
   },
   "yaml.schemas": {
+    "https://aka.ms/configuration-dsc-schema/0.2": "*.dsc.yaml",
     "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/packages/cspell-types/cspell.schema.json": ".cspell.config.yml",
     "https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json": ".coderabbit.yaml"
   }
