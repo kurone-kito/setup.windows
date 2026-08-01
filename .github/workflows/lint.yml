@@ -1,9 +1,13 @@
 name: Linting workflow
 on:
   push:
+    branches: ["**"]
   pull_request:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
 jobs:
   lint:
     runs-on: ubuntu-slim
@@ -13,3 +17,13 @@ jobs:
         uses: streetsidesoftware/cspell-action@v8
       - name: Run markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v23
+  powershell-analyzer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -Repository PSGallery
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit
