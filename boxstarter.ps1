@@ -38,6 +38,14 @@ $ARCH -like 'ARM64*' `
 # other the way three independently-edited references could. See
 # README.md's "Minimal Install" section to switch to 'min'.
 $ConfigProfile = 'full'
+if ($ConfigProfile -notin @('full', 'min')) {
+  # This selection controls what gets installed; failing loudly on a
+  # typo (e.g. 'Min', 'mini') is safer than silently falling back to
+  # full, which the previous `if ($ConfigProfile -eq 'min') {...} else
+  # {...}` form would have done.
+  Write-Error "Unknown ConfigProfile '$ConfigProfile' -- expected 'full' or 'min'. Aborting setup."
+  return
+}
 $profileSuffix = if ($ConfigProfile -eq 'min') { '.min' } else { '' }
 $dscFile = Join-Path $scriptRoot "configurations\packages$profileSuffix.dsc.yaml"
 $importJsonFile = Join-Path $scriptRoot "configurations\packages$profileSuffix.import.json"
@@ -52,28 +60,38 @@ if ($strategy.Route -eq 'unsupported') {
 }
 
 if ($strategy.Route -eq 'dsc') {
+  if (-not (Test-Path $dscFile)) {
+    Write-Error "[Phase 2] DSC file not found: $dscFile. Aborting setup."
+    return
+  }
   Write-Host '[Phase 2] Applying WinGet Configuration (DSC)...' -ForegroundColor Cyan
   winget configure --accept-configuration-agreements --disable-interactivity $dscFile
   $exitCode = $LASTEXITCODE
   if ($exitCode -ne 0) {
     # Never re-route on a runtime failure (see libs/strategy.ps1's own
-    # rationale): a bad package ID or a transient single-package error
-    # in this route fails identically under winget import, so falling
-    # back would only waste time re-running the same failure under a
-    # different command. Abort instead, matching Phase 0's precedent
-    # for a setup-blocking condition (Write-Error + return, not throw
-    # -- consistent within this script, and correct under Boxstarter's
+    # rationale): re-running under winget import risks a *partial
+    # apply* on top of whatever this attempt already changed, and the
+    # two routes cover different resource scopes -- a Registry/
+    # OsVersion failure here would not even be attempted under import,
+    # so switching wouldn't retry the same failure, it would silently
+    # drop it. Abort instead, matching Phase 0's precedent for a
+    # setup-blocking condition (Write-Error + return, not throw --
+    # consistent within this script, and correct under Boxstarter's
     # $ErrorActionPreference = 'Continue').
     Write-Error "[Phase 2] winget configure failed (exit code $exitCode). Command: winget configure --accept-configuration-agreements --disable-interactivity `"$dscFile`". Aborting setup."
     return
   }
   Write-Host '[Phase 2] WinGet Configuration complete.' -ForegroundColor Green
 }
-else {
+elseif ($strategy.Route -eq 'import') {
   # import route (degraded mode): only PackageIdentifiers can be
   # expressed in import.json, so PSDscResources/Registry resources and
   # the OsVersion assertion from $dscFile are not applied here -- see
   # the unapplied-resources warning below.
+  if (-not (Test-Path $importJsonFile)) {
+    Write-Error "[Phase 2] import.json file not found: $importJsonFile. Aborting setup."
+    return
+  }
   Write-Host '[Phase 2] Applying WinGet import (degraded mode)...' -ForegroundColor Cyan
   # --ignore-unavailable: chosen so one package that's unavailable on
   # this machine/region (e.g. an msstore entry not offered here) does
@@ -102,10 +120,23 @@ else {
         Write-Warning "  - $($item.Resource) $($item.Id): $($item.Description)"
       }
     }
+    else {
+      Write-Host '[Phase 2] Degraded mode: no unapplied resources for this profile.' -ForegroundColor Green
+    }
   }
   else {
     Write-Warning "[Phase 2] Unapplied-resources list not found: $unappliedResourcesFile -- skipping the degraded-mode warning."
   }
+}
+else {
+  # Defensive guard, not a reachable branch under
+  # Test-ConfigurationStrategy's documented contract (Route is always
+  # 'dsc' | 'import' | 'unsupported', and 'unsupported' already
+  # returned above) -- but Phase 2 chooses between two real winget
+  # commands based on this value, so a future change to that contract
+  # should fail loudly here instead of silently running winget import.
+  Write-Error "[Phase 2] Unexpected configuration route '$($strategy.Route)'. Aborting setup."
+  return
 }
 
 ###########################################################################

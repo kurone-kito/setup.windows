@@ -17,7 +17,8 @@ setup.cmd                        ← 唯一のエントリーポイント
             ├─ Phase 0: OS サポート確認          (libs/os-guard.ps1)
             ├─ Phase 1: 環境検出
             ├─ Phase 2: winget configure または   (configurations/packages.dsc.yaml
-            │    winget import（縮退モード）        または packages.import.json, libs/strategy.ps1)
+            │    winget import（縮退モード）        または configurations/packages.import.json,
+            │                                      libs/strategy.ps1)
             ├─ Phase 3: Chocolatey（フォント、vb-cable）+ posh-git（PowerShellGet）
             ├─ Phase 4: アーキテクチャ依存パッケージ
             ├─ Phase 5: インストール後セットアップ (libs/post-install.ps1)
@@ -66,6 +67,8 @@ setup.cmd                        ← 唯一のエントリーポイント
 1. **Chocolatey** と **Boxstarter** が未インストールならインストール
 2. `Install-BoxstarterPackage` 経由で `boxstarter.ps1` を起動（再起動耐性あり）
 3. **WinGet Configuration (DSC)** で 105 個のパッケージを宣言的にインストール
+   （利用できない場合は **`winget import`**（縮退モード）にフォール
+   バックし、適用できなかったリソースを報告）
 4. Chocolatey で残りのパッケージ（フォント、オーディオドライバ）をインストール
 5. インストール後セットアップ（Node.js, Rust/cargo パッケージ, Unity, Docker イメージ）
 6. Microsoft Update を有効化し、Windows Update を実行

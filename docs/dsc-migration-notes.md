@@ -47,11 +47,12 @@ installation starts:
   `OsVersion` assertion.
 - **`import`**: `winget import` against `packages.import.json`,
   **degraded mode**. `import.json` can only express `PackageIdentifier`s
-  (see `winget-packages.schema.2.0.json`), so the Registry resources
-  and the assertion are silently out of scope for this command --
-  Phase 2 reads `packages.unapplied.json` afterward and warns about
-  each one by name, so this is visible to the person running setup
-  instead of a silent gap.
+  (schema: <https://aka.ms/winget-packages.schema.2.0.json>, not a file
+  checked into this repository), so the Registry resources and the
+  assertion are silently out of scope for this command -- Phase 2
+  reads `packages.unapplied.json` afterward and warns about each one
+  by name, so this is visible to the person running setup instead of a
+  silent gap.
 
 Both routes check `$LASTEXITCODE` after the winget call and treat any
 non-zero exit as a failure: Phase 2 logs the failed route, exit code,
@@ -59,13 +60,18 @@ and the exact command, then aborts setup (`Write-Error` + `return`,
 matching Phase 0's precedent for a setup-blocking condition).
 
 **Routes never switch after Phase 2 starts**, on either route's
-failure. A failure partway through `winget configure` is either a bad
-package ID or a transient single-package error; both fail identically
-under `winget import` too, so re-routing would only waste the time
-already spent, not fix anything. Re-routing after a partial apply
-would also layer a second, differently-scoped install operation on top
-of whatever the first one already changed. `Test-ConfigurationStrategy`
-runs once, before Phase 2, and its result is not re-evaluated.
+failure. Re-routing risks a *partial apply* on top of whatever the
+first attempt already changed, and the two routes cover different
+resource scopes -- a `PSDscResources/Registry` or `OsVersion` failure
+under `winget configure` would not even be attempted under
+`winget import`, so switching would not retry the same failure, it
+would silently drop it. (A bad package ID or a transient single-
+package error is the one failure class that genuinely repeats under
+either route, since both install the same packages -- but the policy
+is "never switch," not "switch only when it would help," precisely
+because Phase 2 cannot tell which failure class it hit from the exit
+code alone.) `Test-ConfigurationStrategy` runs once, before Phase 2,
+and its result is not re-evaluated.
 
 The import route passes `--ignore-unavailable` to `winget import`, so
 one package unavailable on the current machine/region does not abort
