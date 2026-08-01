@@ -2,6 +2,9 @@
 .SYNOPSIS
 Detects the current OS version and edition, and warns or blocks
 execution based on the support status.
+
+This file is dot-sourced (not imported as a module) from
+boxstarter.ps1's Phase 0 -- do not add Export-ModuleMember here.
 #>
 Set-StrictMode -Version Latest
 
