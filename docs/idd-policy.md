@@ -85,8 +85,13 @@ recorded in `.github/idd/config.json`)
   `gh run rerun <run-id>` on the existing `pull_request`-family run for
   the current HEAD SHA (found via `gh run list
   --workflow=idd-advisory-convergence.yml --json
-  databaseId,headSha,event,url`), or `workflow_dispatch` if no such run
-  exists yet for that HEAD.
+  databaseId,headSha,event,url`). **Prefer this over `workflow_dispatch`**:
+  a manually dispatched run is not reliably associated with the PR's own
+  HEAD SHA / required-check rollup (GitHub can attribute it to the
+  default branch instead), so even a successful dispatched run may not
+  actually clear the check. If no `pull_request`-family run exists yet
+  for this HEAD, trigger one first (a new push, or re-opening the PR)
+  rather than falling back to `workflow_dispatch`.
 - **Post-merge cleanup**: `.github/workflows/post-merge-cleanup.yml`
   runs F4 cleanup (`idd-audit-pr-cleanup --apply --skip-claim-check`) as
   a server-side fallback after a PR merges, in case the merging session
