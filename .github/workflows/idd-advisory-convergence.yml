@@ -1,0 +1,102 @@
+# Trust model: this workflow is a required-check gate (once #61
+# registers its job id in branch protection), so tampering matters more
+# here than in an ordinary lint check. This file is NOT self-protecting:
+# for `pull_request`, GitHub runs the PR's own copy of this workflow
+# file (unlike `pull_request_target`, which always resolves from the
+# base branch) -- so a PR editing this file does take effect for its own
+# run. What IS protected:
+#   - `ref: master` on the checkout step means a PR cannot substitute its
+#     own edited `.github/idd/config.json` (markerPrefix,
+#     trustedMarkerActors, advisoryBotLogins) to weaken the verdict.
+#   - Under this repository's `ephemeral-npx` helper-runtime profile
+#     (`.github/idd/config.json`'s `helperRuntime.profile`), the actual
+#     verdict logic (`advisory-convergence.mjs`) runs straight from the
+#     pinned upstream npm tarball below, never from a checked-out copy --
+#     there is no in-repository script for a PR to edit.
+#   - Once #61 registers this job's id as a required status check,
+#     deleting/renaming the job or the trigger events in a PR makes the
+#     required check simply never report for that PR, rather than
+#     report a false "ready" -- required checks fail closed on absence.
+#     Until #61 lands, this workflow is advisory only; a PR that edits
+#     it to always pass would not yet be blocked by branch protection,
+#     only caught by ordinary human/bot review of the diff.
+# If a future change adds a `ref:` override that resolves to the PR head,
+# vendors the helper script into this repository, or widens
+# `permissions:` below, re-review this trust model before merging that
+# change.
+name: IDD advisory-convergence gate
+# Read-only: contents: read + issues: read + pull-requests: read. The
+# helper only queries the GitHub API for reviews, review threads, PR
+# conversation comments, and waiver markers; it never mutates GitHub
+# state. `issues: read` is required (not just pull-requests: read)
+# because the helper reads the PR's own conversation comments via the
+# issue-comments REST endpoint, which GitHub gates under the Issues
+# permission category even when the issue number is a pull request --
+# see post-merge-cleanup.yml, which needs the same permission for the
+# identical endpoint shape.
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  pull_request_review:
+    types:
+      - submitted
+  # Covers E6 disposition replies (and any other reply/edit/delete on a
+  # review thread): Clause 2 of the verdict is "every advisory-bot
+  # thread resolved or dispositioned", which changes exactly when one of
+  # these events fires, not just on a new push or review submission.
+  pull_request_review_comment:
+    types:
+      - created
+      - edited
+      - deleted
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to re-check (e.g. after posting a maintainer waiver)
+        required: true
+        type: number
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+concurrency:
+  # Grouped by PR number, not github.ref: pull_request_review and
+  # pull_request_review_comment are not pull_request-family events, so
+  # github.ref does not resolve the same way for them as it does for
+  # lint.yml's pull_request-only trigger. cancel-in-progress stays true
+  # deliberately: a narrower group or cancel-in-progress:false both trade
+  # this race for an equally-racy alternative rather than closing it (see
+  # upstream idd-skill#1381) -- if the rollup ever appears stuck on a
+  # stale run for the current HEAD SHA, `gh run rerun <run-id>` on the
+  # existing pull_request-family run for that SHA is the known recovery.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: true
+jobs:
+  # The job id doubles as this check's required-status-check context name
+  # and as the `ciGate.externalChecks.waivable[].selector` value in
+  # `.github/idd/config.json` -- keep both in sync if this id ever
+  # changes. Branch-protection registration itself is out of scope here
+  # (tracked separately in #61, which is blocked on this workflow
+  # existing first).
+  idd-advisory-convergence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Run advisory-convergence verdict (--assert)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/4e8c7043edcb00dd8447dee83e7a17e5b2604d5d \
+            idd-advisory-convergence --pr "$PR_NUMBER" --assert

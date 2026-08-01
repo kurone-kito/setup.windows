@@ -44,6 +44,57 @@ recorded in `.github/idd/config.json`)
 - **generation timeout**: `PT10M` (matches the distributed default)
 - **rerun policy**: `rerun-once`
 
+### CI Gate (External Checks)
+
+- **Required-check gate**: `.github/workflows/idd-advisory-convergence.yml`
+  (job id `idd-advisory-convergence`) asserts that the primary advisory
+  bot's review has converged on the current PR HEAD, turning the F2
+  advisory/disposition sub-gate into a non-bypassable GitHub status
+  check. Branch-protection registration of this check as a required
+  status check is tracked separately in #61 (human-blocked; this
+  workflow must exist first).
+- **`ciGate.externalChecks.waivable`**: `[{ "selector":
+  "idd-advisory-convergence" }]` — this repository's only waivable
+  external check.
+- **`ciGate.externalCheckWaivers.mode`**: `maintainer-authorized`
+  (repository override; distributed default is `disabled`). All other
+  `externalCheckWaivers` fields (`authorityPolicy`, `maxValidity`) are
+  not overridden and use the bundle's distributed defaults
+  (`owners-and-maintainers-only`, `PT24H`).
+- **Not yet live until this change merges**: `idd-advisory-convergence.yml`
+  reads `.github/idd/config.json` from `master`, so this `ciGate`
+  addition only takes effect once this PR itself merges. A waiver
+  posted against the PR that introduces it would fail closed as an
+  unknown selector.
+- **Waiver path**: when installed, prefer the helper facade over
+  hand-writing marker comments:
+
+  ```sh
+  npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/4e8c7043edcb00dd8447dee83e7a17e5b2604d5d \
+    idd-external-check-waiver --pr <number> \
+    --check idd-advisory-convergence \
+    --reason "<short reason>" \
+    --expires-in PT2H \
+    --apply --yes
+  ```
+
+  **Posting a waiver comment alone does not turn the check green.** A PR
+  comment is not one of `idd-advisory-convergence.yml`'s trigger events,
+  and a completed run's conclusion never changes on its own — after
+  posting a valid waiver, re-run the check via
+  `gh run rerun <run-id>` on the existing `pull_request`-family run for
+  the current HEAD SHA (found via `gh run list
+  --workflow=idd-advisory-convergence.yml --json
+  databaseId,headSha,event,url`), or `workflow_dispatch` if no such run
+  exists yet for that HEAD.
+- **Post-merge cleanup**: `.github/workflows/post-merge-cleanup.yml`
+  runs F4 cleanup (`idd-audit-pr-cleanup --apply --skip-claim-check`) as
+  a server-side fallback after a PR merges, in case the merging session
+  did not reach F4 itself. It cannot run for the PR that first
+  introduces it (GitHub reads `pull_request_target` workflow files from
+  the base branch) — that PR's own F4 cleanup goes through the normal
+  IDD flow instead.
+
 ### Credential Scope
 
 **Worker credentials**: same scope as any other IDD session running in
