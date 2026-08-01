@@ -1,8 +1,11 @@
 BeforeAll {
+  $script:originalErrorActionPreference = $ErrorActionPreference
+
   # Get-CimInstance ships in the Windows-only CimCmdlets module, so it
   # does not exist on the Linux runner Pester runs on here. A global
   # placeholder makes it mockable; Test-OsSupport never calls the real
-  # cmdlet under test, only this mock.
+  # cmdlet under test, only this mock. Removed again in AfterAll below
+  # so it can't shadow the real cmdlet on a Windows run.
   function global:Get-CimInstance { }
 
   . (Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath '..', 'libs', 'os-guard.ps1')
@@ -13,8 +16,15 @@ BeforeAll {
   # signal for the unsupported-OS branches) into terminating exceptions
   # here -- unlike a plain local `pwsh -c` invocation, where the
   # session default of 'Continue' lets those branches return normally.
-  # Reset it explicitly so this suite behaves the same in both places.
+  # Reset it explicitly so this suite behaves the same in both places;
+  # restored in AfterAll below so it doesn't leak into other test files
+  # run in the same Invoke-Pester session.
   $ErrorActionPreference = 'Continue'
+}
+
+AfterAll {
+  Remove-Item -Path function:Get-CimInstance -ErrorAction SilentlyContinue
+  $ErrorActionPreference = $script:originalErrorActionPreference
 }
 
 Describe 'Test-OsSupport' {
