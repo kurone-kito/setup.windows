@@ -543,12 +543,12 @@ a `{{placeholder}}`, this table gives the live ↔ template mapping:
 
 | Live value (`.github/instructions/`)                                | Template form (`idd-template/`)  |
 | ------------------------------------------------------------------- | -------------------------------- |
-| `idd-skill` in repo-name contexts                                   | `{{REPO_NAME}}`                  |
-| `idd-skill` in marker-prefix contexts (e.g. `idd-skill-roadmap-id`) | `{{PROJECT_MARKER_PREFIX}}`      |
-| **fix-validate** command string                                     | `{{FIX_VALIDATE_COMMANDS}}`      |
-| **pre-push-validate** command string                                | `{{PRE_PUSH_VALIDATE_COMMANDS}}` |
-| **post-fix-validate** command string                                | `{{POST_FIX_VALIDATE_COMMANDS}}` |
-| **install-deps** command string                                     | `{{INSTALL_DEPS_COMMAND}}`       |
+| `idd-skill` in repo-name contexts                                   | `setup.windows`                  |
+| `idd-skill` in marker-prefix contexts (e.g. `idd-skill-roadmap-id`) | `setup-windows`      |
+| **fix-validate** command string                                     | `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md"`      |
+| **pre-push-validate** command string                                | `npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"` |
+| **post-fix-validate** command string                                | `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"` |
+| **install-deps** command string                                     | `true`       |
 
 Match by the named command row in the Project commands table, not by
 command prefix, to avoid confusing commands that share the same
@@ -934,7 +934,7 @@ sources.
 
 - `audit-docs.mjs` enforces synchronization rules defined in
   `sync-manifest.json`
-- Template copies use placeholders like `{{REPO_NAME}}` to support
+- Template copies use placeholders like `setup.windows` to support
   repository-specific values during import
 - The `sync-manifest.json` defines source→target mappings and sync modes
   (exact copy vs placeholder substitution)

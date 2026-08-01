@@ -84,8 +84,8 @@ repository root. Compute the path as
 `../<repo-name>.<normalized-branch>` where `<normalized-branch>` is the
 branch name with every `/` replaced by `-`.
 
-Example: repo `{{REPO_NAME}}`, branch `issue/123-add-foo` → worktree path
-`../{{REPO_NAME}}.issue-123-add-foo`.
+Example: repo `setup.windows`, branch `issue/123-add-foo` → worktree path
+`../setup.windows.issue-123-add-foo`.
 
 **Step 1 — Check for orphaned path**: if the target path already exists
 but is not listed in `git worktree list`, stop and report for manual

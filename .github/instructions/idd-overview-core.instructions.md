@@ -127,12 +127,12 @@ Ownership timing in this workflow uses the policy defaults
 `docs/policy-constants.md`.
 
 - **Stale**: an active claim whose latest **valid** `claimed-by`
-  comment's GitHub `created_at` is ≥ 24 h ago. Another session may take
+  comment's GitHub `created_at` is ≥ 12 h ago. Another session may take
   it over by posting a fresh `{claim-id}` whose `supersedes:` value is
   that active claim's `{claim-id}`.
 - **Heartbeat**: after re-validating ownership, re-post the claim
-  comment every 12 h while holding or when any phase is expected to
-  exceed 12 h. The latest **valid** `claimed-by` comment for the same
+  comment every 6 h while holding or when any phase is expected to
+  exceed 6 h. The latest **valid** `claimed-by` comment for the same
   `{claim-id}` resets the stale clock. Embed timestamps are ignored;
   only the GitHub `created_at` of the comment itself counts.
 - **Heartbeat-overdue**: diagnostic only; see
@@ -261,10 +261,10 @@ enabled and default approval actors to
 <!-- dprint-ignore-start -->
 | Name | Commands |
 | --- | --- |
-| **fix-validate** | `{{FIX_VALIDATE_COMMANDS}}` |
-| **pre-push-validate** | `{{PRE_PUSH_VALIDATE_COMMANDS}}` |
-| **post-fix-validate** | `{{POST_FIX_VALIDATE_COMMANDS}}` |
-| **install-deps** | `{{INSTALL_DEPS_COMMAND}}` |
+| **fix-validate** | `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md"` |
+| **pre-push-validate** | `npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"` |
+| **post-fix-validate** | `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"` |
+| **install-deps** | `true` |
 | **issue-scope** | `roadmap-first` |
 | **orphan-first-policy** | `none` |
 <!-- dprint-ignore-end -->

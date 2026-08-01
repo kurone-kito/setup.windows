@@ -232,7 +232,7 @@ default below is unchanged.
     `maxDepth: number }`
 - **Cross-roadmap autopilot mode (`--all-roadmaps`)**: discovers every
   **open** roadmap root (an open issue carrying the `roadmap` label **or**
-  an `<!-- {{PROJECT_MARKER_PREFIX}}-roadmap-id: ... -->` marker **or** a
+  an `<!-- setup-windows-roadmap-id: ... -->` marker **or** a
   configured `discover.legacyRoots` issue number, deduped against the
   label/marker roots), runs the single-root enumeration above from each
   root, and returns a **union** of open execution leaves. The output
@@ -265,7 +265,7 @@ default below is unchanged.
     `readiness: { ready: boolean, reasons: string[], authoringHeld: boolean,`
     `startable: boolean }` — the A3 startability of each open leaf (dependency
     resolution across visible `Blocked by #N` / `Depends on #N` / task-list refs
-    and hidden `{{PROJECT_MARKER_PREFIX}}-blocked-by` markers, plus
+    and hidden `setup-windows-blocked-by` markers, plus
     authoring-hold), where `reasons` lists the sorted filter reasons (e.g.
     `blocked_by_open_issue:#N`) and is empty when `ready`, and `startable` is
     `ready` **and** not claim-blocked (it folds
@@ -303,7 +303,7 @@ default below is unchanged.
 - **Legacy roots (`discover.legacyRoots`, #1315)**: a repository that
   adopted IDD after already running an ad-hoc "umbrella issue"
   convention may have legacy roots that predate both the `roadmap`
-  label and the `{{PROJECT_MARKER_PREFIX}}-roadmap-id` marker, so they
+  label and the `setup-windows-roadmap-id` marker, so they
   are never found by the two searches above (the graph walker still
   follows their `Blocked by #NNN` references once reached from
   elsewhere; only root _discovery_ has no path to them). Two

@@ -94,7 +94,7 @@ out of scope here.
 
 When the A3 decision tree reports zero ready-to-start candidates and
 every candidate is blocked by an
-`<!-- {{PROJECT_MARKER_PREFIX}}-blocked-by: X -->` marker that points
+`<!-- setup-windows-blocked-by: X -->` marker that points
 to an open roadmap, the markers may be misused as grouping tags.
 Sub-tasks that run while the roadmap is open belong in the task list
 (`- [ ] #NNN`); the `blocked-by` marker is reserved for issues that
