@@ -32,6 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Install Pester
         shell: pwsh
         run: Install-Module -Name Pester -RequiredVersion 6.0.1 -Force -Scope CurrentUser -Repository PSGallery
