@@ -1,0 +1,47 @@
+{
+  "$schema": "https://kurone-kito.github.io/idd-skill/schemas/policy.schema.json",
+  "iddVersion": "0.4.0",
+  "markerPrefix": "setup-windows",
+  "mergePolicy": "fully_autonomous_merge",
+  "reviewPolicy": "copilot-advisory",
+  "threadResolutionPolicy": "fast-agent-resolve",
+  "claimTiming": {
+    "staleAge": "PT12H",
+    "heartbeatInterval": "PT6H"
+  },
+  "trustedMarkerActors": ["kurone-kito"],
+  "advisoryBotLogins": [
+    "copilot-pull-request-reviewer[bot]",
+    "coderabbitai[bot]"
+  ],
+  "workshop": {
+    "exampleRepository": ""
+  },
+  "commands": {
+    "install-deps": "true",
+    "fix-validate": "npx -y markdownlint-cli2 --fix \"**/*.md\" && npx -y markdownlint-cli2 \"**/*.md\"",
+    "pre-push-validate": "npx -y markdownlint-cli2 \"**/*.md\" && npx -y cspell lint \"**\" --no-progress && pwsh -c \"Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit\"",
+    "post-fix-validate": "npx -y markdownlint-cli2 --fix \"**/*.md\" && npx -y markdownlint-cli2 \"**/*.md\" && npx -y cspell lint \"**\" --no-progress && pwsh -c \"Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit\""
+  },
+  "helperRuntime": {
+    "profile": "ephemeral-npx"
+  },
+  "issueScope": "roadmap-first",
+  "orphanFirstPolicy": "none",
+  "skipIssueAuthorApprovalGate": true,
+  "maintainerApprovalActorPolicy": "owners-and-maintainers-only",
+  "advisoryWait": {
+    "convergenceScope": "all-prs"
+  },
+  "ciWait": {
+    "runningTimeout": "PT10M",
+    "generationTimeout": "PT10M",
+    "rerunPolicy": "rerun-once"
+  },
+  "autopilotSuitability": {
+    "floor": 3
+  },
+  "worktreeGuard": {
+    "enabled": true
+  }
+}
