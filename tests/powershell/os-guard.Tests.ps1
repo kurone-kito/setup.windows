@@ -6,6 +6,15 @@ BeforeAll {
   function global:Get-CimInstance { }
 
   . (Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath '..', 'libs', 'os-guard.ps1')
+
+  # GitHub Actions' `shell: pwsh` steps implicitly set
+  # $ErrorActionPreference = 'Stop' for the whole step, which turns
+  # Test-OsSupport's non-terminating Write-Error calls (its documented
+  # signal for the unsupported-OS branches) into terminating exceptions
+  # here -- unlike a plain local `pwsh -c` invocation, where the
+  # session default of 'Continue' lets those branches return normally.
+  # Reset it explicitly so this suite behaves the same in both places.
+  $ErrorActionPreference = 'Continue'
 }
 
 Describe 'Test-OsSupport' {
