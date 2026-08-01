@@ -8,7 +8,6 @@ echo.
 
 REM --- Unblock all PowerShell scripts ---
 powershell -Command "Get-ChildItem -Recurse '%~dp0libs\*.ps1' | Unblock-File"
-powershell -Command "Get-ChildItem -Recurse '%~dp0libs\*.psm1' | Unblock-File"
 
 REM --- Ensure Chocolatey is available (needed for Boxstarter) ---
 where choco >nul 2>&1

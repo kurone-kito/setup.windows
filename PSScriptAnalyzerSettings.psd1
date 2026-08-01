@@ -1,29 +1,20 @@
 @{
-  # Analysis targets boxstarter.ps1 / libs/ (.ps1 / .psm1) at repository root
-  # via -Path . -Recurse; there is no t/ directory or boxstarter.min.ps1 after
-  # the DSC migration (issue #63) -- the "min" profile is now data
-  # (configurations/packages.min.dsc.yaml / .min.import.json), not a parallel
-  # script.
+  # Analysis targets boxstarter.ps1 / libs/ (.ps1) at repository root via
+  # -Path . -Recurse; there is no t/ directory, boxstarter.min.ps1, or
+  # libs/*.psm1 file after the DSC migration (issue #63) and dead-code
+  # cleanup (issue #70) -- the "min" profile is now data
+  # (configurations/packages.min.dsc.yaml / .min.import.json), not a
+  # parallel script, and libs/.lib.psm1 (unreferenced anywhere) was
+  # deleted outright rather than kept around unused.
   ExcludeRules = @(
     # Boxstarter/setup scripts are interactive by design: Write-Host (and
     # [Console]::WriteLine) is the intended direct-to-console channel here, not
     # accidental pipeline pollution.
     'PSAvoidUsingWriteHost',
 
-    # The flagged function (libs/.lib.psm1's Write-SkippedMessage) takes a
-    # single pipeline value by design (callers pipe one item at a time via
-    # ForEach-Object). Adding a process {} block would require relocating its
-    # trailing comment-based help ahead of param() to keep Get-Help working --
-    # mechanical churn for no behavior change.
-    'PSUseProcessBlockForPipelineCommand',
-
-    # The flagged names (libs/.lib.psm1's Invoke-SelfWithPrivileges,
-    # Join-PSOptions; libs/post-install.ps1's Test-CommandExists) have no
-    # call sites anywhere in this repository as of the DSC migration (issue
-    # #63) -- libs/.lib.psm1 itself is currently dead code (tracked
-    # separately for #70's cleanup pass), and Test-CommandExists is a
-    # private helper used only within its own file. Renaming them is
-    # out of scope for this lint/CI-infrastructure issue regardless.
+    # libs/post-install.ps1's Test-CommandExists is a private helper used
+    # only within its own file; renaming it is out of scope for this
+    # lint/CI-infrastructure issue.
     'PSUseSingularNouns'
 
     # PSAvoidUsingInvokeExpression is intentionally NOT excluded here (flagged
