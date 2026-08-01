@@ -2,6 +2,7 @@ name: Linting workflow
 on:
   push:
     branches: ["**"]
+    tags: ["**"]
   pull_request:
 permissions:
   contents: read
@@ -23,7 +24,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install PSScriptAnalyzer
         shell: pwsh
-        run: Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser -Repository PSGallery
+        run: Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Force -Scope CurrentUser -Repository PSGallery
       - name: Run PSScriptAnalyzer
         shell: pwsh
         run: Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit
