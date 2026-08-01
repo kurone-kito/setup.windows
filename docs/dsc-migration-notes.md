@@ -116,8 +116,57 @@ Run this after adding or changing a package in either `dsc.yaml` file,
 and whenever setup fails on a specific package -- to tell a genuine
 id/source problem apart from a transient install failure before
 re-running the whole setup. Requires a real `winget` on PATH, so it
-only runs on Windows; not wired into CI (a Linux runner has no
-`winget` to check against -- see issue #69).
+only runs on Windows -- not wired into CI yet (issue #69 confirmed
+`winget` itself is usable on GitHub Actions' `windows-latest` runner,
+but whether to actually add a CI job for `scripts/Test-PackageIds.ps1`
+is a separate decision, out of that issue's scope).
+
+## Is `winget` usable on GitHub Actions' Windows runner? (issue #69)
+
+Investigated whether `scripts/Test-PackageIds.ps1` (above) could run
+in CI on a `windows-latest` GitHub Actions runner, via a temporary
+`workflow_dispatch`/push-triggered probe workflow (removed after this
+investigation, per the issue's own scope -- no permanent CI job was
+added).
+
+**Runner**: `windows-latest`, image `windows-2025-vs2026`
+(`ImageVersion=20260714.173.1`), Microsoft Windows Server 2025
+(`10.0.26100`, Datacenter). **Observed**: 2026-08-01T23:27Z (run
+[30723356166](https://github.com/kurone-kito/setup.windows/actions/runs/30723356166)).
+`windows-latest` is a moving target -- GitHub periodically retargets it
+to a newer image -- so this observation is tied to the image version
+above, not to "`windows-latest`" as a permanent guarantee.
+
+| Check | Result |
+| --- | --- |
+| `winget` preinstalled | Yes -- found at `C:\Users\runneradmin\AppData\Local\Microsoft\WindowsApps\winget.exe`, no extra install step needed |
+| `winget --version` | `v1.11.510`, exit `0` |
+| `winget show --exact --id Git.Git --source winget --accept-source-agreements --disable-interactivity` | Succeeded non-interactively, exit `0`, returned full package metadata |
+| `winget show --exact --id XP9KHM4BK9FZ7Q --source msstore --accept-source-agreements --disable-interactivity` | Succeeded non-interactively, exit `0`, returned full package metadata |
+
+The `msstore` query printed a one-time notice about the source's terms
+of transaction and its geographic-region requirement, but
+`--accept-source-agreements` covered it without any interactive
+prompt or authentication -- no token, login, or secret was configured
+for this probe.
+
+**Recommendation: achievable without additional dependencies.** This
+scopes to what was actually tested here -- the `winget` CLI itself.
+Both the `winget` and `msstore` sources are queryable non-interactively
+on a stock `windows-latest` runner, with the same flags
+`scripts/Test-PackageIds.ps1` already uses -- no third-party action,
+no extra install step for `winget`. Running `Test-PackageIds.ps1`
+itself would still need its existing `powershell-yaml` 0.4.12
+prerequisite provisioned the same way the `pester` and
+`configuration-drift` jobs already do
+(`Install-Module -Name powershell-yaml -RequiredVersion 0.4.12 ...`,
+`.github/workflows/lint.yml`) -- not a new dependency this
+investigation introduces, just one worth naming explicitly rather than
+letting "no additional dependencies" read as covering the whole
+script. Wiring `Test-PackageIds.ps1` into an actual CI job (matrix
+over both profiles, on `windows-latest`) is a reasonable follow-up,
+but is a separate decision left to a future issue, per
+issue #69's own scope.
 
 ## Removed files and their relocation
 
