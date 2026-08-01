@@ -2,6 +2,8 @@
 .SYNOPSIS
 The setup scripts by Boxstarter.
 #>
+[System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '', Justification = 'fnm and Scoop official install/init incantations (fnm env --use-on-cd, Scoop bootstrap script)')]
+param()
 
 Set-StrictMode -Version Latest
 
