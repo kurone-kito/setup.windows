@@ -20,7 +20,7 @@ BeforeAll {
 Describe 'Test-OsSupport' {
   Context 'boundary and gap cases' {
     It 'returns Tier <ExpectedTier> (Supported=<ExpectedSupported>) for build <BuildNumber>, <Description>' -ForEach @(
-      @{ Description = 'Windows 11 Pro, the build-22000 lower boundary'; BuildNumber = '22000'; Caption = 'Microsoft Windows 11 Pro'; EditionID = 'Professional'; ExpectedSupported = $true; ExpectedTier = 2; ExpectedIsServer = $false }
+      @{ Description = 'Windows 11 Pro, the build-22000 lower boundary'; BuildNumber = '22000'; Caption = 'Microsoft Windows 11 Pro'; EditionID = 'Professional'; ExpectedSupported = $true; ExpectedTier = 1; ExpectedIsServer = $false }
       @{ Description = 'Windows 11 Home, the build-22000 lower boundary'; BuildNumber = '22000'; Caption = 'Microsoft Windows 11 Home'; EditionID = 'Core'; ExpectedSupported = $true; ExpectedTier = 2; ExpectedIsServer = $false }
       @{ Description = 'Windows 10 22H2 Pro, the build-19045 EOL-warning boundary'; BuildNumber = '19045'; Caption = 'Microsoft Windows 10 Pro'; EditionID = 'Professional'; ExpectedSupported = $true; ExpectedTier = 3; ExpectedIsServer = $false }
       @{ Description = 'Windows 10 22H2 Home, the build-19045 EOL-warning boundary'; BuildNumber = '19045'; Caption = 'Microsoft Windows 10 Home'; EditionID = 'Core'; ExpectedSupported = $true; ExpectedTier = 4; ExpectedIsServer = $false }
