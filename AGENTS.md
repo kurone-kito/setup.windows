@@ -27,8 +27,8 @@ for the shared claim/marker/safety-gate definitions, then follow
 [`docs/idd-workflow.md`](docs/idd-workflow.md) as the phase-by-phase entry
 point (Discover → Claim → Work → PR Submit → CI Wait → Review Triage →
 Review Fix → Merge → Cleanup → Loop). Phase routing is manual: when a
-phase changes, open the routing target the current phase file names —
-this repository does not auto-route between phase files.
+phase changes, open the next-phase file the current phase instructions
+name — this repository does not auto-route between phase files.
 
 See [`docs/idd-policy.md`](docs/idd-policy.md) for this repository's
 recorded IDD policy decisions (merge policy, review policy, claim
