@@ -1,0 +1,73 @@
+{
+  "$schema": "https://aka.ms/winget-packages.schema.2.0.json",
+  "Sources": [
+    {
+      "Packages": [
+        { "PackageIdentifier": "jdx.mise" },
+        { "PackageIdentifier": "GitHub.Copilot" },
+        { "PackageIdentifier": "Fastfetch-cli.Fastfetch" },
+        { "PackageIdentifier": "marlocarlo.pstop" },
+        { "PackageIdentifier": "twpayne.chezmoi" },
+        { "PackageIdentifier": "hpjansson.Chafa" },
+        { "PackageIdentifier": "ImageMagick.ImageMagick" },
+        { "PackageIdentifier": "jqlang.jq" },
+        { "PackageIdentifier": "Oracle.MySQL" },
+        { "PackageIdentifier": "SQLite.SQLite" },
+        { "PackageIdentifier": "MikeFarah.yq" },
+        { "PackageIdentifier": "ast-grep.ast-grep" },
+        { "PackageIdentifier": "BiomeJS.Biome" },
+        { "PackageIdentifier": "AlDanial.Cloc" },
+        { "PackageIdentifier": "direnv.direnv" },
+        { "PackageIdentifier": "dprint.dprint" },
+        { "PackageIdentifier": "7zip.7zip" },
+        { "PackageIdentifier": "GnuWin32.File" },
+        { "PackageIdentifier": "GnuPG.GnuPG" },
+        { "PackageIdentifier": "sharkdp.bat" },
+        { "PackageIdentifier": "eza-community.eza" },
+        { "PackageIdentifier": "sharkdp.fd" },
+        { "PackageIdentifier": "junegunn.fzf" },
+        { "PackageIdentifier": "BurntSushi.ripgrep.MSVC" },
+        { "PackageIdentifier": "sxyazi.yazi" },
+        { "PackageIdentifier": "ajeetdsouza.zoxide" },
+        { "PackageIdentifier": "x-motemen.ghq" },
+        { "PackageIdentifier": "Git.Git" },
+        { "PackageIdentifier": "GitHub.GitLFS" },
+        { "PackageIdentifier": "GitHub.git-sizer" },
+        { "PackageIdentifier": "GitHub.cli" },
+        { "PackageIdentifier": "max-sixty.worktrunk" },
+        { "PackageIdentifier": "Amazon.AWSCLI" },
+        { "PackageIdentifier": "JesseDuffield.lazygit" },
+        { "PackageIdentifier": "marlocarlo.psmux" },
+        { "PackageIdentifier": "Zellij.Zellij" },
+        { "PackageIdentifier": "Microsoft.PowerShell" },
+        { "PackageIdentifier": "Starship.Starship" },
+        { "PackageIdentifier": "dandavison.delta" },
+        { "PackageIdentifier": "charmbracelet.glow" },
+        { "PackageIdentifier": "dbrgn.tealdeer" },
+        { "PackageIdentifier": "Microsoft.Edit" },
+        { "PackageIdentifier": "Neovim.Neovim" },
+        { "PackageIdentifier": "vim.vim" },
+        { "PackageIdentifier": "HTTPie.HTTPie" },
+        { "PackageIdentifier": "GitHub.GitHubDesktop" },
+        { "PackageIdentifier": "Obsidian.Obsidian" }
+      ],
+      "SourceDetails": {
+        "Argument": "https://cdn.winget.microsoft.com/cache",
+        "Identifier": "Microsoft.Winget.Source_8wekyb3d8bbwe",
+        "Name": "winget",
+        "Type": "Microsoft.PreIndexed.Package"
+      }
+    },
+    {
+      "Packages": [
+        { "PackageIdentifier": "XP9KHM4BK9FZ7Q" }
+      ],
+      "SourceDetails": {
+        "Argument": "https://storeedgefd.dsx.mp.microsoft.com/v9.0",
+        "Identifier": "StoreEdgeFD",
+        "Name": "msstore",
+        "Type": "Microsoft.Rest"
+      }
+    }
+  ]
+}

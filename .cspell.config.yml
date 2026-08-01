@@ -21,51 +21,61 @@ ignorePaths:
   - .github/CODE_OF_CONDUCT.*
   - .vscode/extensions.json
   - cspell.config.yml
-  - test
 ignoreRegExpList:
   - '\b[0-9A-Z]{12,14}\b'
-  - Install-WingetApps .*\.
 language: en,ja
 useGitignore: true
 version: "0.2"
 words:
-  - alsa
-  - apic
+  - ajeetdsouza
   - antlr
-  - audioin
-  - biosapic
+  - bbwe
+  - chafa
+  - chezmoi
   - choco
+  - dbrgn
   - dind
-  - dsound
+  - dosbox
+  - farah
+  - fastfetch
+  - fnm
   - ghub
   - hkcu
   - hklm
-  - hpet
-  - hwvirtex
-  - iexplore
+  - hpjansson
   - imgbotconfig
-  - ioapic
   - izotope
+  - jqlang
+  - junegunn
   - kito
   - kuron
   - kuroné
-  - modifyvm
-  - mswin
-  - maxon
-  - nprocessors
+  - mikefarah
+  - mojang
+  - nektos
+  - nvme
+  - oldj
   - ollama
+  - pixiv
+  - posh
+  - psmux
+  - psscriptanalyzer
+  - pstop
+  - schniz
+  - sharkdp
+  - slik
+  - steamcmd
+  - sxyazi
+  - tealdeer
   - tldr
-  - usbxhci
-  - useb
-  - vbguest
-  - vboxsvga
+  - twpayne
+  - unigetui
   - vcredist
   - vrchat
   - vrcx
-  - vtxux
-  - vtxvpid
-  - wkhtmltopdf
-  - wkhtmltox
+  - vroid
+  - wekyb
+  - yazi
   # IDD workflow terms (imported from upstream idd-skill core template)
   - desync
   - desynced
