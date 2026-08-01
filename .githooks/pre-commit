@@ -1,0 +1,8 @@
+#!/bin/sh
+# IDD disposable-worktree guard (pre-commit). Opt-in via
+# worktreeGuard.enabled in .github/idd/config.json. See
+# _idd-worktree-guard.sh for the full behavior. Enable the hooks with:
+#   git config core.hooksPath .githooks
+. "$(dirname "$0")/_idd-worktree-guard.sh"
+idd_worktree_guard_check commit || exit 1
+exit 0

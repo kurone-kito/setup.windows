@@ -1,0 +1,33 @@
+{
+  "$schema": "https://kurone-kito.github.io/idd-skill/schemas/policy.schema.json",
+  "iddVersion": "0.4.0",
+  "markerPrefix": "{{PROJECT_MARKER_PREFIX}}",
+  "mergePolicy": "fully_autonomous_merge",
+  "reviewPolicy": "copilot-advisory",
+  "threadResolutionPolicy": "fast-agent-resolve",
+  "claimTiming": {
+    "staleAge": "PT24H",
+    "heartbeatInterval": "PT12H"
+  },
+  "trustedMarkerActors": ["{{TRUSTED_MARKER_ACTOR}}"],
+  "workshop": {
+    "exampleRepository": ""
+  },
+  "commands": {
+    "install-deps": "{{INSTALL_DEPS_COMMAND}}",
+    "fix-validate": "{{FIX_VALIDATE_COMMANDS}}",
+    "pre-push-validate": "{{PRE_PUSH_VALIDATE_COMMANDS}}",
+    "post-fix-validate": "{{POST_FIX_VALIDATE_COMMANDS}}"
+  },
+  "helperRuntime": {
+    "profile": "package-manager"
+  },
+  "issueScope": "roadmap-first",
+  "orphanFirstPolicy": "none",
+  "advisoryWait": {
+    "convergenceScope": "all-prs"
+  },
+  "autopilotSuitability": {
+    "floor": 3
+  }
+}
