@@ -1,0 +1,167 @@
+[
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "edge.hideFirstRun",
+    "Description": "Hide Edge first-run experience to prevent interruptions"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "explorer.showHiddenFiles",
+    "Description": "Show hidden files, folders, and drives in Explorer"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "explorer.showFileExtensions",
+    "Description": "Show file extensions for known file types in Explorer"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "explorer.navPaneExpandToCurrentFolder",
+    "Description": "Expand Explorer's navigation pane to the current folder"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "explorer.separateProcess",
+    "Description": "Launch folder windows in a separate process"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "explorer.showCompColor",
+    "Description": "Show encrypted or compressed NTFS files in color"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "explorer.showRecentInQuickAccess",
+    "Description": "Show recently used files in Quick Access"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "explorer.showFrequentInQuickAccess",
+    "Description": "Show frequently used folders in Quick Access"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "explorer.hideRibbon",
+    "Description": "Keep Explorer's ribbon minimized outside tablet mode"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "taskbar.multiMonitorEnabled",
+    "Description": "Show the taskbar on all monitors"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "taskbar.multiMonitorMode",
+    "Description": "Show all taskbar buttons on every monitor"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "taskbar.multiMonitorGlomLevel",
+    "Description": "Always combine taskbar buttons on every monitor"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "search.searchboxTaskbarMode",
+    "Description": "Show the search box on the taskbar"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.activeSetupTempFolders",
+    "Description": "Disk Cleanup sageset: Active Setup Temp Folders"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.branchCache",
+    "Description": "Disk Cleanup sageset: BranchCache"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.d3dShaderCache",
+    "Description": "Disk Cleanup sageset: D3D Shader Cache"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.deliveryOptimizationFiles",
+    "Description": "Disk Cleanup sageset: Delivery Optimization Files"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.diagnosticDataViewerDatabaseFiles",
+    "Description": "Disk Cleanup sageset: Diagnostic Data Viewer database files"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.downloadedProgramFiles",
+    "Description": "Disk Cleanup sageset: Downloaded Program Files"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.internetCacheFiles",
+    "Description": "Disk Cleanup sageset: Internet Cache Files"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.oldChkDskFiles",
+    "Description": "Disk Cleanup sageset: Old ChkDsk Files"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.recycleBin",
+    "Description": "Disk Cleanup sageset: Recycle Bin"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.retailDemoOfflineContent",
+    "Description": "Disk Cleanup sageset: RetailDemo Offline Content"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.setupLogFiles",
+    "Description": "Disk Cleanup sageset: Setup Log Files"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.systemErrorMemoryDumpFiles",
+    "Description": "Disk Cleanup sageset: System error memory dump files"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.systemErrorMinidumpFiles",
+    "Description": "Disk Cleanup sageset: System error minidump files"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.temporaryFiles",
+    "Description": "Disk Cleanup sageset: Temporary Files"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.thumbnailCache",
+    "Description": "Disk Cleanup sageset: Thumbnail Cache"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.updateCleanup",
+    "Description": "Disk Cleanup sageset: Update Cleanup"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.userFileVersions",
+    "Description": "Disk Cleanup sageset: User file versions"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.windowsDefender",
+    "Description": "Disk Cleanup sageset: Windows Defender"
+  },
+  {
+    "Resource": "PSDscResources/Registry",
+    "Id": "sageset.windowsErrorReportingFiles",
+    "Description": "Disk Cleanup sageset: Windows Error Reporting Files"
+  },
+  {
+    "Resource": "Microsoft.Windows.Developer/OsVersion",
+    "Id": null,
+    "Description": "Require Windows 10 22H2 (build 19045) or later"
+  }
+]

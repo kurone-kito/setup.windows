@@ -6,6 +6,36 @@ disposition of the Windows configuration processing that had no DSC
 equivalent at that point (declared as a DSC resource by issue #64, or
 recorded as staying imperative and why).
 
+## `dsc.yaml` is the single source of truth
+
+`configurations/packages.dsc.yaml` (full profile) and
+`configurations/packages.min.dsc.yaml` (min profile) are hand-
+maintained. Everything else under `configurations/` is generated from
+one of them by `scripts/Build-Configurations.ps1` and must never be
+hand-edited:
+
+| Generated file | Generated from | Purpose |
+| --- | --- | --- |
+| `packages.import.json` | `packages.dsc.yaml` | `winget import` fallback for the degraded route (issue #65) |
+| `packages.unapplied.json` | `packages.dsc.yaml` | Machine-readable list of resources the import.json route cannot express (non-`WinGetPackage` resources and `properties.assertions` entries) |
+| `packages.min.import.json` | `packages.min.dsc.yaml` | Same as above, min profile |
+| `packages.min.unapplied.json` | `packages.min.dsc.yaml` | Same as above, min profile |
+
+To add, remove, or change a package or resource: edit the relevant
+`dsc.yaml` file only, then regenerate both of its outputs:
+
+```powershell
+./scripts/Build-Configurations.ps1 -DscPath ./configurations/packages.dsc.yaml
+./scripts/Build-Configurations.ps1 -DscPath ./configurations/packages.min.dsc.yaml
+```
+
+The generator is deterministic (same input always produces byte-
+identical output) and requires the `powershell-yaml` module. CI's
+`configuration-drift` job (`.github/workflows/lint.yml`) reruns it on
+every push/PR and fails if the committed generated files don't match
+what regeneration produces, so a `dsc.yaml` edit that isn't followed
+by regeneration is caught before merge rather than silently drifting.
+
 ## Removed files and their relocation
 
 | Removed file | Disposition |
