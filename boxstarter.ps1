@@ -32,6 +32,17 @@ $ARCH -like 'ARM64*' `
 ###########################################################################
 ### Phase 2 — WinGet Configuration (DSC)
 ###########################################################################
+. (Join-Path $scriptRoot 'libs\strategy.ps1')
+$strategy = Test-ConfigurationStrategy
+Write-Host "[Phase 2] Configuration route: $($strategy.Route) -- $($strategy.Reason)" -ForegroundColor Cyan
+if ($strategy.Route -eq 'unsupported') {
+  Write-Error 'Unsupported winget capability. Aborting setup.'
+  return
+}
+
+# Route selection is logged above for visibility only; the import route
+# still runs winget configure at this point (issue #65 scope). Acting on
+# the selected route (running winget import instead) is issue #67's scope.
 $dscFile = Join-Path $scriptRoot 'configurations\packages.dsc.yaml'
 if (Test-Path $dscFile) {
   Write-Host '[Phase 2] Applying WinGet Configuration (DSC)...' -ForegroundColor Cyan
