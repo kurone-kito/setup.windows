@@ -87,10 +87,22 @@ if (Test-Path $postInstall) {
 }
 
 ###########################################################################
-### Phase 6 — Teardown
+### Phase 6 — Remote Desktop
 ###########################################################################
-Write-Host '[Phase 6] Finalizing...' -ForegroundColor Cyan
+# Not declarable as a PSDscResources/Registry resource: Boxstarter's
+# Enable-RemoteDesktop calls the Win32_TerminalServiceSetting /
+# Win32_TSGeneralSetting WMI methods (SetAllowTsConnections,
+# SetUserAuthenticationRequired), not a direct registry write. See
+# docs/dsc-migration-notes.md for the full rationale.
+Write-Host '[Phase 6] Enabling Remote Desktop...' -ForegroundColor Cyan
+Enable-RemoteDesktop
+Write-Host '[Phase 6] Remote Desktop enabled.' -ForegroundColor Green
+
+###########################################################################
+### Phase 7 — Teardown
+###########################################################################
+Write-Host '[Phase 7] Finalizing...' -ForegroundColor Cyan
 Enable-MicrosoftUpdate
 Enable-UAC
 Install-WindowsUpdate
-Write-Host '[Phase 6] Setup complete!' -ForegroundColor Green
+Write-Host '[Phase 7] Setup complete!' -ForegroundColor Green

@@ -26,7 +26,8 @@ setup.cmd                        ← 唯一のエントリーポイント
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → ローカル CA
             │    └─ Docker Desktop → イメージ pull
-            └─ Phase 6: Windows Update & 後処理
+            ├─ Phase 6: リモートデスクトップ         (Enable-RemoteDesktop)
+            └─ Phase 7: Windows Update & 後処理
 ```
 
 ## OS サポート
