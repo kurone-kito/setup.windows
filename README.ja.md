@@ -16,7 +16,8 @@ setup.cmd                        ← 唯一のエントリーポイント
        └─ boxstarter.ps1
             ├─ Phase 0: OS サポート確認          (libs/os-guard.ps1)
             ├─ Phase 1: 環境検出
-            ├─ Phase 2: winget configure (DSC)   (configurations/packages.dsc.yaml)
+            ├─ Phase 2: winget configure または   (configurations/packages.dsc.yaml
+            │    winget import（縮退モード）        または packages.import.json, libs/strategy.ps1)
             ├─ Phase 3: Chocolatey（フォント、vb-cable）+ posh-git（PowerShellGet）
             ├─ Phase 4: アーキテクチャ依存パッケージ
             ├─ Phase 5: インストール後セットアップ (libs/post-install.ps1)
@@ -75,8 +76,9 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 ### 最小インストール
 
 軽量構成（開発ツールのみ、ゲーミング/メディア系なし）を使用する場合は、
-`boxstarter.ps1` 内の DSC ファイル参照を `packages.dsc.yaml` から
-`packages.min.dsc.yaml` に変更してください。
+`boxstarter.ps1` の Phase 2 にある `$ConfigProfile` を `'full'` から
+`'min'` に変更してください。この 1 つの値が DSC ファイル・対応する
+`import.json`・未適用リソース一覧をまとめて切り替えます。
 
 ## インストールされるもの
 
