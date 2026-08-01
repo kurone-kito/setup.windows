@@ -81,6 +81,44 @@ an asymmetry with the dsc route's exit-code check, accepted because
 availability gaps are still visible in winget's own per-package output
 in the Boxstarter log.
 
+## Verifying package ids before running setup
+
+A wrong or stale `WinGetPackage` id is not fixed by Phase 2's route
+fallback (above): the `import` route queries the same winget, the
+same id, against the same source, and fails identically. `scripts/
+Test-PackageIds.ps1` checks id validity independently of route
+selection and without installing anything, via `winget show --exact
+--id <id> --source <source>`:
+
+```powershell
+./scripts/Test-PackageIds.ps1 -DscPath ./configurations/packages.dsc.yaml
+./scripts/Test-PackageIds.ps1 -DscPath ./configurations/packages.min.dsc.yaml
+```
+
+It reuses `libs/configuration-builder.ps1`'s `Split-DscResource` to
+extract id/source pairs, so parsing is not duplicated between the
+generation track (issue #66) and this verification track.
+
+Results are classified three ways -- **Confirmed** (count only),
+**NotFound**, and **Indeterminate** -- and the two failure classes are
+never merged. Only winget-cli's own documented
+`APPINSTALLER_CLI_ERROR_NO_APPLICATIONS_FOUND` exit code
+(`-1978335212`, from
+[`AppInstallerErrors.h`](https://github.com/microsoft/winget-cli/blob/master/src/AppInstallerSharedLib/Public/AppInstallerErrors.h))
+counts as NotFound; every other non-zero exit (a source-open failure,
+a network error, anything this script doesn't specifically recognize)
+is Indeterminate. Reporting a network outage as a bad package id would
+destroy this check's own credibility, so the exit codes differ too:
+`1` if any id was NotFound, `2` if only Indeterminate ids occurred, `0`
+if every id was Confirmed.
+
+Run this after adding or changing a package in either `dsc.yaml` file,
+and whenever setup fails on a specific package -- to tell a genuine
+id/source problem apart from a transient install failure before
+re-running the whole setup. Requires a real `winget` on PATH, so it
+only runs on Windows; not wired into CI (a Linux runner has no
+`winget` to check against -- see issue #69).
+
 ## Removed files and their relocation
 
 | Removed file | Disposition |
