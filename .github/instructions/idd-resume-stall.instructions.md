@@ -143,17 +143,17 @@ waives the stale-threshold gate in S3.
 Apply the shared stale rule from `idd-overview-core.instructions.md` and
 `claim-stale-age` in `docs/policy-constants.md`:
 takeover is allowed only when the active non-owned claim is stale
-(`latest valid claimed-by created_at >= 24h`).
+(`latest valid claimed-by created_at >= 12h`).
 
-- Claim age `< 24h`: **hold and stop**. Keep waiting for the shared
+- Claim age `< 12h`: **hold and stop**. Keep waiting for the shared
   stale threshold.
-- Claim age `>= 24h`: takeover is eligible; continue to S4.
+- Claim age `>= 12h`: takeover is eligible; continue to S4.
 
 **Heartbeat-overdue is diagnostic only, not a shortcut.** Discovery's
 `activeClaim.heartbeatOverdue` (`claimTiming.heartbeatInterval`, default
 12h) is an expected, human-visible signal worth a glance or a live-status
 digest note — it is not, by itself, evidence for S2 or an alternate S3
-threshold. A heartbeat-overdue claim younger than 24h is still `< 24h`
+threshold. A heartbeat-overdue claim younger than 12h is still `< 12h`
 above: **hold and stop**, exactly as any other non-stale claim. Do not
 treat a missed heartbeat as shortening the wait or as quiet-window
 evidence.

@@ -67,21 +67,21 @@ Quiet window alone never authorizes takeover.
 ## S3 — Stale threshold (ownership gate)
 
 Takeover only if latest valid trusted `claimed-by` `created_at` is
-**≥ 24 h** ago (`claim-stale-age`).
+**≥ 12 h** ago (`claim-stale-age`).
 
 | Claim age | Action            |
 | --------- | ----------------- |
-| < 24 h    | **Hold and stop** |
-| ≥ 24 h    | Continue to S4    |
+| < 12 h    | **Hold and stop** |
+| ≥ 12 h    | Continue to S4    |
 
-`heartbeatOverdue` is **diagnostic only**. It does not shorten the 24 h
+`heartbeatOverdue` is **diagnostic only**. It does not shorten the 12 h
 gate.
 
 ## S4 — Race-safe recheck (immediately before write)
 
 1. Re-run `resume-claim-routing.mjs --issue <N>`.
 2. Active claim still the same non-owned `{claim-id}`.
-3. Still stale (≥ 24 h) now.
+3. Still stale (≥ 12 h) now.
 4. Fresh server `NOW` + re-run quiet-check; if new activity, STOP and
    restart from resume discovery.
 5. Issue still open; PR not merged.
