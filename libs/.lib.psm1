@@ -149,12 +149,13 @@ function Join-PSOptions
 
 function New-TouchFile
 {
+  [CmdletBinding(SupportsShouldProcess = $true)]
   param(
     [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
     [string]
     $Path
   )
-  if (-not (Test-Path -Path $Path))
+  if ((-not (Test-Path -Path $Path)) -and $PSCmdlet.ShouldProcess($Path, 'Create file'))
   {
     New-Item -Path $Path -ItemType File | Out-Null
   }
