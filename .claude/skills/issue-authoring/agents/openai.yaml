@@ -1,0 +1,4 @@
+interface:
+  display_name: "Issue Authoring"
+  short_description: "Draft IDD-ready issues and roadmaps"
+  default_prompt: "Use $issue-authoring to draft an IDD-ready issue set for this request."

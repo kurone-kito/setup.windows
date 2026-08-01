@@ -79,12 +79,15 @@ npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/4e8
 
 ### Issue-Authoring Companion
 
-**Status**: not installed yet — tracked separately by
-[#59](https://github.com/kurone-kito/setup.windows/issues/59), which
-introduces `.claude/skills/issue-authoring/`.
+**Status**: `installed` at
+[`.claude/skills/issue-authoring/`](../.claude/skills/issue-authoring/SKILL.md)
+(copied from the pinned upstream commit's `skills/issue-authoring/`,
+with bundle-internal maintenance-doc links relinked to upstream URLs —
+see the in-file note in `SKILL.md`).
 
-- **`issueAuthoring.maxClarificationRounds`**: not yet configured
-  (defaults apply once #59 lands)
+- **`issueAuthoring.maxClarificationRounds`**: no override recorded in
+  `.github/idd/config.json`; the bundle's distributed default of `3`
+  rounds applies
 
 ### IDD Label Names
 
