@@ -60,6 +60,10 @@ $knownSourceDetail = [ordered]@{
   }
 }
 
+if (-not (Test-Path -Path $DscPath -PathType Leaf)) {
+  throw "DscPath '$DscPath' does not exist or is not a file."
+}
+
 if (-not $ImportJsonPath) {
   if ($DscPath -notlike '*.dsc.yaml') {
     throw "Cannot derive -ImportJsonPath from -DscPath '$DscPath' (does not end with '.dsc.yaml'); pass -ImportJsonPath explicitly."
@@ -74,7 +78,7 @@ if (-not $UnappliedResourcesPath) {
   $UnappliedResourcesPath = $DscPath -replace '\.dsc\.yaml$', '.unapplied.json'
 }
 
-Import-Module powershell-yaml -ErrorAction Stop
+Import-Module powershell-yaml -RequiredVersion 0.4.12 -ErrorAction Stop
 . (Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath 'libs', 'configuration-builder.ps1')
 
 $document = ConvertFrom-Yaml -Yaml (Get-Content -Raw -Path $DscPath) -Ordered

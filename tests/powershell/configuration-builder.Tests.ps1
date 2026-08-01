@@ -1,5 +1,5 @@
 BeforeAll {
-  Import-Module powershell-yaml
+  Import-Module powershell-yaml -RequiredVersion 0.4.12
 
   . (Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath '..', 'libs', 'configuration-builder.ps1')
 
@@ -89,6 +89,34 @@ Describe 'Split-DscResource' {
       $split = New-FixtureSplit
 
       $split.Unapplied.Resource | Should -Not -Contain 'Microsoft.WinGet.DSC/WinGetPackage'
+    }
+  }
+
+  Context 'malformed WinGetPackage resources' {
+    It 'throws a clear error naming the offending resource id when settings.source is missing' {
+      $document = ConvertFrom-Yaml -Yaml @'
+properties:
+  resources:
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.broken
+      settings:
+        id: Vendor.Broken
+'@ -Ordered
+
+      { Split-DscResource -Resource @($document['properties']['resources']) } | Should -Throw '*pkg.broken*'
+    }
+
+    It 'throws a clear error naming the offending resource id when settings.id is missing' {
+      $document = ConvertFrom-Yaml -Yaml @'
+properties:
+  resources:
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.broken
+      settings:
+        source: winget
+'@ -Ordered
+
+      { Split-DscResource -Resource @($document['properties']['resources']) } | Should -Throw '*pkg.broken*'
     }
   }
 }

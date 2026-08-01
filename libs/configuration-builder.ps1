@@ -25,10 +25,14 @@ function Split-DscResource {
   foreach ($item in $Resource) {
     if ($item['resource'] -eq 'Microsoft.WinGet.DSC/WinGetPackage') {
       $source = $item['settings']['source']
+      $packageId = $item['settings']['id']
+      if ([string]::IsNullOrEmpty($source) -or [string]::IsNullOrEmpty($packageId)) {
+        throw "WinGetPackage resource '$($item['id'])' is missing settings.source or settings.id."
+      }
       if (-not $grouped.Contains($source)) {
         $grouped[$source] = [System.Collections.Generic.List[string]]::new()
       }
-      $grouped[$source].Add($item['settings']['id'])
+      $grouped[$source].Add($packageId)
       continue
     }
     $unapplied.Add([pscustomobject][ordered]@{
@@ -64,6 +68,12 @@ function Split-DscResource {
   name to its SourceDetails (Argument/Identifier/Name/Type) is a
   separate concern, handled by ConvertTo-PackagesImportJson.
 
+  Throws if a WinGetPackage resource is missing settings.source or
+  settings.id, naming the offending resource's own id, rather than
+  letting a null/empty key reach $grouped (an OrderedDictionary throws
+  a cryptic "Key cannot be null" on that) or silently emitting an
+  invalid PackageIdentifier.
+
   .OUTPUTS
   Ordered hashtable with Grouped (ordered dictionary of source name ->
   list of PackageIdentifier strings, insertion order = first-
@@ -85,7 +95,7 @@ function ConvertTo-PackagesImportJson {
 
   $unknown = @($Grouped.Keys | Where-Object { -not $SourceDetail.Contains($_) })
   if ($unknown.Count -gt 0) {
-    throw "Unknown WinGetPackage source(s) '$($unknown -join ', ')' -- add SourceDetails for them in scripts/Build-Configurations.ps1 before regenerating import.json."
+    throw "Unknown WinGetPackage source(s) '$($unknown -join ', ')' -- add SourceDetails for them to the -SourceDetail map passed to this function."
   }
 
   $line = [System.Collections.Generic.List[string]]::new()
@@ -135,8 +145,11 @@ function ConvertTo-PackagesImportJson {
 
   Throws if $Grouped references a source with no entry in
   $SourceDetail, rather than silently emitting a Sources[] entry
-  without SourceDetails -- winget import.json to describe a source it
-  cannot resolve.
+  without SourceDetails -- winget needs SourceDetails to resolve a
+  source, and a missing entry would produce an import.json winget
+  cannot use. The error names the caller-supplied -SourceDetail map,
+  not a specific caller script, so this function stays reusable by
+  any caller that supplies its own source knowledge.
 
   .OUTPUTS
   The complete file text, LF-terminated, ending with exactly one
