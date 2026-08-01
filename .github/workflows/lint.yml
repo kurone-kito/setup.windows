@@ -28,3 +28,15 @@ jobs:
       - name: Run PSScriptAnalyzer
         shell: pwsh
         run: Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit
+  pester:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module -Name Pester -RequiredVersion 6.0.1 -Force -Scope CurrentUser -Repository PSGallery
+      - name: Run Pester tests
+        shell: pwsh
+        run: Invoke-Pester -Path ./tests/powershell -CI
