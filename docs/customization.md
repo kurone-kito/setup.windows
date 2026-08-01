@@ -541,14 +541,14 @@ distribution](#exception-this-repository-is-the-source-of-a-reusable-idd-distrib
 Where an `idd-template/` source expresses a project-specific value as
 a `{{placeholder}}`, this table gives the live ↔ template mapping:
 
-| Live value (`.github/instructions/`)                                | Template form (`idd-template/`)  |
-| ------------------------------------------------------------------- | -------------------------------- |
-| `idd-skill` in repo-name contexts                                   | `setup.windows`                  |
-| `idd-skill` in marker-prefix contexts (e.g. `idd-skill-roadmap-id`) | `setup-windows`      |
-| **fix-validate** command string                                     | `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md"`      |
-| **pre-push-validate** command string                                | `npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"` |
+| Live value (`.github/instructions/`)                                | Template form (`idd-template/`)                                                                                                                                                                                                     |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `idd-skill` in repo-name contexts                                   | `setup.windows`                                                                                                                                                                                                                     |
+| `idd-skill` in marker-prefix contexts (e.g. `idd-skill-roadmap-id`) | `setup-windows`                                                                                                                                                                                                                     |
+| **fix-validate** command string                                     | `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md"`                                                                                                                                                    |
+| **pre-push-validate** command string                                | `npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"`                                             |
 | **post-fix-validate** command string                                | `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"` |
-| **install-deps** command string                                     | `true`       |
+| **install-deps** command string                                     | `true`                                                                                                                                                                                                                              |
 
 Match by the named command row in the Project commands table, not by
 command prefix, to avoid confusing commands that share the same
