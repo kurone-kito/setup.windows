@@ -168,6 +168,133 @@ over both profiles, on `windows-latest`) is a reasonable follow-up,
 but is a separate decision left to a future issue, per
 issue #69's own scope.
 
+## Can the Chocolatey route and the ARM64 branch be declared? (issue #71)
+
+Two pieces of `boxstarter.ps1` sit outside `configurations/*.dsc.yaml`:
+Phase 3's Chocolatey packages (`font-hackgen`, `font-hackgen-nerd`,
+`lato`, `vb-cable`, plus `posh-git` via `Install-Module`), and Phase
+4's `if (-not $IS_ARM64) { ... }` branch around `act` / Docker Desktop
+/ VirtualBox. This is investigation only -- no `dsc.yaml`, generator,
+or `boxstarter.ps1` change is made here; implementation (if any) is a
+future issue's scope.
+
+### Chocolatey packages
+
+`Microsoft.WinGet.DSC/WinGetPackage` can only install winget packages,
+so declaring a Chocolatey package needs a separate DSC resource
+module. The obvious candidate, [`chocolatey/cChoco`](https://github.com/chocolatey/cChoco),
+**is archived** -- confirmed via the GitHub API
+(`archived: true`, archived 2026-06-29) and its own `readme.md`:
+"cChoco has now been archived, and will not have any further updates
+or support... we recommend using
+[Chocolatey Module](https://github.com/chocolatey-community/Chocolatey-Module)."
+
+That successor (`chocolatey-community/Chocolatey-Module`, PSGallery
+module name `chocolatey`) is actively maintained (pushed 2026-06-19,
+41 stars, class-based DSC resources). It provides a `ChocolateyPackage`
+resource (`Name`, `Version`, `Ensure`, `ChocolateyOptions`, `Source`,
+`Credential`) that checks `Test-ChocolateyInstall` before acting --
+already satisfied in this repo, since `setup.cmd` installs Chocolatey
+(`choco install boxstarter -y`) before Phase 2/3 ever run.
+
+**Recommendation: declare it**, via `resource: chocolatey/ChocolateyPackage`
+per package, `securityContext: elevated` (matching today's system-wide
+install). `ChocolateyPackage` is not a `Microsoft.WinGet.DSC/WinGetPackage`
+resource, so `Split-DscResource` (issue #66) already buckets it into
+the unapplied-resources list with zero generator changes -- the same
+mechanism that already covers `PSDscResources/Registry` and the
+`OsVersion` assertion. Caveat: `chocolatey-community/Chocolatey-Module`
+publishes a preview release on every merge to `main`, so it's
+comparatively new and fast-moving next to `PSDscResources` -- worth a
+trial run before committing fully.
+
+### `posh-git` (PowerShell module)
+
+No well-maintained DSC resource exists specifically for "install this
+PowerShell module." Two candidates checked:
+
+- `PSModule` (in `PowerShell/PackageManagementProviderResource`):
+  **archived**, last pushed 2018-04-12 -- 8 years stale.
+- `Microsoft.PowerShell.PSResourceGet`: actively maintained (Microsoft's
+  own package manager, pushed 2026-07-31), but its own module reference
+  docs list only cmdlets (`Install-PSResource`, `Find-PSResource`,
+  etc.) -- it is a package-manager module, not a DSC resource provider.
+  No `[DscResource()]` class ships in it.
+
+**Recommendation: declare it via `PSDscResources/Script`** -- already
+proven in this repo for the Registry resources (issue #64).
+Idempotency: `TestScript`/`GetScript` check
+`Get-Module -ListAvailable -Name posh-git`; `SetScript` runs
+`Install-Module posh-git -Scope CurrentUser -Force -AllowClobber`,
+identical to today's imperative line. `securityContext: current`
+(`CurrentUser` scope, no elevation, matching today). Also not a
+`WinGetPackage` resource, so it lands in the unapplied-resources list
+automatically.
+
+### Architecture (ARM64) conditional exclusion
+
+Three approaches compared, evaluating file count, maintenance cost,
+and impact on `scripts/Build-Configurations.ps1` (issue #66):
+
+**A. Separate config files per architecture** (crossed with the
+full/min profile axis: 2 profiles x 2 architectures). File count goes
+from 2 `dsc.yaml` sources (6 total with their generated files) to 4
+(12 total). The ~102 packages common to both architectures would need
+to stay in sync across 2 files per profile, to exclude just 3
+ARM64-incompatible packages. `Build-Configurations.ps1` needs no code
+change (it already takes an arbitrary `-DscPath`), just 2 more
+invocations wired into CI/docs. The dsc route and the import-fallback
+route stay consistent by construction, since the ARM64 file simply
+never lists the excluded packages.
+
+**B. Single file, assertion-gated exclusion via `dependsOn`.** WinGet
+Configuration assertions can gate individual resources through
+`dependsOn`: a failed assertion skips its dependents without failing
+the run (per the
+[official authoring guide](https://learn.microsoft.com/en-us/windows/package-manager/configuration/create)).
+But: no off-the-shelf architecture-assertion resource exists --
+checked `Microsoft.Windows.Developer`'s full resource list
+(`DeveloperMode`, `OsVersion`, `Taskbar`, `WindowsExplorer`,
+`UserAccessControl`, `EnableDarkMode`, `ShowSecondsInClock`,
+`EnableRemoteDesktop`, `EnableLongPathSupport`, `PowerPlanSetting`,
+`WindowsCapability`, `NetConnectionProfile`,
+`AdvancedNetworkSharingSetting`, `FirewallRule`) -- none check
+processor architecture, so this option would also need a bespoke
+`PSDscResources/Script`-based assertion. More importantly, **this
+option breaks with the generator as it stands today**:
+`Split-DscResource` has no concept of `dependsOn` -- it extracts every
+`Microsoft.WinGet.DSC/WinGetPackage` resource's id/source
+unconditionally, so an assertion-gated package would still appear in
+`import.json` for every architecture including ARM64, where the dsc
+route correctly skips it but the import-fallback route would not. That
+route/generator mismatch is a gap this option introduces, not one it
+inherits. On top of that, winget-cli's own issue tracker documents
+ARM64-specific `winget configure` problems (`Repair-WinGetPackageManager`
+failing on ARM64, general install failures on ARM64) -- the underlying
+DSC engine's ARM64 support is itself immature right now.
+
+**C. Stay imperative** (today's `if (-not $IS_ARM64) { ... }` block).
+Zero migration cost, zero new risk, but does not satisfy roadmap #62's
+stated success condition of full replacement.
+
+**Recommendation: stay imperative for now.** Option A is technically
+sound but a large maintenance-cost jump to exclude just 3 packages;
+Option B is unsound against the current generator and rests on an
+immature winget-cli ARM64 story. If ARM64 exclusions grow beyond this
+narrow case, Option A -- not Option B -- is the correct path to
+revisit.
+
+### Roadmap #62 success-condition amendment
+
+Because architecture conditionals are recommended to stay imperative,
+roadmap #62's stated success condition ("procedural `winget install` /
+`choco install` enumeration fully replaced by declarative definitions")
+cannot be met exactly as worded. Proposed amendment: narrow it to
+"every package/resource that does not require runtime branching is
+declared," with `boxstarter.ps1` Phase 4's architecture branch recorded
+as a documented, intentional exception (linking here), revisitable if
+a sound single-file mechanism becomes available.
+
 ## Removed files and their relocation
 
 | Removed file | Disposition |
