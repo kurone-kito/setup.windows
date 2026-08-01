@@ -1,4 +1,7 @@
 BeforeAll {
+  Import-Module powershell-yaml -RequiredVersion 0.4.12
+
+  . (Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath '..', 'libs', 'configuration-builder.ps1')
   . (Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath '..', 'libs', 'package-id-checker.ps1')
 }
 
@@ -86,5 +89,54 @@ Describe 'Get-PackageIdCheckExitCode' {
     $result = [ordered]@{ Confirmed = @(); NotFound = @(1); Indeterminate = @(1) }
 
     Get-PackageIdCheckExitCode -Result $result | Should -Be 1
+  }
+}
+
+Describe 'Invoke-PackageIdCheck' {
+  BeforeAll {
+    $script:fixturePath = Join-Path -Path $TestDrive -ChildPath 'fixture.dsc.yaml'
+    Set-Content -Path $script:fixturePath -Value @'
+properties:
+  resources:
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.good
+      settings:
+        id: Vendor.Good
+        source: winget
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.bad
+      settings:
+        id: Vendor.Bad
+        source: msstore
+  assertions: []
+'@
+  }
+
+  It 'runs the full pipeline end-to-end: parses, splits, tests, formats, and exits non-zero on NotFound' {
+    Mock Invoke-WingetShow {
+      switch ($Id) {
+        'Vendor.Good' { 0 }
+        'Vendor.Bad' { -1978335212 }
+      }
+    }
+
+    $check = Invoke-PackageIdCheck -DscPath $script:fixturePath
+
+    $check.Result.Confirmed.Count | Should -Be 1
+    $check.Result.NotFound.Count | Should -Be 1
+    $check.Result.NotFound[0].Id | Should -Be 'Vendor.Bad'
+    $check.ExitCode | Should -Be 1
+    ($check.Lines -join "`n") | Should -Match 'Confirmed: 1 package'
+    ($check.Lines -join "`n") | Should -Match 'Vendor\.Bad \(msstore\) exit=-1978335212'
+  }
+
+  It 'always prints the Not found and Indeterminate headers, even at zero count' {
+    Mock Invoke-WingetShow { 0 }
+
+    $check = Invoke-PackageIdCheck -DscPath $script:fixturePath
+
+    $check.Lines | Should -Contain 'Not found (0):'
+    $check.Lines | Should -Contain 'Indeterminate (0):'
+    $check.ExitCode | Should -Be 0
   }
 }

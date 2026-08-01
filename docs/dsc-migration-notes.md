@@ -85,10 +85,10 @@ in the Boxstarter log.
 
 A wrong or stale `WinGetPackage` id is not fixed by Phase 2's route
 fallback (above): the `import` route queries the same winget, the
-same id, against the same source, and fails identically. `scripts/
-Test-PackageIds.ps1` checks id validity independently of route
-selection and without installing anything, via `winget show --exact
---id <id> --source <source>`:
+same id, against the same source, and fails identically.
+`scripts/Test-PackageIds.ps1` checks id validity independently of
+route selection and without installing anything, via
+`winget show --exact --id <id> --source <source>`:
 
 ```powershell
 ./scripts/Test-PackageIds.ps1 -DscPath ./configurations/packages.dsc.yaml

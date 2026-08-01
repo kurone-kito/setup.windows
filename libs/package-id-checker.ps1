@@ -150,3 +150,58 @@ function Get-PackageIdCheckExitCode {
   0 if every id was Confirmed.
   #>
 }
+
+function Invoke-PackageIdCheck {
+  param(
+    [Parameter(Mandatory)]
+    [string] $DscPath
+  )
+
+  $document = ConvertFrom-Yaml -Yaml (Get-Content -Raw -Path $DscPath) -Ordered
+  $resource = @($document['properties']['resources'])
+  $assertion = @($document['properties']['assertions'])
+  $split = Split-DscResource -Resource $resource -Assertion $assertion
+  $result = Test-PackageIdList -Grouped $split.Grouped
+
+  $lines = [System.Collections.Generic.List[string]]::new()
+  $lines.Add("Confirmed: $($result.Confirmed.Count) package(s) exist.")
+  $lines.Add("Not found ($($result.NotFound.Count)):")
+  foreach ($item in $result.NotFound) {
+    $lines.Add("  - $($item.Id) ($($item.Source)) exit=$($item.ExitCode)")
+  }
+  $lines.Add("Indeterminate ($($result.Indeterminate.Count)):")
+  foreach ($item in $result.Indeterminate) {
+    $lines.Add("  - $($item.Id) ($($item.Source)) exit=$($item.ExitCode)")
+  }
+
+  return [ordered]@{
+    Lines    = $lines
+    Result   = $result
+    ExitCode = (Get-PackageIdCheckExitCode -Result $result)
+  }
+  <#
+  .SYNOPSIS
+  Runs the full package-id check for one dsc.yaml file: parse, split,
+  test, format, and compute the exit code.
+
+  .DESCRIPTION
+  Everything scripts/Test-PackageIds.ps1 needs, factored out into one
+  function so Pester can exercise the whole pipeline -- including
+  output formatting and exit-code selection -- without spawning a
+  child process or calling `exit` directly from a test. Requires
+  Split-DscResource (libs/configuration-builder.ps1) and
+  ConvertFrom-Yaml (the powershell-yaml module) to already be
+  available in the caller's scope; scripts/Test-PackageIds.ps1 dot-
+  sources configuration-builder.ps1 before this file for that reason.
+
+  The "Not found" and "Indeterminate" headers are always printed, with
+  a 0 count when empty, so a caller never has to infer "section
+  missing" as "zero" -- the output shape is the same whether every id
+  was confirmed or not.
+
+  .OUTPUTS
+  Ordered hashtable: Lines (array of output strings, ready to print),
+  Result (Test-PackageIdList's bucketed result), ExitCode
+  (Get-PackageIdCheckExitCode's result for Result).
+  #>
+}

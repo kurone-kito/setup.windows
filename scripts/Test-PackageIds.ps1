@@ -46,27 +46,6 @@ Import-Module powershell-yaml -RequiredVersion 0.4.12 -ErrorAction Stop
 . (Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath 'libs', 'configuration-builder.ps1')
 . (Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath 'libs', 'package-id-checker.ps1')
 
-$document = ConvertFrom-Yaml -Yaml (Get-Content -Raw -Path $DscPath) -Ordered
-$resource = @($document['properties']['resources'])
-$assertion = @($document['properties']['assertions'])
-$split = Split-DscResource -Resource $resource -Assertion $assertion
-
-$result = Test-PackageIdList -Grouped $split.Grouped
-
-Write-Output "Confirmed: $($result.Confirmed.Count) package(s) exist."
-
-if ($result.NotFound.Count -gt 0) {
-  Write-Output "Not found ($($result.NotFound.Count)):"
-  foreach ($item in $result.NotFound) {
-    Write-Output "  - $($item.Id) ($($item.Source)) exit=$($item.ExitCode)"
-  }
-}
-
-if ($result.Indeterminate.Count -gt 0) {
-  Write-Output "Indeterminate ($($result.Indeterminate.Count)):"
-  foreach ($item in $result.Indeterminate) {
-    Write-Output "  - $($item.Id) ($($item.Source)) exit=$($item.ExitCode)"
-  }
-}
-
-exit (Get-PackageIdCheckExitCode -Result $result)
+$check = Invoke-PackageIdCheck -DscPath $DscPath
+$check.Lines | Write-Output
+exit $check.ExitCode
