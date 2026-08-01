@@ -15,7 +15,9 @@ setup.cmd                        ← single entry point
        └─ boxstarter.ps1
             ├─ Phase 0: OS support check        (libs/os-guard.ps1)
             ├─ Phase 1: Environment detection
-            ├─ Phase 2: winget configure (DSC)   (configurations/packages.dsc.yaml)
+            ├─ Phase 2: winget configure or      (configurations/packages.dsc.yaml
+            │    winget import (degraded mode)    or configurations/packages.import.json,
+            │                                      libs/strategy.ps1)
             ├─ Phase 3: Chocolatey (fonts, vb-cable) + posh-git (PowerShellGet)
             ├─ Phase 4: Architecture-conditional packages
             ├─ Phase 5: Post-install             (libs/post-install.ps1)
@@ -63,7 +65,10 @@ The script will:
 
 1. Install **Chocolatey** and **Boxstarter** if not already present
 2. Launch `boxstarter.ps1` via `Install-BoxstarterPackage` (reboot-resilient)
-3. Apply the **WinGet Configuration (DSC)** to install 105 packages declaratively
+3. Apply the **WinGet Configuration (DSC)** to install 105 packages
+   declaratively when available, otherwise fall back to
+   **`winget import`** (degraded mode) and report any resources it
+   could not apply
 4. Install remaining packages via Chocolatey (fonts and audio drivers)
 5. Run post-install setup (Node.js, Rust/cargo packages, Unity, Docker images)
 6. Enable Microsoft Update and run Windows Update
@@ -75,8 +80,9 @@ simply re-run `.\setup.cmd` — all phases are **idempotent**.
 
 To use the lighter configuration (development tools only, no gaming/media):
 
-Edit `boxstarter.ps1` and change the DSC file reference from
-`packages.dsc.yaml` to `packages.min.dsc.yaml`.
+Edit `boxstarter.ps1`'s Phase 2 and change `$ConfigProfile` from `'full'`
+to `'min'`. This single value selects the DSC file, its `import.json`
+fallback, and its unapplied-resources list together.
 
 ## What Gets Installed
 
