@@ -1,8 +1,10 @@
 # DSC Migration Notes
 
 This document records what happened to each file removed when
-`migrate-to-dsc` was merged into `master` (issue #63), and lists the
-Windows configuration processing that has no replacement yet.
+`migrate-to-dsc` was merged into `master` (issue #63), and the
+disposition of the Windows configuration processing that had no DSC
+equivalent at that point (declared as a DSC resource by issue #64, or
+recorded as staying imperative and why).
 
 ## Removed files and their relocation
 
@@ -21,13 +23,15 @@ Windows configuration processing that has no replacement yet.
 | `t/deploy.ps1` | Not relocated. Deployed `t/sw-launcher.cmd` into the `Vagrantfile` VM for the manual E2E flow; removed alongside `Vagrantfile` / `test` for the same reason. |
 | `t/sw-launcher.cmd` | Not relocated. Launched `setup.cmd` from inside the `Vagrantfile` VM as part of the manual E2E flow; removed alongside `Vagrantfile` / `test` for the same reason. |
 
-## Windows configuration processing with no DSC replacement (as of this merge)
+## Disposition of the remaining Windows configuration processing
 
-The following processing existed in the pre-migration `boxstarter.ps1`
-but has no equivalent in `configurations/packages.dsc.yaml`,
-`configurations/packages.min.dsc.yaml`, or `libs/*.ps1` after this
-merge. Restoring these is out of scope for issue #63 (tracked by
-roadmap #62's #64).
+Issue #63 left the following pre-migration `boxstarter.ps1` processing
+without a DSC equivalent. Issue #64 investigated each item against
+Boxstarter's own source (`chocolatey/boxstarter`,
+`Boxstarter.WinConfig/*.ps1`) and, for each, either declared it as a
+`PSDscResources/Registry` resource in `configurations/packages.dsc.yaml`,
+restored it imperatively, or recorded why it should not be restored at
+all.
 
 ### Boxstarter setting commands (5)
 
@@ -41,41 +45,121 @@ Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowFileEx
 Enable-RemoteDesktop
 ```
 
+Disposition of each command:
+
+- **`Set-ExplorerOptions -showHiddenFilesFoldersDrives -showFileExtensions`**
+  — Not declared as a separate resource. This cmdlet is deprecated in
+  Boxstarter's own source and internally forwards to
+  `Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives
+  -EnableShowFileExtensions`, writing the exact same
+  `Explorer\Advanced\Hidden` / `HideFileExt` values as the fourth
+  command below. The original script called both, so this call was
+  fully redundant; declaring `explorer.showHiddenFiles` /
+  `explorer.showFileExtensions` once (from the fourth command) covers
+  it without duplication.
+- **`Set-StartScreenOptions ...`** — Not declared. All five switches
+  this call sets (`OpenAtLogon`, `MonitorOverride`, `MakeAllAppsDefault`,
+  `GlobalSearchInApps`, `DesktopFirst`) write under
+  `HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartPage`,
+  a Windows 8/8.1 Start *Screen* key. Boxstarter's own implementation
+  guards every write with `if (Test-Path -Path $startPageKey)`; on
+  Windows 10/11 — the only OS tier this repository's
+  `Microsoft.Windows.Developer/OsVersion` assertion (build 19045+)
+  supports — that key does not exist, so the pre-migration script
+  wrote nothing here on any machine this repo targets. Declaring it as
+  a `Force: true` DSC resource would *create* registry state the old
+  script never created, which is a behavior change, not a faithful
+  migration. Not declared, and not restored to `boxstarter.ps1` either
+  (the call was already absent after #63's rewrite — this only
+  documents why it stays absent). This is the one command in this list
+  where the discriminating fact is that its target key is dead across
+  the *entire* supported OS range; `Explorer\Advanced`, `Explorer`,
+  and `Explorer\Ribbon` (used by the declared resources below) are all
+  live on Windows 10 22H2+, so the same `Test-Path`-guard concern does
+  not apply to them.
+- **`Set-BoxstarterTaskbarOptions -MultiMonitorOn -MultiMonitorMode All
+  -MultiMonitorCombine Always`** — Declared as
+  `taskbar.multiMonitorEnabled` (`MMTaskbarEnabled=1`),
+  `taskbar.multiMonitorMode` (`MMTaskbarMode=0`), and
+  `taskbar.multiMonitorGlomLevel` (`MMTaskbarGlomLevel=0`), all under
+  `HKCU:\...\Explorer\Advanced`. The function also has a
+  byte-array-manipulation branch (`StuckRects2\Settings`) for
+  dock/auto-hide switches, but the original call never used those
+  switches, so it isn't represented here. The function ends with
+  `Restart-Explorer`, which DSC does not replicate — the setting takes
+  effect at next sign-in instead of immediately.
+- **`Set-WindowsExplorerOptions ...`** — Declared as
+  `explorer.showHiddenFiles` (`Advanced\Hidden=1`),
+  `explorer.showFileExtensions` (`Advanced\HideFileExt=0`),
+  `explorer.navPaneExpandToCurrentFolder`
+  (`Advanced\NavPaneExpandToCurrentFolder=1`),
+  `explorer.showRecentInQuickAccess` (`Explorer\ShowRecent=1`),
+  `explorer.showFrequentInQuickAccess` (`Explorer\ShowFrequent=1`), and
+  `explorer.hideRibbon` (`Explorer\Ribbon\MinimizedStateTabletModeOff=1`).
+  This function also ends with `Restart-Explorer` (same caveat as
+  above).
+- **`Enable-RemoteDesktop`** — Not declared; kept as a literal call in
+  `boxstarter.ps1`'s Phase 6. Boxstarter's implementation enables
+  Remote Desktop through WMI method calls
+  (`Win32_TerminalServiceSetting.SetAllowTsConnections`,
+  `Win32_TSGeneralSetting.SetUserAuthenticationRequired`), not a direct
+  registry write, so `PSDscResources/Registry` cannot express it.
+  (Its own doc comment also claims it enables a firewall rule, but the
+  implementation contains no firewall-rule code — that claim is not
+  repeated here since it wasn't verified against the source.)
+
 ### Explorer / Search registry values (4)
 
-| Registry path | Value name | Type | Value |
-| --- | --- | --- | --- |
-| `HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` | `NavPaneExpandToCurrentFolder` | DWord (implicit via `Set-ItemProperty`) | `1` |
-| `HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` | `SeparateProcess` | DWord (implicit via `Set-ItemProperty`) | `1` |
-| `HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` | `ShowCompColor` | DWord (implicit via `Set-ItemProperty`) | `1` |
-| `HKCU:\Software\Microsoft\Windows\CurrentVersion\Search` | `SearchboxTaskbarMode` | DWord (implicit via `Set-ItemProperty`) | `1` |
+Declared in `configurations/packages.dsc.yaml`, all HKCU /
+`securityContext: current`:
+
+| Resource id | Registry path | Value name | Type | Value |
+| --- | --- | --- | --- | --- |
+| `explorer.navPaneExpandToCurrentFolder` | `HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` | `NavPaneExpandToCurrentFolder` | Dword | `1` |
+| `explorer.separateProcess` | `HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` | `SeparateProcess` | Dword | `1` |
+| `explorer.showCompColor` | `HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` | `ShowCompColor` | Dword | `1` |
+| `search.searchboxTaskbarMode` | `HKCU:\Software\Microsoft\Windows\CurrentVersion\Search` | `SearchboxTaskbarMode` | Dword | `1` |
 
 ### Disk Cleanup sageset registrations (19)
 
-All 19 entries share the same registry shape: base path
+Declared in `configurations/packages.dsc.yaml` as `sageset.<slug>`, all
+HKLM / `securityContext: elevated`. All 19 entries share the same
+registry shape: base path
 `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches\<name>`,
-value name `StateFlags0001`, type `DWord`, value `2`.
+value name `StateFlags0001`, type `Dword`, value `2`. `Force: true`
+follows the same style as the resources above; on a system where a
+given `VolumeCaches\<name>` subkey does not already exist, it will
+create the key rather than fail.
 
-`<name>` values:
+| Resource id | `<name>` |
+| --- | --- |
+| `sageset.activeSetupTempFolders` | Active Setup Temp Folders |
+| `sageset.branchCache` | BranchCache |
+| `sageset.d3dShaderCache` | D3D Shader Cache |
+| `sageset.deliveryOptimizationFiles` | Delivery Optimization Files |
+| `sageset.diagnosticDataViewerDatabaseFiles` | Diagnostic Data Viewer database files |
+| `sageset.downloadedProgramFiles` | Downloaded Program Files |
+| `sageset.internetCacheFiles` | Internet Cache Files |
+| `sageset.oldChkDskFiles` | Old ChkDsk Files |
+| `sageset.recycleBin` | Recycle Bin |
+| `sageset.retailDemoOfflineContent` | RetailDemo Offline Content |
+| `sageset.setupLogFiles` | Setup Log Files |
+| `sageset.systemErrorMemoryDumpFiles` | System error memory dump files |
+| `sageset.systemErrorMinidumpFiles` | System error minidump files |
+| `sageset.temporaryFiles` | Temporary Files |
+| `sageset.thumbnailCache` | Thumbnail Cache |
+| `sageset.updateCleanup` | Update Cleanup |
+| `sageset.userFileVersions` | User file versions |
+| `sageset.windowsDefender` | Windows Defender |
+| `sageset.windowsErrorReportingFiles` | Windows Error Reporting Files |
 
-```text
-Active Setup Temp Folders
-BranchCache
-D3D Shader Cache
-Delivery Optimization Files
-Diagnostic Data Viewer database files
-Downloaded Program Files
-Internet Cache Files
-Old ChkDsk Files
-Recycle Bin
-RetailDemo Offline Content
-Setup Log Files
-System error memory dump files
-System error minidump files
-Temporary Files
-Thumbnail Cache
-Update Cleanup
-User file versions
-Windows Defender
-Windows Error Reporting Files
-```
+### min profile inclusion
+
+None of the resources above are included in
+`configurations/packages.min.dsc.yaml`. The min profile's existing
+non-package resources (`windows11-native-nvme-driver-{1,2,3}`) enable
+hardware functionality that can matter for correct operation on
+affected devices; the Explorer/Taskbar/Search/sageset resources above
+are convenience UI/cleanup preferences with no functional necessity.
+Keeping the min profile limited to packages plus that one
+hardware-enablement exception preserves its "minimal" intent.

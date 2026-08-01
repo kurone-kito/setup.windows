@@ -25,7 +25,8 @@ setup.cmd                        ← single entry point
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → local CA
             │    └─ Docker Desktop → image pulls
-            └─ Phase 6: Windows Update & teardown
+            ├─ Phase 6: Remote Desktop            (Enable-RemoteDesktop)
+            └─ Phase 7: Windows Update & teardown
 ```
 
 ## OS Support

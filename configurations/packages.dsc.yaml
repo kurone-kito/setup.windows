@@ -38,6 +38,422 @@ properties:
         Force: true
 
     # ================================================================
+    # Windows Explorer / Taskbar / Search UI settings
+    # Restored from the pre-migration boxstarter.ps1's Boxstarter setting
+    # commands (Set-WindowsExplorerOptions, Set-BoxstarterTaskbarOptions)
+    # and its direct Explorer/Taskbar Set-ItemProperty calls. See
+    # docs/dsc-migration-notes.md for the source-to-resource mapping.
+    # ================================================================
+    - resource: PSDscResources/Registry
+      id: explorer.showHiddenFiles
+      directives:
+        description: Show hidden files, folders, and drives in Explorer
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+        ValueName: Hidden
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: explorer.showFileExtensions
+      directives:
+        description: Show file extensions for known file types in Explorer
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+        ValueName: HideFileExt
+        ValueType: Dword
+        ValueData: "0"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: explorer.navPaneExpandToCurrentFolder
+      directives:
+        description: Expand Explorer's navigation pane to the current folder
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+        ValueName: NavPaneExpandToCurrentFolder
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: explorer.separateProcess
+      directives:
+        description: Launch folder windows in a separate process
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+        ValueName: SeparateProcess
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: explorer.showCompColor
+      directives:
+        description: Show encrypted or compressed NTFS files in color
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+        ValueName: ShowCompColor
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: explorer.showRecentInQuickAccess
+      directives:
+        description: Show recently used files in Quick Access
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer
+        ValueName: ShowRecent
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: explorer.showFrequentInQuickAccess
+      directives:
+        description: Show frequently used folders in Quick Access
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer
+        ValueName: ShowFrequent
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: explorer.hideRibbon
+      directives:
+        description: Keep Explorer's ribbon minimized outside tablet mode
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Ribbon
+        ValueName: MinimizedStateTabletModeOff
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: taskbar.multiMonitorEnabled
+      directives:
+        description: Show the taskbar on all monitors
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+        ValueName: MMTaskbarEnabled
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: taskbar.multiMonitorMode
+      directives:
+        description: Show all taskbar buttons on every monitor
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+        ValueName: MMTaskbarMode
+        ValueType: Dword
+        ValueData: "0"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: taskbar.multiMonitorGlomLevel
+      directives:
+        description: Always combine taskbar buttons on every monitor
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+        ValueName: MMTaskbarGlomLevel
+        ValueType: Dword
+        ValueData: "0"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: search.searchboxTaskbarMode
+      directives:
+        description: Show the search box on the taskbar
+        securityContext: current
+      settings:
+        Key: HKCU:\Software\Microsoft\Windows\CurrentVersion\Search
+        ValueName: SearchboxTaskbarMode
+        ValueType: Dword
+        ValueData: "1"
+        Ensure: Present
+        Force: true
+
+    # ================================================================
+    # Disk Cleanup sageset registrations
+    # Restored from the pre-migration boxstarter.ps1. Each entry marks
+    # one Disk Cleanup category as selected for cleanmgr's sageset 1
+    # (StateFlags0001). See docs/dsc-migration-notes.md for the source.
+    # ================================================================
+    - resource: PSDscResources/Registry
+      id: sageset.activeSetupTempFolders
+      directives:
+        description: "Disk Cleanup sageset: Active Setup Temp Folders"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Active Setup Temp Folders"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.branchCache
+      directives:
+        description: "Disk Cleanup sageset: BranchCache"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\BranchCache"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.d3dShaderCache
+      directives:
+        description: "Disk Cleanup sageset: D3D Shader Cache"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\D3D Shader Cache"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.deliveryOptimizationFiles
+      directives:
+        description: "Disk Cleanup sageset: Delivery Optimization Files"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Delivery Optimization Files"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.diagnosticDataViewerDatabaseFiles
+      directives:
+        description: "Disk Cleanup sageset: Diagnostic Data Viewer database files"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Diagnostic Data Viewer database files"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.downloadedProgramFiles
+      directives:
+        description: "Disk Cleanup sageset: Downloaded Program Files"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Downloaded Program Files"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.internetCacheFiles
+      directives:
+        description: "Disk Cleanup sageset: Internet Cache Files"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Internet Cache Files"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.oldChkDskFiles
+      directives:
+        description: "Disk Cleanup sageset: Old ChkDsk Files"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Old ChkDsk Files"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.recycleBin
+      directives:
+        description: "Disk Cleanup sageset: Recycle Bin"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Recycle Bin"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.retailDemoOfflineContent
+      directives:
+        description: "Disk Cleanup sageset: RetailDemo Offline Content"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\RetailDemo Offline Content"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.setupLogFiles
+      directives:
+        description: "Disk Cleanup sageset: Setup Log Files"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Setup Log Files"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.systemErrorMemoryDumpFiles
+      directives:
+        description: "Disk Cleanup sageset: System error memory dump files"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\System error memory dump files"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.systemErrorMinidumpFiles
+      directives:
+        description: "Disk Cleanup sageset: System error minidump files"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\System error minidump files"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.temporaryFiles
+      directives:
+        description: "Disk Cleanup sageset: Temporary Files"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Temporary Files"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.thumbnailCache
+      directives:
+        description: "Disk Cleanup sageset: Thumbnail Cache"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Thumbnail Cache"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.updateCleanup
+      directives:
+        description: "Disk Cleanup sageset: Update Cleanup"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Update Cleanup"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.userFileVersions
+      directives:
+        description: "Disk Cleanup sageset: User file versions"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\User file versions"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.windowsDefender
+      directives:
+        description: "Disk Cleanup sageset: Windows Defender"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Windows Defender"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    - resource: PSDscResources/Registry
+      id: sageset.windowsErrorReportingFiles
+      directives:
+        description: "Disk Cleanup sageset: Windows Error Reporting Files"
+        securityContext: elevated
+      settings:
+        Key: "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VolumeCaches\\Windows Error Reporting Files"
+        ValueName: StateFlags0001
+        ValueType: Dword
+        ValueData: "2"
+        Ensure: Present
+        Force: true
+
+    # ================================================================
     # Package managers & dependencies
     # ================================================================
     - resource: Microsoft.WinGet.DSC/WinGetPackage
