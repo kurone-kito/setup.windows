@@ -1,5 +1,7 @@
 name: winget CI probe (temporary, issue #69)
 on:
+  push:
+    branches: ["issue/69-chore-ci-github-actions-windows-winget"]
   workflow_dispatch:
 permissions:
   contents: read
