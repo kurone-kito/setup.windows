@@ -115,6 +115,9 @@ function Add-UnityCliToProcessPath {
   param (
     [string]$InstallDir = $Script:UnityCliInstallDir
   )
+  if ([string]::IsNullOrEmpty($InstallDir)) {
+    return
+  }
   $current = @($env:Path -split ';' | Where-Object { $_ -ne '' })
   $target = $InstallDir.TrimEnd('\', '/')
   $alreadyPresent = $current | Where-Object {
@@ -136,6 +139,10 @@ function Add-UnityCliToProcessPath {
   install.ps1's own source, which never touches $env:Path. Without
   this, a `unity` call later in the same setup run would fail even
   immediately after a successful install.
+
+  A null/empty InstallDir (e.g. the default on a machine without
+  $env:LOCALAPPDATA, such as this file's own Linux Pester run) is a
+  no-op rather than an error -- there is nothing to add.
   #>
 }
 
@@ -145,6 +152,11 @@ function Sync-UnityCli {
   )
   $config = Get-RuntimeVersionsConfig -Path $ConfigPath
   if ($null -eq $config) {
+    return
+  }
+  if (-not $config.Contains('UnityCli') -or
+    -not $config.UnityCli.Contains('Target') -or -not $config.UnityCli.Contains('Channel')) {
+    Write-Error "Runtime versions config ${ConfigPath} is missing a UnityCli.Target/UnityCli.Channel entry."
     return
   }
   $unityCli = $config.UnityCli

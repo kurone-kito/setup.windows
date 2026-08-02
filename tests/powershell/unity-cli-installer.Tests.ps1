@@ -52,6 +52,14 @@ Describe 'Add-UnityCliToProcessPath' {
 
     ($env:Path -split ';' | Where-Object { $_ -ne '' }).Count | Should -Be 2
   }
+
+  It 'no-ops instead of throwing when InstallDir is null or empty' {
+    $env:Path = '/existing/one'
+
+    { Add-UnityCliToProcessPath -InstallDir $null } | Should -Not -Throw
+    { Add-UnityCliToProcessPath -InstallDir '' } | Should -Not -Throw
+    $env:Path | Should -Be '/existing/one'
+  }
 }
 
 Describe 'Sync-UnityCli' {
@@ -108,5 +116,19 @@ Describe 'Sync-UnityCli' {
 
   It 'writes a non-terminating error and does not throw when the config file is missing' {
     { Sync-UnityCli -ConfigPath (Join-Path $TestDrive 'does-not-exist.psd1') -ErrorAction SilentlyContinue } | Should -Not -Throw
+  }
+
+  It 'writes a non-terminating error and does not throw when the UnityCli entry is missing' {
+    $path = Join-Path -Path $TestDrive -ChildPath 'no-unity-cli.psd1'
+    Set-Content -Path $path -Value "@{ Node = @{} }"
+
+    { Sync-UnityCli -ConfigPath $path -ErrorAction SilentlyContinue } | Should -Not -Throw
+  }
+
+  It 'writes a non-terminating error and does not throw when UnityCli is missing Target/Channel' {
+    $path = Join-Path -Path $TestDrive -ChildPath 'incomplete-unity-cli.psd1'
+    Set-Content -Path $path -Value "@{ UnityCli = @{ Target = '1.0.0-beta.3' } }"
+
+    { Sync-UnityCli -ConfigPath $path -ErrorAction SilentlyContinue } | Should -Not -Throw
   }
 }
