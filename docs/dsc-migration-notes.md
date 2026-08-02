@@ -300,6 +300,70 @@ declared," with `boxstarter.ps1` Phase 4's architecture branch recorded
 as a documented, intentional exception (linking here), revisitable if
 a sound single-file mechanism becomes available.
 
+## Reviewing pinned Node/Unity versions (issue #73)
+
+`libs/post-install.ps1` installs Node.js (via fnm) and the Unity Editor
+(via Unity Hub CLI). Both used to have hardcoded version numbers,
+including one comment block that named its own EOL dates while
+continuing to install two already-EOL'd Node releases -- the versions
+went stale and nothing surfaced it. Both are now declared in
+`configurations/runtime-versions.psd1` instead.
+
+### Why `.psd1`, not YAML or JSON
+
+`scripts/Build-Configurations.ps1` and `scripts/Test-PackageIds.ps1`
+already depend on the `powershell-yaml` module to parse `dsc.yaml`, but
+`libs/post-install.ps1` has no module dependency today. `.psd1` is
+parsed by `Import-PowerShellDataFile`, a builtin cmdlet -- so this file
+does not add a new module dependency for a Boxstarter phase that
+previously had none. It also allows a `#`-prefixed comment directly
+above each entry, same as the hardcoded declarations it replaces.
+
+### Where to look for the next EOL
+
+Every entry in `configurations/runtime-versions.psd1` carries its own
+`Eol` (Node) or `VerifiedDate` (Unity, which has no EOL concept)
+alongside `Reason` -- the file itself is the answer to "when does this
+go stale," no separate tracking needed. `Node.Default` is a distinct
+key (not "first entry wins"), so reordering or trimming `Versions`
+can't silently change which version `fnm default` selects.
+
+### Review cadence
+
+- **Node**: re-check the
+  [official release schedule](https://github.com/nodejs/Release)
+  (`schedule.json`) whenever a version's `Eol` in
+  `runtime-versions.psd1` has passed, or at least whenever an issue
+  like this one revisits the file. Drop any version past its `Eol`,
+  and confirm `fnm` itself supports whichever version is added, since a
+  version fnm doesn't yet recognize will fail `fnm install` outright.
+- **Unity**: no fixed EOL, so `VerifiedDate` records when the pinned
+  version/changeset pair was last confirmed against VRChat's own
+  [current-version page](https://creators.vrchat.com/sdk/upgrade/current-unity-version/).
+  Re-check that page periodically (it has changed roughly once a year
+  historically) and whenever a VRChat SDK/VCC upgrade is suspected.
+  If the version changes, get the matching changeset from
+  [Unity's release API](https://services.api.unity.com/unity/editor/release/v1/releases)
+  (query by `?version=<version>`) in the same change -- a
+  mismatched changeset makes Unity Hub's
+  `install -v <version> -c <changeset>` fail outright. If the version
+  is still current, update `VerifiedDate` only.
+
+### 2026-08-02 verification (this issue)
+
+- Node 20 (EOL 2026-04-30) and Node 25 (EOL 2026-06-01) are past EOL as
+  of this issue's filing (2026-07-28) and have been dropped.
+  Node 22 (Maintenance LTS, EOL 2027-04-30) is kept for projects still
+  pinned to it; Node 24 (Active LTS, EOL 2028-04-30) is the default.
+  Source: `nodejs/Release`'s `schedule.json`, fetched 2026-08-02.
+- Unity `2022.3.22f1` is still the version named on VRChat's
+  current-version page (last updated there 2025-10-03, confirmed
+  2026-08-02) -- version unchanged, so only `VerifiedDate` was updated.
+  The paired changeset `887be4894c44` was independently confirmed
+  against Unity's own release API (`services.api.unity.com`), which
+  returns that exact changeset for `2022.3.22f1`'s Windows x86_64
+  download.
+
 ## Removed files and their relocation
 
 | Removed file | Disposition |

@@ -11,6 +11,20 @@ param()
 Set-StrictMode -Version Latest
 
 ###########################################################################
+### Runtime version config (issue #73) — Node/Unity versions live in
+### configurations/runtime-versions.psd1, not hardcoded here. See that
+### file for each version's EOL/verification info and the reason it is
+### pinned, and docs/dsc-migration-notes.md for the review cadence.
+###########################################################################
+$runtimeVersionsFile = Join-Path -Path $PSScriptRoot -ChildPath '..' `
+  -AdditionalChildPath 'configurations', 'runtime-versions.psd1'
+if (-not (Test-Path -Path $runtimeVersionsFile -PathType Leaf)) {
+  Write-Error "Runtime versions config not found: $runtimeVersionsFile"
+  return
+}
+$runtimeVersions = Import-PowerShellDataFile -Path $runtimeVersionsFile
+
+###########################################################################
 ### Helper — correct command existence check (fixes the Out-Null bug)
 ###########################################################################
 function Test-CommandExists {
@@ -33,17 +47,12 @@ if (Test-CommandExists fnm) {
   Write-Host '[post-install] Setting up Node.js via fnm...' -ForegroundColor Cyan
   fnm env --use-on-cd | Out-String | Invoke-Expression
 
-  # Node 20 (Iron)  — Maintenance LTS, EOL 2026-04-30
-  # Node 22 (Jod)   — Maintenance LTS, EOL 2027-04-30
-  # Node 24 (Krypton) — Active LTS, EOL 2028-04-30
-  # Node 25 — Current (non-LTS), EOL 2026-06-01
-  $nodeVersions = @(20, 22, 24, 25)
-  foreach ($v in $nodeVersions) {
-    Write-Host "  Installing Node.js v$v..." -ForegroundColor Gray
-    fnm install $v
+  $nodeConfig = $runtimeVersions.Node
+  foreach ($entry in @($nodeConfig.Versions)) {
+    Write-Host "  Installing Node.js v$($entry.Version) ($($entry.Status), EOL $($entry.Eol))..." -ForegroundColor Gray
+    fnm install $entry.Version
   }
-  # Set the latest LTS as default
-  fnm default 24
+  fnm default $nodeConfig.Default
   Write-Host '[post-install] Node.js setup complete.' -ForegroundColor Green
 }
 else {
@@ -108,7 +117,7 @@ else {
 
 ###########################################################################
 ### Unity Editor via Unity Hub CLI
-### VRChat SDK / VCC only supports Unity 2022.3.22f1 as of 2026-03
+### Pinned version/changeset live in configurations/runtime-versions.psd1
 ###########################################################################
 $UnityHub = $env:ProgramFiles `
   | Join-Path -ChildPath 'Unity Hub' `
@@ -134,8 +143,8 @@ if (Test-Path $UnityHub) {
     Start-Process $UnityHub -ArgumentList $opts -NoNewWindow -Wait
   }
 
-  # Unity 2022.3.22f1 — required by VRChat SDK / VCC
-  Install-UnityEditor -Version '2022.3.22f1' -Changeset '887be4894c44'
+  $unityConfig = $runtimeVersions.Unity
+  Install-UnityEditor -Version $unityConfig.Version -Changeset $unityConfig.Changeset
 
   Write-Host '[post-install] Unity Editor setup complete.' -ForegroundColor Green
 }
