@@ -189,6 +189,16 @@ if (Test-Path $postInstall) {
   Write-Host '[Phase 5] Post-install setup complete.' -ForegroundColor Green
 }
 
+# Applied after every package-install phase above (winget configure/import in
+# Phase 2, the architecture-conditional winget installs in Phase 4, and
+# post-install.ps1's own package-adjacent work just above) so every pin
+# target actually exists on the machine before winget pin add runs against
+# it -- see docs/dsc-migration-notes.md's "Declaring winget pins (issue #75)"
+# section. Kept in Phase 5 rather than its own numbered phase for the same
+# reason Sync-UnityCli is, above: avoids renumbering every phase below.
+. (Join-Path $scriptRoot 'libs\winget-pin-sync.ps1')
+Sync-WinGetPins -ConfigPath (Join-Path $scriptRoot 'configurations\pinned-packages.psd1')
+
 ###########################################################################
 ### Phase 6 — Remote Desktop
 ###########################################################################

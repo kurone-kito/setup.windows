@@ -625,6 +625,179 @@ developer installed manually for an unrelated project must not disappear as
 a side effect of running this repo's setup -- an explicit constraint from
 this issue, not an oversight.
 
+## Declaring winget pins (issue #75)
+
+Declaring a package in `configurations/packages.dsc.yaml` only controls
+whether it gets installed, not whether it silently upgrades later.
+`Microsoft.WinGet.DSC`'s `WinGetPackage` resource defaults `UseLatest` to
+`$false`, and with no `Version` pinned either, its check is "installed at
+all" -- re-running `winget configure` never upgrades anything. That is not
+the exposure this issue is about: the two real upgrade paths are a human
+running `winget upgrade --all`, and UniGetUI (`MartiCliment.UniGetUI`, this
+repo's own declared package) doing a bulk update. `winget pin` is winget's
+own answer to both, but it is machine-local state -- it does not live in
+`packages.dsc.yaml`, so a clone or a new machine starts with no pins at all
+and silently loses this protection. `configurations/pinned-packages.psd1`
+(declaration) and `libs/winget-pin-sync.ps1` (idempotent apply, called from
+`boxstarter.ps1` Phase 5) exist to make that state reproducible again.
+
+### The three pin types, and which one is used
+
+winget has three pin types (`winget pin add`'s own reference page), and
+they are not interchangeable:
+
+- **Pinning** (the default, no extra flag): excluded from `winget upgrade
+  --all`, but `winget upgrade <package>` by name still goes through.
+- **Blocking** (`--blocking`): rejected by both `winget upgrade --all` and
+  an explicit `winget upgrade <package>`, until unpinned (or `--force`).
+- **Gating** (`--version <range>`, wildcard `*` allowed as the last version
+  part): locks to a specific version or range, independent of the other two.
+
+`configurations/pinned-packages.psd1`'s one entry so far, `Unity.UnityHub`,
+uses **Blocking**. Reasoning (also recorded next to the entry itself, since
+a pin with no reason can't later be judged safe to remove): Unity Hub drives
+Unity Editor installation (`libs/unity-editor-installer.ps1`) and VRChat
+Creator Companion depends on Hub recognizing the installed Editor
+(`configurations/runtime-versions.psd1`'s `Unity` entry) -- a Hub upgrade
+changing that recognition behavior, or the Hub CLI surface underneath a
+pinned Editor version, is exactly the kind of breakage this issue exists to
+prevent. The plain **Pinning** default was rejected specifically because it
+would still let `winget upgrade Unity.UnityHub` (by name) through -- an
+operator typing that should not silently succeed either. **Gating** was not
+used here: it would require tracking and re-verifying a specific target Hub
+version, which nothing in this repo currently does (unlike the Unity Editor
+itself, whose `Version`/`Changeset` are already tracked in
+`runtime-versions.psd1`) -- introducing that tracking was out of scope.
+`Docker.DockerDesktop`, cited alongside Unity Hub as an example in this
+issue's own background, is not pinned: it is intentionally kept out of
+`packages.dsc.yaml` already (installed conditionally in `boxstarter.ps1`
+Phase 4) and has no currently-documented version-compatibility constraint
+in this repo to point to as a reason -- adding a pin without one would
+violate this same section's own "no reason, can't be judged removable"
+principle.
+
+### Undeclared and mismatched pins are reported, never touched
+
+`libs/winget-pin-sync.ps1`'s `Get-WinGetPinDrift` classifies every current
+pin against the declaration into four buckets: `ToAdd` (declared, missing --
+the only bucket `Sync-WinGetPins` acts on), `Matching`, `Mismatched`
+(present, but pinned with a different type or version range than declared),
+and `Undeclared` (present, not declared at all). Mismatched and Undeclared
+are both surfaced via `Write-Warning` and never modified. This is a
+deliberate choice, not an oversight: an operator may have pinned or
+re-pinned a package by hand for a reason this repo doesn't know about, and
+auto-correcting or removing that pin risks silently discarding it -- the
+same "report drift, never remove what the declaration doesn't know about"
+posture `Get-UnityEditorDrift` already uses for installed-but-undeclared
+Unity Editors (issue #74). Whether to eventually add an opt-in
+auto-remove/auto-correct mode is left for a future issue if it turns out to
+matter in practice.
+
+### `winget pin list` has no machine-readable output
+
+Unlike `unity editors -i --format json` (issue #74), `winget pin list` has
+no `--format json` or any other structured-output option -- confirmed
+against winget-cli's own `pin` reference page, which lists only the
+console/logging options (`--verbose`, `--nowarn`, etc.), no output-format
+flag. `microsoft/winget-cli#3051` ("add machine-parseable output") was
+closed as a duplicate of #1753 and redirects scripting use to the
+`Microsoft.WinGet.Client` PowerShell module instead -- but that module has
+no pin cmdlet at all as of this writing (no `Add-WinGetPin`/`Get-WinGetPin`
+exists anywhere in its `Cmdlets` source on GitHub). `ConvertFrom-
+WinGetPinListOutput` therefore parses the human-readable table directly.
+
+The real, current column set -- confirmed from two independent, real
+terminal-output reproductions pasted into actual `microsoft/winget-cli`
+issues, `#4340` (2024-04, winget v1.7.10861) and `#5244` (2025-02, a
+different winget install) -- is **`Name | Id | Version | Source | Pin
+type`**, five columns with `Name` first. This corrected an initial mistake
+in this PR: the first implementation was modeled on `microsoft/winget-
+cli#3013` (2023-02, winget v1.5.441-preview -- the very first preview
+build with pinning at all), whose reproduction shows a *four*-column `Id |
+Source | Version | Pin type` table with no `Name` column at all. That
+issue's own fix (`microsoft/winget-cli#3016`, "Fix order of pin labels")
+only reordered which value landed in which of *its* four columns; it did
+not add the `Name` column seen in the later issues, which must have
+happened separately. A CodeRabbit review comment on this PR caught the
+mismatch, backed by its own citations to the current documentation --
+verified independently against the two issues above (primary terminal
+output, not the docs page, since the docs page itself doesn't show an
+example row) before accepting the correction.
+
+Column start offsets are still derived from the header row rather than
+hardcoded (winget pads each column to its widest cell, an undocumented and
+non-guaranteed width), but are now looked up by name and sorted by
+discovered position instead of assumed to be in a fixed sequence --
+specifically because `#3013` already proves this table's column order has
+shifted across winget-cli versions once before, and could again. Only
+`Id`/`Version`/`Source`/`Pin type` are parsed (`Name` is human-readable
+only, not needed for drift matching), which also means the four-column,
+`Name`-less shape from the older `#3013`-era winget still parses correctly
+without any special-casing -- one fewer column to find is not an error
+condition for this lookup. A related, very recent finding
+(`microsoft/winget-cli#6325`, 2026-06): when no pins are set, the command
+prints the literal message "There are no pins configured." -- consistent
+with this parser's existing design of treating "no recognized header
+found" as zero pins rather than an error, and tolerant of that exact
+wording changing again without a code change here.
+
+One correctness consequence of the real format: both `#4340` and `#5244`
+show a concrete, non-blank installed-version string in the `Version`
+column for every pin type, not just `Gating` -- contradicting this PR's
+original assumption that `Version` would be blank for `Pinning`/`Blocking`
+pins. `Get-WinGetPinDrift` was corrected accordingly: it only compares
+`Version` against the declared `VersionRange` for `Gating` entries;
+`Pinning`/`Blocking` pins are classified as `Matching` by `PinType` alone,
+since there is no "must be blank" value left to check and comparing one
+would misclassify a correctly applied pin as `Mismatched`.
+
+Not verified against a real `winget pin list` invocation on this repo's
+own machine -- Windows-only, and per this repo's established rule,
+`boxstarter.ps1` is never executed directly in this environment even to
+smoke-test. What *is* verified: the column layout and the empty-state
+message both come from real terminal output pasted into the actual
+winget-cli issue tracker, not inferred from a docs page or assumed stable
+across versions. Covered by Pester with `winget` mocked at the
+`Invoke-WinGetPinListCommand` boundary, using fixture tables matching both
+the current five-column shape and the older four-column one.
+
+### UniGetUI does not respect winget pin
+
+UniGetUI's own issue tracker documents an "ignored updates" feature
+(`marticliment/UniGetUI#418`, `Devolutions/UniGetUI#1008`) that its own UI
+labels internally as a "blacklist" -- entirely separate app-managed state,
+not a read of winget's pin database. No evidence of UniGetUI reading or
+writing winget pin state was found anywhere in its issue tracker, release
+notes (through the 2026.2.x series), or documentation. **Conclusion: winget
+pin declared here is not respected by UniGetUI's bulk-update feature.** The
+avoidance path this issue's acceptance criteria asks for does exist, just
+not through winget pin: UniGetUI's own per-package "ignore updates" /
+"Manage ignored updates" feature (its Settings screen) can independently
+exclude a package from UniGetUI's own update pass. That is a manual,
+UniGetUI-side step -- it has no equivalent in `configurations/
+pinned-packages.psd1` and is not automated by `libs/winget-pin-sync.ps1`,
+since it is a different application's own local state, not winget's.
+Anyone relying on UniGetUI for updates should mirror this repo's pinned
+packages there by hand; that gap is a documented limitation, not something
+this issue's mechanism can close.
+
+### What pin cannot close
+
+- **Unity Hub self-updates outside winget entirely.** Its own
+  auto-updater is not a winget-mediated upgrade, so no pin type --
+  Blocking included -- stops it. Pinning `Unity.UnityHub` here still closes
+  the *winget*-mediated path (`winget upgrade --all`, or an explicit
+  `winget upgrade Unity.UnityHub`); it just doesn't close Hub's own
+  self-update mechanism, which is undocumented and outside this repo's
+  control.
+- **Microsoft Store-sourced packages (`source: msstore`, 29 in
+  `configurations/packages.dsc.yaml` as of this writing) are not guaranteed
+  to respect winget pin.** They are also subject to the Microsoft Store's
+  own automatic-update mechanism, independent of winget. `winget pin add`
+  does not reject an `msstore`-sourced target, so declaring one here is not
+  blocked, but its effectiveness against Store's own update path is
+  unverified.
+
 ## Removed files and their relocation
 
 | Removed file | Disposition |
