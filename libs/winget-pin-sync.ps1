@@ -69,7 +69,7 @@ function ConvertFrom-WinGetPinListOutput {
   for ($i = 0; $i -lt $lines.Count; $i++) {
     $candidateOffsets = @{}
     foreach ($name in $requiredColumns) {
-      $candidateOffsets[$name] = $lines[$i].IndexOf($name)
+      $candidateOffsets[$name] = $lines[$i].IndexOf($name, [System.StringComparison]::OrdinalIgnoreCase)
     }
     if (@($candidateOffsets.Values | Where-Object { $_ -lt 0 }).Count -eq 0) {
       $headerIndex = $i
@@ -137,7 +137,13 @@ function ConvertFrom-WinGetPinListOutput {
   their offsets are read from the header row and sorted by discovered
   position, not assumed to be in a fixed order, specifically because
   #3013 already proves this table's column order has shifted across
-  winget-cli versions once before.
+  winget-cli versions once before. The header lookup is also
+  case-insensitive ("Pin type" vs "Pin Type"): third-party mirrors of
+  winget-cli's docs disagree with each other on capitalization and on
+  whether Source or Pin type comes last, which the order-derived-from-
+  the-header design above already tolerates regardless of which is
+  actually current -- case-insensitivity closes the one gap that
+  design alone doesn't.
 
   A missing header row (no pins currently set -- e.g.
   microsoft/winget-cli#6325 (2026-06) shows the literal message "There

@@ -65,6 +65,21 @@ Unity.UnityHub         winget Blocking
     $pins[0].Id | Should -Be 'Unity.UnityHub'
     $pins[0].PinType | Should -Be 'Blocking'
   }
+
+  It 'is tolerant of a Pin Type/Source column swap and title-case header ("Pin Type" vs "Pin type")' {
+    $output = @'
+Name      Id                  Version Pin Type Source
+-----------------------------------------------------
+PowerToys Microsoft.PowerToys 0.70.*  Gating   winget
+'@
+    $pins = @(ConvertFrom-WinGetPinListOutput -Output $output)
+
+    $pins.Count | Should -Be 1
+    $pins[0].Id | Should -Be 'Microsoft.PowerToys'
+    $pins[0].Source | Should -Be 'winget'
+    $pins[0].PinType | Should -Be 'Gating'
+    $pins[0].Version | Should -Be '0.70.*'
+  }
 }
 
 Describe 'Get-CurrentWinGetPins' {
