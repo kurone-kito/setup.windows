@@ -3,26 +3,26 @@ BeforeAll {
 }
 
 Describe 'ConvertFrom-WinGetPinListOutput' {
-  It 'parses Pinning and Blocking pins with an empty Version column' {
+  It 'parses Pinning and Blocking pins, ignoring the leading Name column' {
     $output = @'
-Id                   Source Version Pin type
---------------------------------------------
-Unity.UnityHub       winget         Blocking
-Microsoft.PowerShell winget         Pinning
+Name       Id                   Version Source Pin type
+-------------------------------------------------------
+Unity Hub  Unity.UnityHub       3.10.0  winget Blocking
+PowerShell Microsoft.PowerShell 7.4.6.0 winget Pinning
 '@
     $pins = @(ConvertFrom-WinGetPinListOutput -Output $output)
 
     $pins.Count | Should -Be 2
     ($pins | Where-Object Id -EQ 'Unity.UnityHub').PinType | Should -Be 'Blocking'
-    ($pins | Where-Object Id -EQ 'Unity.UnityHub').Version | Should -Be ''
+    ($pins | Where-Object Id -EQ 'Unity.UnityHub').Version | Should -Be '3.10.0'
     ($pins | Where-Object Id -EQ 'Microsoft.PowerShell').PinType | Should -Be 'Pinning'
   }
 
   It 'parses a Gating pin with a version range in the Version column' {
     $output = @'
-Id                    Source Version Pin type
----------------------------------------------
-VMware.WorkstationPro winget 16.*    Gating
+Name                Id                    Version Source Pin type
+--------------------------------------------------------------------
+VMware Workstation  VMware.WorkstationPro 16.*    winget Gating
 '@
     $pins = @(ConvertFrom-WinGetPinListOutput -Output $output)
 
@@ -32,7 +32,7 @@ VMware.WorkstationPro winget 16.*    Gating
   }
 
   It 'returns an empty array when there is no header row (no pins set)' {
-    $pins = ConvertFrom-WinGetPinListOutput -Output 'No pinned packages found.'
+    $pins = ConvertFrom-WinGetPinListOutput -Output 'There are no pins configured.'
 
     $pins | Should -BeNullOrEmpty
   }
@@ -45,12 +45,25 @@ VMware.WorkstationPro winget 16.*    Gating
 
   It 'returns an empty array when the header is present with no data rows' {
     $output = @'
-Id                Source Version Pin type
-------------------------------------------
+Name Id Version Source Pin type
+--------------------------------
 '@
     $pins = ConvertFrom-WinGetPinListOutput -Output $output
 
     $pins | Should -BeNullOrEmpty
+  }
+
+  It 'is tolerant of the older four-column shape with no Name column (issue #3013-era winget)' {
+    $output = @'
+Id             Version Source Pin type
+---------------------------------------
+Unity.UnityHub         winget Blocking
+'@
+    $pins = @(ConvertFrom-WinGetPinListOutput -Output $output)
+
+    $pins.Count | Should -Be 1
+    $pins[0].Id | Should -Be 'Unity.UnityHub'
+    $pins[0].PinType | Should -Be 'Blocking'
   }
 }
 
@@ -60,9 +73,9 @@ Describe 'Get-CurrentWinGetPins' {
       @{
         ExitCode = 0
         Output   = @'
-Id             Source Version Pin type
---------------------------------------
-Unity.UnityHub winget         Blocking
+Name      Id             Version Source Pin type
+------------------------------------------------
+Unity Hub Unity.UnityHub 3.10.0  winget Blocking
 '@
       }
     }
@@ -98,6 +111,18 @@ Describe 'Test-PinnedPackageEntry' {
 
   It 'rejects an entry missing Reason' {
     Test-PinnedPackageEntry -Entry @{ Id = 'a'; Source = 'winget'; PinType = 'Pinning' } | Should -Be $false
+  }
+
+  It 'rejects an entry with an empty-string Reason' {
+    Test-PinnedPackageEntry -Entry @{ Id = 'a'; Source = 'winget'; PinType = 'Pinning'; Reason = '' } | Should -Be $false
+  }
+
+  It 'rejects an entry with a whitespace-only Id' {
+    Test-PinnedPackageEntry -Entry @{ Id = '   '; Source = 'winget'; PinType = 'Pinning'; Reason = 'r' } | Should -Be $false
+  }
+
+  It 'rejects a Gating entry with an empty-string VersionRange' {
+    Test-PinnedPackageEntry -Entry @{ Id = 'a'; Source = 'winget'; PinType = 'Gating'; Reason = 'r'; VersionRange = '' } | Should -Be $false
   }
 
   It 'returns $false instead of throwing for a non-hashtable entry' {
@@ -182,6 +207,16 @@ Describe 'Get-WinGetPinDrift' {
     $drift = Get-WinGetPinDrift -Declared @($declared) -Current @($current)
 
     $drift.Mismatched.Count | Should -Be 1
+  }
+
+  It 'classifies a Blocking pin as Matching regardless of the Version column (real winget shows the installed version there, not a target)' {
+    $declared = @{ Id = 'a'; Source = 'winget'; PinType = 'Blocking'; Reason = 'r' }
+    $current = @{ Id = 'a'; Source = 'winget'; PinType = 'Blocking'; Version = '3.10.0' }
+
+    $drift = Get-WinGetPinDrift -Declared @($declared) -Current @($current)
+
+    $drift.Matching.Count | Should -Be 1
+    $drift.Mismatched | Should -BeNullOrEmpty
   }
 
   It 'does not confuse packages with the same Id from a different Source' {

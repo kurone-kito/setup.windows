@@ -63,62 +63,97 @@ function ConvertFrom-WinGetPinListOutput {
     [Parameter(Mandatory)][AllowEmptyString()][string]$Output
   )
   $lines = $Output -split "`r?`n"
+  $requiredColumns = @('Id', 'Version', 'Source', 'Pin type')
   $headerIndex = -1
+  $offsets = $null
   for ($i = 0; $i -lt $lines.Count; $i++) {
-    if ($lines[$i] -match '^Id\s+Source\s+Version\s+Pin type\s*$') {
+    $candidateOffsets = @{}
+    foreach ($name in $requiredColumns) {
+      $candidateOffsets[$name] = $lines[$i].IndexOf($name)
+    }
+    if (@($candidateOffsets.Values | Where-Object { $_ -lt 0 }).Count -eq 0) {
       $headerIndex = $i
+      $offsets = $candidateOffsets
       break
     }
   }
   if ($headerIndex -lt 0) {
     return [hashtable[]]@()
   }
-  $header = $lines[$headerIndex]
-  $sourceStart = $header.IndexOf('Source')
-  $versionStart = $header.IndexOf('Version')
-  $pinTypeStart = $header.IndexOf('Pin type')
+  $orderedColumns = @($requiredColumns | Sort-Object { $offsets[$_] })
   $firstDataLine = $headerIndex + 2
   $lastDataLine = $lines.Count - 1
   if ($firstDataLine -gt $lastDataLine) {
     return [hashtable[]]@()
   }
+  $lastColumnStart = $offsets[$orderedColumns[-1]]
   $pins = foreach ($line in $lines[$firstDataLine..$lastDataLine]) {
-    if ([string]::IsNullOrWhiteSpace($line) -or $line.Length -lt $pinTypeStart) {
+    if ([string]::IsNullOrWhiteSpace($line) -or $line.Length -lt $lastColumnStart) {
       continue
     }
+    $values = @{}
+    for ($c = 0; $c -lt $orderedColumns.Count; $c++) {
+      $columnName = $orderedColumns[$c]
+      $start = $offsets[$columnName]
+      if ($c -lt $orderedColumns.Count - 1) {
+        $end = $offsets[$orderedColumns[$c + 1]]
+        $values[$columnName] = $line.Substring($start, $end - $start).Trim()
+      }
+      else {
+        $values[$columnName] = $line.Substring($start).Trim()
+      }
+    }
     @{
-      Id      = $line.Substring(0, $sourceStart).Trim()
-      Source  = $line.Substring($sourceStart, $versionStart - $sourceStart).Trim()
-      Version = $line.Substring($versionStart, $pinTypeStart - $versionStart).Trim()
-      PinType = $line.Substring($pinTypeStart).Trim()
+      Id      = $values['Id']
+      Source  = $values['Source']
+      Version = $values['Version']
+      PinType = $values['Pin type']
     }
   }
   return [hashtable[]]@($pins)
   <#
   .SYNOPSIS
-  Parses `winget pin list`'s human-readable table (Id / Source / Version
-  / Pin type columns). There is no --format json (or any other
-  machine-readable output) for this command: confirmed against
-  microsoft/winget-cli#3051, which was closed as a duplicate of #1753
-  and redirected scripting use to the PowerShell module (Microsoft.
-  WinGet.Client) -- but that module has no pin cmdlet at all as of this
-  writing (no Add-WinGetPin/Get-WinGetPin exists in its Cmdlets source).
-  Column start offsets are read from the header row itself rather than
-  hardcoded, since winget pads each column to fit its widest cell and
-  that width is not documented or guaranteed stable -- this mirrors the
-  header-driven parsing already used nowhere else in this repo, but the
-  same "derive structure from the live output, don't hardcode it"
-  posture as Get-InstalledUnityEditors's per-item field probing.
+  Parses `winget pin list`'s human-readable table. There is no --format
+  json (or any other machine-readable output) for this command:
+  confirmed against microsoft/winget-cli#3051, which was closed as a
+  duplicate of #1753 and redirected scripting use to the PowerShell
+  module (Microsoft.WinGet.Client) -- but that module has no pin
+  cmdlet at all as of this writing (no Add-WinGetPin/Get-WinGetPin
+  exists in its Cmdlets source).
 
-  A missing header row (no pins currently set, or an output shape this
-  parser doesn't recognize) degrades to an empty array rather than an
-  error -- winget pin list itself is not known to fail via exit code
-  merely for having zero pins, so treating "no header found" as "zero
-  pins" is the correct default for the common case.
+  The real, current column set is `Name | Id | Version | Source | Pin
+  type` (five columns, Name first) -- confirmed from two independent,
+  real terminal-output reproductions pasted into microsoft/winget-cli
+  issues: #4340 (2024-04, winget v1.7.10861) and #5244 (2025-02, a
+  different winget install). This is NOT what an earlier issue,
+  #3013 (2023-02, winget v1.5.441-preview -- the first preview build
+  with pinning at all), showed: a four-column `Id | Source | Version |
+  Pin type` table with no Name column. #3013's own fix
+  (microsoft/winget-cli#3016, "Fix order of pin labels") only
+  reordered which value landed in which of ITS FOUR columns; #4340 and
+  #5244 show a materially different, five-column shape that must have
+  been added later. Only Id/Version/Source/Pin type are parsed here
+  (Name is human-readable-only, not needed for drift matching) --
+  their offsets are read from the header row and sorted by discovered
+  position, not assumed to be in a fixed order, specifically because
+  #3013 already proves this table's column order has shifted across
+  winget-cli versions once before.
+
+  A missing header row (no pins currently set -- e.g.
+  microsoft/winget-cli#6325 (2026-06) shows the literal message "There
+  are no pins configured." -- or an output shape this parser doesn't
+  recognize) degrades to an empty array rather than an error: winget
+  pin list itself is not known to fail via exit code merely for having
+  zero pins, so treating "no header found" as "zero pins" is the
+  correct default for the common case, and is tolerant of the exact
+  empty-state wording changing again without a code change here.
 
   .OUTPUTS
-  One hashtable per pin (Id/Source/Version/PinType, all strings; Version
-  is '' for Pinning/Blocking pins), or an empty array.
+  One hashtable per pin (Id/Source/Version/PinType, all strings).
+  Version is not blank for Pinning/Blocking pins in current winget
+  (both #4340 and #5244 show a concrete installed-version string for
+  every pin type, not just Gating) -- see Get-WinGetPinDrift, which
+  does not compare Version for non-Gating pins for exactly this reason.
   #>
 }
 
@@ -145,10 +180,15 @@ function Test-PinnedPackageEntry {
     -not $Entry.Contains('PinType') -or -not $Entry.Contains('Reason')) {
     return $false
   }
+  if ([string]::IsNullOrWhiteSpace($Entry.Id) -or [string]::IsNullOrWhiteSpace($Entry.Source) -or
+    [string]::IsNullOrWhiteSpace($Entry.Reason)) {
+    return $false
+  }
   if ($Entry.PinType -notin @('Pinning', 'Blocking', 'Gating')) {
     return $false
   }
-  if ($Entry.PinType -eq 'Gating' -and -not $Entry.Contains('VersionRange')) {
+  if ($Entry.PinType -eq 'Gating' -and
+    (-not $Entry.Contains('VersionRange') -or [string]::IsNullOrWhiteSpace($Entry.VersionRange))) {
     return $false
   }
   return $true
@@ -169,6 +209,12 @@ function Test-PinnedPackageEntry {
   is NOT caught by the Where-Object scriptblock that calls this
   function, so it would abort the entire Sync-WinGetPins run instead of
   just skipping the one bad entry.
+
+  Checks Id/Source/Reason/VersionRange for non-empty, non-whitespace
+  values, not just key presence: a key present with an empty string
+  (e.g. `Reason = ''`) would otherwise pass validation and reach
+  Get-WinGetPinAddArguments, producing a broken `winget pin add --id ''
+  ...` call that fails at runtime instead of being rejected here.
   #>
 }
 
@@ -229,9 +275,17 @@ function Get-WinGetPinDrift {
       $toAdd += $entry
       continue
     }
-    $expectedVersion = if ($entry.PinType -eq 'Gating') { $entry.VersionRange } else { '' }
     $typeMatches = [string]::Equals($existing.PinType, $entry.PinType, [System.StringComparison]::Ordinal)
-    $versionMatches = [string]::Equals($existing.Version, $expectedVersion, [System.StringComparison]::Ordinal)
+    $versionMatches = if ($entry.PinType -eq 'Gating') {
+      [string]::Equals($existing.Version, $entry.VersionRange, [System.StringComparison]::Ordinal)
+    }
+    else {
+      # Pinning/Blocking carry no declared target version -- winget pin
+      # list's Version column shows the currently-installed version for
+      # every pin type, not just Gating, so there is nothing meaningful
+      # to compare it against here.
+      $true
+    }
     if ($typeMatches -and $versionMatches) {
       $matching += $entry
     }
@@ -256,15 +310,23 @@ function Get-WinGetPinDrift {
   .SYNOPSIS
   Classifies each declared pin against the machine's current pins
   (matched by Id+Source, ordinal): ToAdd (declared, not present at
-  all), Matching (present with the declared PinType/VersionRange),
-  Mismatched (present but pinned differently than declared -- e.g. a
-  plain pin where Blocking is declared), or Undeclared (present but not
-  in configurations/pinned-packages.psd1 at all). Pure classification,
-  no `winget` call -- Sync-WinGetPins only ever adds ToAdd entries; it
+  all), Matching (present with the declared PinType, and for Gating
+  also the declared VersionRange), Mismatched (present but pinned
+  differently than declared -- e.g. a plain pin where Blocking is
+  declared), or Undeclared (present but not in
+  configurations/pinned-packages.psd1 at all). Pure classification, no
+  `winget` call -- Sync-WinGetPins only ever adds ToAdd entries; it
   never removes Undeclared pins or corrects Mismatched ones, since
   either could be silently discarding an operator's own manual `winget
   pin` choice (see docs/dsc-migration-notes.md's "why report-only"
   rationale). Both are surfaced as warnings instead.
+
+  Version is only compared for Gating: real `winget pin list` output
+  shows a concrete installed-version string in the Version column
+  regardless of pin type (confirmed in microsoft/winget-cli#4340 and
+  #5244), so there is no "must be blank" value to check for
+  Pinning/Blocking, and comparing it would misclassify a correctly
+  applied pin as Mismatched.
   #>
 }
 

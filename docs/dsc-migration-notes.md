@@ -704,19 +704,62 @@ closed as a duplicate of #1753 and redirects scripting use to the
 `Microsoft.WinGet.Client` PowerShell module instead -- but that module has
 no pin cmdlet at all as of this writing (no `Add-WinGetPin`/`Get-WinGetPin`
 exists anywhere in its `Cmdlets` source on GitHub). `ConvertFrom-
-WinGetPinListOutput` therefore parses the human-readable table directly,
-deriving each column's start offset from the header row itself (`Id`,
-`Source`, `Version`, `Pin type`) rather than hardcoding a width, since
-winget pads each column to its widest cell and that width isn't documented
-or guaranteed stable. A known related bug (`microsoft/winget-cli#3013`,
-`Version`/`Pin type` columns swapped for Gating pins) was already fixed
-upstream by the time of that issue's later comments, but is exactly the
-kind of shift this header-driven approach tolerates without a code change.
-Not verified against a real `winget pin list` invocation -- Windows-only,
-and per this repo's established rule, `boxstarter.ps1` is never executed
-directly in this environment even to smoke-test. Covered by Pester with
-`winget` mocked at the `Invoke-WinGetPinListCommand` boundary, using
-fixture tables generated to match winget's documented column layout.
+WinGetPinListOutput` therefore parses the human-readable table directly.
+
+The real, current column set -- confirmed from two independent, real
+terminal-output reproductions pasted into actual `microsoft/winget-cli`
+issues, `#4340` (2024-04, winget v1.7.10861) and `#5244` (2025-02, a
+different winget install) -- is **`Name | Id | Version | Source | Pin
+type`**, five columns with `Name` first. This corrected an initial mistake
+in this PR: the first implementation was modeled on `microsoft/winget-
+cli#3013` (2023-02, winget v1.5.441-preview -- the very first preview
+build with pinning at all), whose reproduction shows a *four*-column `Id |
+Source | Version | Pin type` table with no `Name` column at all. That
+issue's own fix (`microsoft/winget-cli#3016`, "Fix order of pin labels")
+only reordered which value landed in which of *its* four columns; it did
+not add the `Name` column seen in the later issues, which must have
+happened separately. A CodeRabbit review comment on this PR caught the
+mismatch, backed by its own citations to the current documentation --
+verified independently against the two issues above (primary terminal
+output, not the docs page, since the docs page itself doesn't show an
+example row) before accepting the correction.
+
+Column start offsets are still derived from the header row rather than
+hardcoded (winget pads each column to its widest cell, an undocumented and
+non-guaranteed width), but are now looked up by name and sorted by
+discovered position instead of assumed to be in a fixed sequence --
+specifically because `#3013` already proves this table's column order has
+shifted across winget-cli versions once before, and could again. Only
+`Id`/`Version`/`Source`/`Pin type` are parsed (`Name` is human-readable
+only, not needed for drift matching), which also means the four-column,
+`Name`-less shape from the older `#3013`-era winget still parses correctly
+without any special-casing -- one fewer column to find is not an error
+condition for this lookup. A related, very recent finding
+(`microsoft/winget-cli#6325`, 2026-06): when no pins are set, the command
+prints the literal message "There are no pins configured." -- consistent
+with this parser's existing design of treating "no recognized header
+found" as zero pins rather than an error, and tolerant of that exact
+wording changing again without a code change here.
+
+One correctness consequence of the real format: both `#4340` and `#5244`
+show a concrete, non-blank installed-version string in the `Version`
+column for every pin type, not just `Gating` -- contradicting this PR's
+original assumption that `Version` would be blank for `Pinning`/`Blocking`
+pins. `Get-WinGetPinDrift` was corrected accordingly: it only compares
+`Version` against the declared `VersionRange` for `Gating` entries;
+`Pinning`/`Blocking` pins are classified as `Matching` by `PinType` alone,
+since there is no "must be blank" value left to check and comparing one
+would misclassify a correctly applied pin as `Mismatched`.
+
+Not verified against a real `winget pin list` invocation on this repo's
+own machine -- Windows-only, and per this repo's established rule,
+`boxstarter.ps1` is never executed directly in this environment even to
+smoke-test. What *is* verified: the column layout and the empty-state
+message both come from real terminal output pasted into the actual
+winget-cli issue tracker, not inferred from a docs page or assumed stable
+across versions. Covered by Pester with `winget` mocked at the
+`Invoke-WinGetPinListCommand` boundary, using fixture tables matching both
+the current five-column shape and the older four-column one.
 
 ### UniGetUI does not respect winget pin
 
