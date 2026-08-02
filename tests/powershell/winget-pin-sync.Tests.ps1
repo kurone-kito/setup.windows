@@ -100,6 +100,11 @@ Describe 'Test-PinnedPackageEntry' {
     Test-PinnedPackageEntry -Entry @{ Id = 'a'; Source = 'winget'; PinType = 'Pinning' } | Should -Be $false
   }
 
+  It 'returns $false instead of throwing for a non-hashtable entry' {
+    { Test-PinnedPackageEntry -Entry 'not-a-hashtable' } | Should -Not -Throw
+    Test-PinnedPackageEntry -Entry 'not-a-hashtable' | Should -Be $false
+  }
+
   It 'rejects an unknown PinType' {
     Test-PinnedPackageEntry -Entry @{ Id = 'a'; Source = 'winget'; PinType = 'Unknown'; Reason = 'r' } | Should -Be $false
   }
@@ -276,6 +281,26 @@ Describe 'Sync-WinGetPins' {
     Mock Invoke-WinGetPinAddCommand { 0 }
 
     Sync-WinGetPins -ConfigPath $path -WarningAction SilentlyContinue
+
+    Should -Invoke Invoke-WinGetPinAddCommand -Times 1 -ParameterFilter {
+      ($ArgumentList -join ' ') -like '*Good.Entry*'
+    }
+  }
+
+  It 'skips a non-hashtable entry in Pins without crashing the whole run' {
+    $path = Join-Path -Path $TestDrive -ChildPath 'string-pin.psd1'
+    Set-Content -Path $path -Value @'
+@{
+  Pins = @(
+    'not-a-hashtable'
+    @{ Id = 'Good.Entry'; Source = 'winget'; PinType = 'Pinning'; Reason = 'r' }
+  )
+}
+'@
+    Mock Get-CurrentWinGetPins { @() }
+    Mock Invoke-WinGetPinAddCommand { 0 }
+
+    { Sync-WinGetPins -ConfigPath $path -WarningAction SilentlyContinue } | Should -Not -Throw
 
     Should -Invoke Invoke-WinGetPinAddCommand -Times 1 -ParameterFilter {
       ($ArgumentList -join ' ') -like '*Good.Entry*'

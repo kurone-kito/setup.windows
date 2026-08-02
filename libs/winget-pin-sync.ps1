@@ -136,8 +136,11 @@ function Get-CurrentWinGetPins {
 
 function Test-PinnedPackageEntry {
   param (
-    [Parameter(Mandatory)][hashtable]$Entry
+    [Parameter(Mandatory)]$Entry
   )
+  if ($Entry -isnot [hashtable]) {
+    return $false
+  }
   if (-not $Entry.Contains('Id') -or -not $Entry.Contains('Source') -or
     -not $Entry.Contains('PinType') -or -not $Entry.Contains('Reason')) {
     return $false
@@ -157,6 +160,15 @@ function Test-PinnedPackageEntry {
   declared list through this and reports what it skips, the same
   "don't let one bad item take down the whole run" posture as
   Get-InstalledUnityEditors's per-item field probing.
+
+  $Entry is deliberately untyped, with an explicit `-isnot [hashtable]`
+  check as the first condition, rather than a `[hashtable]$Entry`
+  parameter: a typed parameter rejects a non-hashtable item (e.g. a
+  stray string in the Pins array) via a terminating parameter-binding
+  error, not a $false return -- confirmed empirically, and that error
+  is NOT caught by the Where-Object scriptblock that calls this
+  function, so it would abort the entire Sync-WinGetPins run instead of
+  just skipping the one bad entry.
   #>
 }
 
@@ -319,7 +331,7 @@ function Sync-WinGetPins {
   }
 
   if ($drift.ToAdd.Count -eq 0) {
-    Write-Host '[winget-pin] All declared pins already applied -- skipping.' -ForegroundColor Gray
+    Write-Host '[winget-pin] No missing declared pins to add.' -ForegroundColor Gray
   }
   <#
   .SYNOPSIS
