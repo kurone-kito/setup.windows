@@ -209,6 +209,18 @@ Describe 'Sync-UnityEditor' {
     Should -Invoke Invoke-UnityEditorInstall -Times 0
   }
 
+  It 'aborts (end to end, no mocking of Get-InstalledUnityEditors itself) when the real envelope shape is unexpected' {
+    Mock Test-UnityCliAvailable { $true }
+    Mock Invoke-UnityEditorsListCommand {
+      @{ ExitCode = 0; Output = '{"unexpected":true}' }
+    }
+    Mock Invoke-UnityEditorInstall { 0 }
+
+    { Sync-UnityEditor -ConfigPath $script:configPath -ErrorAction SilentlyContinue } | Should -Not -Throw
+
+    Should -Invoke Invoke-UnityEditorInstall -Times 0
+  }
+
   It 'skips installation when the declared version is already installed' {
     Mock Test-UnityCliAvailable { $true }
     Mock Get-InstalledUnityEditors { @('2022.3.22f1') }

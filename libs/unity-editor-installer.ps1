@@ -54,12 +54,14 @@ function Get-InstalledUnityEditors {
     return [string[]]@()
   }
   if ($null -eq $envelope) {
+    Write-Error "'unity editors -i --format json' returned a null envelope: $($result.Output)"
     return [string[]]@()
   }
   $successProperty = $envelope.PSObject.Properties['success']
   $dataProperty = $envelope.PSObject.Properties['data']
   if (-not $successProperty -or -not $successProperty.Value -or
     -not $dataProperty -or $null -eq $dataProperty.Value) {
+    Write-Error "'unity editors -i --format json' returned an unexpected envelope shape (missing/false success or missing/null data): $($result.Output)"
     return [string[]]@()
   }
   $versions = foreach ($item in @($dataProperty.Value)) {
