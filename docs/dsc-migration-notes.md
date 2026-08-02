@@ -194,8 +194,11 @@ module name `chocolatey`) is actively maintained (pushed 2026-06-19,
 41 stars, class-based DSC resources). It provides a `ChocolateyPackage`
 resource (`Name`, `Version`, `Ensure`, `ChocolateyOptions`, `Source`,
 `Credential`) that checks `Test-ChocolateyInstall` before acting --
-already satisfied in this repo, since `setup.cmd` installs Chocolatey
-(`choco install boxstarter -y`) before Phase 2/3 ever run.
+already satisfied in this repo: `setup.cmd` bootstraps Chocolatey
+itself via the official `install.ps1` when `choco` isn't found on
+PATH, then separately runs `choco install boxstarter -y` to install
+Boxstarter (which requires Chocolatey to already be present) --
+Chocolatey is present well before Phase 2/3 ever run.
 
 **Recommendation: declare it**, via `resource: chocolatey/ChocolateyPackage`
 per package, `securityContext: elevated` (matching today's system-wide
@@ -221,9 +224,11 @@ PowerShell module." Two candidates checked:
   etc.) -- it is a package-manager module, not a DSC resource provider.
   No `[DscResource()]` class ships in it.
 
-**Recommendation: declare it via `PSDscResources/Script`** -- already
-proven in this repo for the Registry resources (issue #64).
-Idempotency: `TestScript`/`GetScript` check
+**Recommendation: declare it via `PSDscResources/Script`** -- the same
+`PSDscResources` module this repo already resolves successfully via
+`winget configure` for the `PSDscResources/Registry` resources
+(issue #64), though `Script` itself would be a new resource type for
+this repo, not one already in use. Idempotency: `TestScript`/`GetScript` check
 `Get-Module -ListAvailable -Name posh-git`; `SetScript` runs
 `Install-Module posh-git -Scope CurrentUser -Force -AllowClobber`,
 identical to today's imperative line. `securityContext: current`
