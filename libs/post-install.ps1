@@ -22,7 +22,13 @@ if (-not (Test-Path -Path $runtimeVersionsFile -PathType Leaf)) {
   Write-Error "Runtime versions config not found: $runtimeVersionsFile"
   return
 }
-$runtimeVersions = Import-PowerShellDataFile -Path $runtimeVersionsFile
+try {
+  $runtimeVersions = Import-PowerShellDataFile -Path $runtimeVersionsFile -ErrorAction Stop
+}
+catch {
+  Write-Error "Failed to read runtime versions config ${runtimeVersionsFile}: $_"
+  return
+}
 
 ###########################################################################
 ### Helper — correct command existence check (fixes the Out-Null bug)
