@@ -118,41 +118,18 @@ else {
 }
 
 ###########################################################################
-### Unity Editor via Unity Hub CLI
-### Pinned version/changeset live in configurations/runtime-versions.psd1
+### Unity Editor via the Unity CLI (`unity install`)
+### Pinned version/changeset/modules live in
+### configurations/runtime-versions.psd1. Installed and verified by
+### libs/unity-editor-installer.ps1 -- see docs/dsc-migration-notes.md
+### for why this replaced Unity Hub's unofficial `-- --headless`
+### interface (issue #74). Unity Hub itself remains a declared package
+### (configurations/packages.dsc.yaml) since VRChat Creator Companion
+### may rely on Hub recognizing installed Editors -- only the Editor
+### install path moved.
 ###########################################################################
-$UnityHub = $env:ProgramFiles `
-  | Join-Path -ChildPath 'Unity Hub' `
-  | Join-Path -ChildPath 'Unity Hub.exe'
-
-if (Test-Path $UnityHub) {
-  Write-Host '[post-install] Setting up Unity Editor...' -ForegroundColor Cyan
-
-  $versions = & $UnityHub -- --headless editors --installed | Out-String
-
-  function Install-UnityEditor {
-    param (
-      [Parameter(Mandatory)][string]$Version,
-      [Parameter(Mandatory)][string]$Changeset
-    )
-    if ($versions | Select-String -Pattern $Version) {
-      Write-Host "  Unity $Version is already installed — skipping." -ForegroundColor Gray
-      return
-    }
-    $opts = '-- --headless install -v {0} -c {1} -m android -m documentation -m ios -m language-ja --cm' `
-      -f $Version, $Changeset
-    Write-Host "  Installing Unity $Version..." -ForegroundColor Gray
-    Start-Process $UnityHub -ArgumentList $opts -NoNewWindow -Wait
-  }
-
-  $unityConfig = $runtimeVersions.Unity
-  Install-UnityEditor -Version $unityConfig.Version -Changeset $unityConfig.Changeset
-
-  Write-Host '[post-install] Unity Editor setup complete.' -ForegroundColor Green
-}
-else {
-  Write-Warning '[post-install] Unity Hub not found — skipping Unity Editor setup.'
-}
+. (Join-Path -Path $PSScriptRoot -ChildPath 'unity-editor-installer.ps1')
+Sync-UnityEditor -ConfigPath $runtimeVersionsFile
 
 ###########################################################################
 ### Docker Desktop — start and pull base images

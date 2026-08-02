@@ -27,15 +27,22 @@
     )
   }
 
-  # Unity Editor version installed via Unity Hub CLI (libs/post-install.ps1).
+  # Unity Editor version installed via the Unity CLI (`unity install`,
+  # libs/unity-editor-installer.ps1) -- not Unity Hub's unofficial
+  # `-- --headless` interface (replaced by issue #74; see
+  # docs/dsc-migration-notes.md for why).
   #
-  # The changeset must match the version exactly, or Unity Hub's
-  # `install -v <version> -c <changeset>` fails. When updating Version,
-  # update Changeset from the same source in the same change -- never
+  # The changeset must match the version exactly, or `unity install
+  # <version> -c <changeset>` fails. When updating Version, update
+  # Changeset from the same source in the same change -- never
   # independently.
   Unity     = @{
     Version      = '2022.3.22f1'
     Changeset    = '887be4894c44'
+    # Passed to `unity install ... -m <id>` for each entry, plus --cm
+    # (also install each module's child modules) -- see
+    # docs/dsc-migration-notes.md for why --cm is kept.
+    Modules      = @('android', 'documentation', 'ios', 'language-ja')
     Reason       = 'Required by VRChat SDK / VCC (VRChat Creator Companion).'
     VerifiedDate = '2026-08-02'
     Sources      = @(
