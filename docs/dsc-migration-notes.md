@@ -364,6 +364,114 @@ can't silently change which version `fnm default` selects.
   returns that exact changeset for `2022.3.22f1`'s Windows x86_64
   download.
 
+## Installing the Unity CLI (issue #76)
+
+Unity's CLI (`unity` binary) is a second, official way to manage Unity
+Editor installs, distinct from Unity Hub's unofficial `-- --headless`
+interface already used by `libs/post-install.ps1`. This issue installs
+only the CLI binary itself, via Unity's own installer script
+(`https://public-cdn.cloud.unity3d.com/hub/prod/cli/install.ps1`), from
+`libs/unity-cli-installer.ps1`. Switching Editor installation from Hub
+to CLI is a separate, later issue's scope.
+
+### The stable channel does not exist yet (verified 2026-08-02)
+
+The Unity CLI's own docs list `beta` in every Windows example, without
+saying whether that's a preference or a necessity. Checked directly
+against the CDN itself:
+
+| Manifest | URL | HTTP status |
+| --- | --- | --- |
+| stable/GA | `.../cli/latest.json` | **404** |
+| beta | `.../cli/latest-beta.json` | 200 (`1.0.0-beta.3`) |
+| alpha | `.../cli/latest-alpha.json` | 404 |
+
+Beta is not merely recommended -- as of this verification, it is the
+*only* channel with a published build. `configurations/runtime-versions.psd1`'s
+`UnityCli.Channel` records this as `beta` with the reason and the date
+checked, per the review-cadence pattern issue #73 established. Re-check
+these three URLs when reviewing this entry; a `latest.json` 200 would
+mean a stable release has shipped.
+
+### `-Target` pins the version; `-Channel` only matters unpinned
+
+Reading `install.ps1`'s own source (not just its docs) matters here:
+when `-Target` is a concrete version (not `"latest"`), the script
+fetches that version's own manifest directly
+(`.../cli/<version>/latest.json`) and never consults `-Channel` /
+`$env:UNITY_CLI_CHANNEL` at all -- channel selection only resolves what
+`"latest"` means. `runtime-versions.psd1` pins `Target` to
+`1.0.0-beta.3` (the exact version confirmed available above), so
+`Channel: beta` is recorded for traceability only; it has no effect on
+this pinned install. If `Target` is ever changed back to `"latest"`,
+`Channel` starts mattering again.
+
+### Never invoke `install.ps1`'s downloaded content as an in-process scriptblock
+
+`install.ps1` calls `exit 1` on several of its own failure paths. This
+matters more than it looks: invoking downloaded script content
+in-process (e.g. `& [scriptblock]::Create($content) -Target ...`, or
+the official `irm ... | iex` one-liner with parameters spliced into the
+string) runs that `exit` in the *caller's own process*. Confirmed
+empirically with a minimal repro (a scriptblock containing `exit 1`
+invoked via `& $sb`, followed by a line that never printed) -- `exit`
+inside an in-process-invoked scriptblock terminates the entire
+PowerShell host, not just the scriptblock, silently aborting whatever
+of `boxstarter.ps1` was still queued behind it. `Invoke-UnityCliInstaller`
+in `libs/unity-cli-installer.ps1` downloads `install.ps1` to a temp file
+and runs it via `Start-Process -Wait -PassThru` in a **separate**
+process instead, so its exit code can be inspected and handled without
+risk to the calling process.
+
+### `install.ps1` itself is not pinned
+
+Unlike the binary it downloads (SHA-256 verified by the script itself),
+`install.ps1` is fetched fresh on every run and is not pinned by hash
+or version. This is the same trust model as any curl-pipe-to-shell
+bootstrap (Chocolatey's own installer, Scoop's) -- a compromise of
+Unity's CDN could serve a different script. Recorded here as a known,
+accepted risk rather than left implicit; mitigating it (e.g. pinning
+and re-verifying a hash of `install.ps1` itself) is out of this issue's
+scope.
+
+### PATH is not live in the current process after install
+
+`install.ps1` updates the persistent User-scope PATH
+(`[System.Environment]::SetEnvironmentVariable(..., "User")`) and
+broadcasts `WM_SETTINGCHANGE` so new shells and Explorer pick it up --
+but never touches `$env:Path` in its own process, let alone the
+calling one. `Sync-UnityCli` calls `Add-UnityCliToProcessPath` both
+before checking whether the CLI is already installed (so an existing
+install from a prior run is found) and after a fresh install (so
+`unity` is callable later in the same `boxstarter.ps1` run without a
+new shell).
+
+### Unity Hub stays installed; `com.unity.pipeline` is out of scope
+
+`configurations/packages.dsc.yaml` keeps `Unity.UnityHub`. VRChat
+Creator Companion may recognize installed Editors through Hub, and
+removing Hub without confirming that would risk breaking VCC; whether
+Hub can eventually be dropped is left to a future issue, not decided
+here. Separately, `com.unity.pipeline` (a beta Unity package that talks
+to a running Editor over local HTTP, requiring the CLI as a
+precondition) is installed into a Unity **project**, not this
+machine-setup repository -- out of scope here beyond this note.
+
+### Not verified on a real machine
+
+Like issue #68's package-id checker, this Windows-only script could not
+be run against a real `unity` binary or `install.ps1` invocation from
+this Linux development environment. `libs/post-install.ps1` and
+`boxstarter.ps1` are also never executed directly in this environment
+even for smoke-testing, since doing so risks running real installers
+present on the shared machine's PATH (learned the hard way during
+issue #73). What *is* verified: `install.ps1`'s actual source was read
+end to end (not assumed from its docs), the channel-manifest HTTP
+checks above were run for real, and `Sync-UnityCli`'s idempotency and
+error-handling logic is covered by Pester with
+`Get-InstalledUnityCliVersion` / `Invoke-UnityCliInstaller` mocked --
+see `tests/powershell/unity-cli-installer.Tests.ps1`.
+
 ## Removed files and their relocation
 
 | Removed file | Disposition |
