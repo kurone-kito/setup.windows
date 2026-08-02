@@ -12,8 +12,12 @@ typo or a package removed from its source can be caught before
 running setup.
 
 Requires the powershell-yaml module (Install-Module -Name
-powershell-yaml -RequiredVersion 0.4.12 -Scope CurrentUser) and a
-working `winget` on PATH -- this script only runs on Windows.
+powershell-yaml -RequiredVersion 0.4.12 -Scope CurrentUser), a
+working `winget` on PATH -- this script only runs on Windows -- and
+PowerShell 7+ (see the #Requires statement below). This script uses
+Join-Path's -AdditionalChildPath parameter, added in PowerShell 6.0
+and unavailable in Windows PowerShell 5.1's default `powershell`
+command; see docs/dsc-migration-notes.md.
 
 Run this after adding or changing a package in dsc.yaml, and whenever
 setup fails on a specific package, to tell a genuine id/source problem
@@ -30,6 +34,7 @@ packages.min.dsc.yaml).
 .EXAMPLE
 ./scripts/Test-PackageIds.ps1 -DscPath ./configurations/packages.min.dsc.yaml
 #>
+#Requires -Version 7.0
 [CmdletBinding()]
 param(
   [Parameter(Mandatory)]

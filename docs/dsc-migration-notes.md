@@ -472,6 +472,47 @@ error-handling logic is covered by Pester with
 `Get-InstalledUnityCliVersion` / `Invoke-UnityCliInstaller` mocked --
 see `tests/powershell/unity-cli-installer.Tests.ps1`.
 
+## PowerShell 7+ requirement for `scripts/*.ps1` (issue #96)
+
+`libs/post-install.ps1` had a `Join-Path -Path ... -AdditionalChildPath
+...` call that failed on Windows PowerShell 5.1 -- `-AdditionalChildPath`
+was added in PowerShell 6.0, and `setup.cmd` launches Boxstarter via the
+bare `powershell` command, which resolves to 5.1 on a stock Windows
+machine. That was fixed during issue #73's review by rewriting it as a
+`Join-Path -ChildPath` pipeline chain, since `libs/post-install.ps1`
+must work before a newer PowerShell is guaranteed to be installed.
+
+The same `-AdditionalChildPath` pattern also existed in
+`scripts/Build-Configurations.ps1` and `scripts/Test-PackageIds.ps1`,
+which are developer-run CLI tools, not part of the Boxstarter bootstrap
+path. Rather than rewrite them the same way, this issue declares them
+PowerShell 7+-only via `#Requires -Version 7.0`, because the evidence
+shows they already are:
+
+- `.github/workflows/lint.yml`'s `configuration-drift` job runs
+  `Build-Configurations.ps1` exclusively via `shell: pwsh` on
+  `ubuntu-latest` -- it has never been exercised under 5.1 in this
+  repository's own automation.
+- `Test-PackageIds.ps1` isn't run in CI at all (it needs a real
+  `winget`, so it only runs on Windows), but it shares
+  `libs/configuration-builder.ps1` and the same `-AdditionalChildPath`
+  pattern with `Build-Configurations.ps1`; keeping both scripts under
+  the same requirement avoids a silent inconsistency where one enforces
+  PowerShell 7+ and the other fails opaquely if a developer runs it
+  under the default `powershell` command instead of `pwsh`.
+
+`#Requires -Version 7.0` was chosen over a doc-comment-only note
+because PowerShell enforces it natively at parse time, before the
+script body (and its 5.1-incompatible `Join-Path` call) ever runs --
+this produces PowerShell's own clear "cannot be run" message instead of
+a parameter-binding error several lines into execution.
+
+`tests/powershell/*.Tests.ps1` use the same `-AdditionalChildPath`
+pattern and were deliberately left untouched: `docs/testing.md` already
+documents Pester as pwsh-only (CI installs and runs it via
+`shell: pwsh`), so adding `#Requires` there would only restate an
+existing, already-enforced constraint.
+
 ## Removed files and their relocation
 
 | Removed file | Disposition |

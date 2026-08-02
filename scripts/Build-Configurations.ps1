@@ -9,7 +9,12 @@ and configurations/*.unapplied.json are generated from it by this
 script and must never be hand-edited. See docs/dsc-migration-notes.md.
 
 Requires the powershell-yaml module (Install-Module -Name
-powershell-yaml -RequiredVersion 0.4.12 -Scope CurrentUser).
+powershell-yaml -RequiredVersion 0.4.12 -Scope CurrentUser) and
+PowerShell 7+ (see the #Requires statement below) -- this script uses
+Join-Path's -AdditionalChildPath parameter, added in PowerShell 6.0
+and unavailable in Windows PowerShell 5.1. .github/workflows/lint.yml
+already runs it exclusively via `shell: pwsh`, so this only makes the
+existing constraint explicit; see docs/dsc-migration-notes.md.
 
 .PARAMETER DscPath
 Path to the source dsc.yaml file.
@@ -28,6 +33,7 @@ $DscPath with its trailing ".dsc.yaml" replaced by ".unapplied.json".
 .EXAMPLE
 ./scripts/Build-Configurations.ps1 -DscPath ./configurations/packages.min.dsc.yaml
 #>
+#Requires -Version 7.0
 [CmdletBinding()]
 param(
   [Parameter(Mandatory)]
