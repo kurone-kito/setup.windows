@@ -513,6 +513,26 @@ documents Pester as pwsh-only (CI installs and runs it via
 `shell: pwsh`), so adding `#Requires` there would only restate an
 existing, already-enforced constraint.
 
+## Handling a failed Unity CLI installer download (issue #98)
+
+Found while verifying a `-UseBasicParsing` review comment during issue #76's
+own PR review: `Invoke-UnityCliInstaller`'s `Invoke-WebRequest` call,
+which downloads Unity's `install.ps1`, had no `catch` of its own --
+only the surrounding `try`/`finally` that cleans up the temp file.
+A network failure (DNS, connection refused, a non-2xx status) throws a
+terminating error there that would have propagated uncaught through
+`Sync-UnityCli` and into `boxstarter.ps1`'s Phase 5, aborting the rest
+of setup instead of being reported as a clear, contained Unity CLI
+installer failure.
+
+Fixed by wrapping the `Invoke-WebRequest` call in its own try/catch
+and returning a non-zero exit code on failure, instead of adding a
+second, parallel error-handling path: `Sync-UnityCli` already treats
+any non-zero `Invoke-UnityCliInstaller` return value (e.g. a failed
+`install.ps1` run) as a failure and reports it via `Write-Error`. A
+failed download now flows through that same path rather than needing
+its own.
+
 ## Removed files and their relocation
 
 | Removed file | Disposition |

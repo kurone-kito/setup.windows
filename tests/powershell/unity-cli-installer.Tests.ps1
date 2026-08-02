@@ -62,6 +62,28 @@ Describe 'Add-UnityCliToProcessPath' {
   }
 }
 
+Describe 'Invoke-UnityCliInstaller' {
+  It 'returns a non-zero exit code instead of throwing when the download fails' {
+    Mock Invoke-WebRequest { throw [System.Net.WebException]::new('Name or service not known') }
+    Mock Start-Process { }
+
+    $exitCode = Invoke-UnityCliInstaller -Target '1.0.0-beta.3' -Channel 'beta' -ErrorAction SilentlyContinue
+    $exitCode | Should -Not -Be 0
+
+    Should -Invoke Start-Process -Times 0
+  }
+
+  It 'removes the temp script even when the download fails' {
+    Mock Invoke-WebRequest { throw [System.Net.WebException]::new('Name or service not known') }
+    Mock Start-Process { }
+    Mock Remove-Item { }
+
+    Invoke-UnityCliInstaller -Target '1.0.0-beta.3' -Channel 'beta' -ErrorAction SilentlyContinue | Out-Null
+
+    Should -Invoke Remove-Item -Times 1
+  }
+}
+
 Describe 'Sync-UnityCli' {
   BeforeAll {
     $script:configPath = Join-Path -Path $TestDrive -ChildPath 'runtime-versions.psd1'
