@@ -16,19 +16,13 @@ Set-StrictMode -Version Latest
 ### file for each version's EOL/verification info and the reason it is
 ### pinned, and docs/dsc-migration-notes.md for the review cadence.
 ###########################################################################
+. (Join-Path -Path $PSScriptRoot -ChildPath 'runtime-versions.ps1')
 $runtimeVersionsFile = $PSScriptRoot `
   | Join-Path -ChildPath '..' `
   | Join-Path -ChildPath 'configurations' `
   | Join-Path -ChildPath 'runtime-versions.psd1'
-if (-not (Test-Path -Path $runtimeVersionsFile -PathType Leaf)) {
-  Write-Error "Runtime versions config not found: $runtimeVersionsFile"
-  return
-}
-try {
-  $runtimeVersions = Import-PowerShellDataFile -Path $runtimeVersionsFile -ErrorAction Stop
-}
-catch {
-  Write-Error "Failed to read runtime versions config ${runtimeVersionsFile}: $_"
+$runtimeVersions = Get-RuntimeVersionsConfig -Path $runtimeVersionsFile
+if ($null -eq $runtimeVersions) {
   return
 }
 

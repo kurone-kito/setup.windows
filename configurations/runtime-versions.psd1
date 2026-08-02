@@ -45,4 +45,28 @@
       'https://services.api.unity.com/unity/editor/release/v1/releases?version=2022.3.22f1 (Unity, confirms download URL contains changeset 887be4894c44)'
     )
   }
+
+  # Unity CLI (`unity` binary, libs/unity-cli-installer.ps1) -- not the
+  # Unity Editor itself. Pinned because the CLI is still experimental
+  # (Unity's own docs: "The features and documentation might change in
+  # an upcoming release.").
+  #
+  # Target is passed to install.ps1's -Target; Channel is passed to
+  # -Channel / $env:UNITY_CLI_CHANNEL, though install.ps1's own source
+  # shows -Channel only affects "latest" resolution -- once Target is a
+  # pinned version (not "latest"), install.ps1 fetches that version's
+  # own manifest directly and Channel has no functional effect. Kept
+  # here anyway to record which channel this pinned version came from.
+  UnityCli  = @{
+    Target       = '1.0.0-beta.3'
+    Channel      = 'beta'
+    Reason       = 'CLI is experimental; the stable/GA manifest returns HTTP 404 (no stable release published yet) as of VerifiedDate -- beta is not merely preferred, it is the only channel with any build.'
+    VerifiedDate = '2026-08-02'
+    Sources      = @(
+      # The stable/GA manifest itself, confirming no build exists yet.
+      'https://public-cdn.cloud.unity3d.com/hub/prod/cli/latest.json (Unity CDN, HTTP 404 as of VerifiedDate)'
+      # The beta manifest, confirming the pinned version and its availability.
+      'https://public-cdn.cloud.unity3d.com/hub/prod/cli/latest-beta.json (Unity CDN, HTTP 200, version 1.0.0-beta.3 as of VerifiedDate)'
+    )
+  }
 }

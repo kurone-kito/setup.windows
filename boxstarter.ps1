@@ -176,6 +176,12 @@ else {
 ###########################################################################
 ### Phase 5 — Post-install setup (fnm, cargo, Unity, mkcert, Docker)
 ###########################################################################
+# Unity CLI must be in place before post-install.ps1's own Unity Editor
+# install step (issue #76) -- installed here, ahead of that step, rather
+# than as its own numbered phase, to avoid renumbering every phase below.
+. (Join-Path $scriptRoot 'libs\unity-cli-installer.ps1')
+Sync-UnityCli -ConfigPath (Join-Path $scriptRoot 'configurations\runtime-versions.psd1')
+
 $postInstall = Join-Path $scriptRoot 'libs\post-install.ps1'
 if (Test-Path $postInstall) {
   Write-Host '[Phase 5] Running post-install setup...' -ForegroundColor Cyan
