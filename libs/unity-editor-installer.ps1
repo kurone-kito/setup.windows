@@ -261,8 +261,21 @@ function Sync-UnityEditor {
   $unityConfig = $config.Unity
 
   if (-not (Test-UnityCliAvailable)) {
-    Write-Error 'Unity CLI (`unity`) is not on PATH -- cannot install or verify the Unity Editor. The Unity CLI installer (libs/unity-cli-installer.ps1) must run before this step; there is no Unity Hub CLI fallback (issue #74).'
-    return
+    # throw, not Write-Error + return: this is a function, not a script's
+    # own top level -- `return` here only exits Sync-UnityEditor and lets
+    # libs/post-install.ps1's later steps (Docker, mkcert, etc.) run
+    # normally under Boxstarter's default $ErrorActionPreference =
+    # 'Continue', silently reaching "setup complete" despite the Unity
+    # Editor step never running. Verified empirically: a dot-sourced
+    # function's `Write-Error` + `return` does not halt its caller's
+    # later statements, unlike `return` at a script's own top level
+    # (the case this repo's existing Write-Error + return convention,
+    # e.g. Phase 0's OS check, actually relies on). `throw` propagates
+    # as a terminating error through post-install.ps1 (invoked via `&`
+    # from boxstarter.ps1) and aborts the whole run -- the correct
+    # outcome here, since a missing Unity CLI means the earlier
+    # Sync-UnityCli step (issue #76) itself already failed silently.
+    throw 'Unity CLI (`unity`) is not on PATH -- cannot install or verify the Unity Editor. The Unity CLI installer (libs/unity-cli-installer.ps1) must run before this step; there is no Unity Hub CLI fallback (issue #74).'
   }
 
   # -ErrorAction Stop: Get-InstalledUnityEditors returns an empty array

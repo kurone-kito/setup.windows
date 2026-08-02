@@ -188,12 +188,12 @@ Describe 'Sync-UnityEditor' {
 '@
   }
 
-  It 'stops with an explicit error and does not check installed editors when the Unity CLI is unavailable' {
+  It 'throws (stopping the whole run, not just this step) and does not check installed editors when the Unity CLI is unavailable' {
     Mock Test-UnityCliAvailable { $false }
     Mock Get-InstalledUnityEditors { @() }
     Mock Invoke-UnityEditorInstall { 0 }
 
-    { Sync-UnityEditor -ConfigPath $script:configPath -ErrorAction SilentlyContinue } | Should -Not -Throw
+    { Sync-UnityEditor -ConfigPath $script:configPath } | Should -Throw
 
     Should -Invoke Get-InstalledUnityEditors -Times 0
     Should -Invoke Invoke-UnityEditorInstall -Times 0
