@@ -72,7 +72,13 @@ function Invoke-UnityCliInstaller {
   )
   $tempScript = Join-Path ([System.IO.Path]::GetTempPath()) "unity-cli-install-$([guid]::NewGuid().ToString('N')).ps1"
   try {
-    Invoke-WebRequest -Uri $InstallScriptUrl -OutFile $tempScript -UseBasicParsing
+    try {
+      Invoke-WebRequest -Uri $InstallScriptUrl -OutFile $tempScript -UseBasicParsing -ErrorAction Stop
+    }
+    catch {
+      Write-Error "Failed to download the Unity CLI installer from ${InstallScriptUrl}: $_"
+      return 1
+    }
     $shell = (Get-Process -Id $PID).Path
     $process = Start-Process -FilePath $shell -ArgumentList @(
       '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $tempScript,
@@ -104,10 +110,24 @@ function Invoke-UnityCliInstaller {
   is the same trust model as any curl-pipe-to-shell bootstrap (Chocolatey,
   Scoop); see docs/dsc-migration-notes.md for the recorded risk.
 
+  The download itself is wrapped in its own try/catch (issue #98): a
+  network failure (DNS, connection refused, non-2xx status) throws a
+  terminating error from Invoke-WebRequest that would otherwise
+  propagate uncaught past this function, past Sync-UnityCli, and into
+  boxstarter.ps1's Phase 5. Caught here and turned into a non-zero
+  return instead, so it flows through the same
+  "$exitCode -ne 0 -> Write-Error, return" handling in Sync-UnityCli
+  that an install.ps1 failure already goes through -- one failure path
+  for both causes rather than two.
+
   .OUTPUTS
-  The child process's exit code. install.ps1 does not call `exit 0` on
-  its success path, so a clean run's exit code is whatever a script
-  falling off the end returns (0).
+  The child process's exit code, or a non-zero value (currently 1) if
+  the installer script itself could not be downloaded. Callers cannot
+  distinguish a download failure from an install.ps1 failure by exit
+  code value alone -- install.ps1 can itself legitimately exit 1 on
+  its own failure paths -- only by whether it's zero. install.ps1 does
+  not call `exit 0` on its success path, so a clean run's exit code is
+  whatever a script falling off the end returns (0).
   #>
 }
 
