@@ -263,13 +263,28 @@ function Sync-UnityEditor {
     return
   }
 
+  # -ErrorAction Stop: Get-InstalledUnityEditors returns an empty array
+  # (not a thrown error) when it can't determine the installed list, so
+  # that other callers can degrade gracefully. Sync-UnityEditor cannot --
+  # treating "couldn't tell" the same as "genuinely nothing installed"
+  # would attempt an install based on a false premise instead of
+  # reporting the real problem (`unity editors` itself failing).
+  # -ErrorAction Stop escalates Get-InstalledUnityEditors's own
+  # Write-Error calls to terminating for this call only.
+  #
   # @(...) guards against PowerShell's own empty-array-collapses-to-$null
   # behavior across a function-call boundary (confirmed empirically:
   # `$x = Get-Foo` is $null, not an empty array, when Get-Foo's only
   # output is `return @()`) -- without this, an environment with zero
   # installed Editors would fail Get-UnityEditorDrift's
   # [AllowEmptyCollection()] binding instead of reporting zero drift.
-  $installed = @(Get-InstalledUnityEditors)
+  try {
+    $installed = @(Get-InstalledUnityEditors -ErrorAction Stop)
+  }
+  catch {
+    Write-Error "Could not determine installed Unity Editors -- aborting rather than risk installing based on unknown state: $_"
+    return
+  }
   $target = $unityConfig.Version
   $drift = Get-UnityEditorDrift -Declared @($target) -Installed $installed
 

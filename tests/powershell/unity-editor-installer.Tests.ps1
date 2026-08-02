@@ -199,6 +199,16 @@ Describe 'Sync-UnityEditor' {
     Should -Invoke Invoke-UnityEditorInstall -Times 0
   }
 
+  It 'aborts without attempting an install when the installed-editors list cannot be determined' {
+    Mock Test-UnityCliAvailable { $true }
+    Mock Get-InstalledUnityEditors { throw 'unity editors -i --format json failed' }
+    Mock Invoke-UnityEditorInstall { 0 }
+
+    { Sync-UnityEditor -ConfigPath $script:configPath -ErrorAction SilentlyContinue } | Should -Not -Throw
+
+    Should -Invoke Invoke-UnityEditorInstall -Times 0
+  }
+
   It 'skips installation when the declared version is already installed' {
     Mock Test-UnityCliAvailable { $true }
     Mock Get-InstalledUnityEditors { @('2022.3.22f1') }
