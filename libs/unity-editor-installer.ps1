@@ -53,10 +53,16 @@ function Get-InstalledUnityEditors {
     Write-Error "Failed to parse 'unity editors -i --format json' output: $_"
     return [string[]]@()
   }
-  if (-not $envelope.success -or $null -eq $envelope.data) {
+  if ($null -eq $envelope) {
     return [string[]]@()
   }
-  $versions = foreach ($item in @($envelope.data)) {
+  $successProperty = $envelope.PSObject.Properties['success']
+  $dataProperty = $envelope.PSObject.Properties['data']
+  if (-not $successProperty -or -not $successProperty.Value -or
+    -not $dataProperty -or $null -eq $dataProperty.Value) {
+    return [string[]]@()
+  }
+  $versions = foreach ($item in @($dataProperty.Value)) {
     $property = $item.PSObject.Properties['version']
     if (-not $property) {
       $property = $item.PSObject.Properties['Version']

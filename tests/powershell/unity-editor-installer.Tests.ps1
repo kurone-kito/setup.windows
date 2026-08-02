@@ -63,6 +63,33 @@ Describe 'Get-InstalledUnityEditors' {
 
     Get-InstalledUnityEditors | Should -Be @('2022.3.22f1')
   }
+
+  It 'returns an empty array instead of throwing under StrictMode when the envelope has no "success" or "data" member' {
+    Mock Invoke-UnityEditorsListCommand {
+      @{ ExitCode = 0; Output = '{"unexpected":true}' }
+    }
+
+    { Get-InstalledUnityEditors -ErrorAction SilentlyContinue } | Should -Not -Throw
+    Get-InstalledUnityEditors -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+  }
+
+  It 'returns an empty array instead of throwing under StrictMode when the JSON parses to a bare primitive' {
+    Mock Invoke-UnityEditorsListCommand {
+      @{ ExitCode = 0; Output = '42' }
+    }
+
+    { Get-InstalledUnityEditors -ErrorAction SilentlyContinue } | Should -Not -Throw
+    Get-InstalledUnityEditors -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+  }
+
+  It 'returns an empty array instead of throwing under StrictMode when the JSON is a literal null' {
+    Mock Invoke-UnityEditorsListCommand {
+      @{ ExitCode = 0; Output = 'null' }
+    }
+
+    { Get-InstalledUnityEditors -ErrorAction SilentlyContinue } | Should -Not -Throw
+    Get-InstalledUnityEditors -ErrorAction SilentlyContinue | Should -BeNullOrEmpty
+  }
 }
 
 Describe 'Test-UnityEditorInstalled' {
