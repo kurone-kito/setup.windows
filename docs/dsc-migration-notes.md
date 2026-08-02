@@ -533,6 +533,98 @@ any non-zero `Invoke-UnityCliInstaller` return value (e.g. a failed
 failed download now flows through that same path rather than needing
 its own.
 
+## Migrating Unity Editor installation from Hub CLI to the Unity CLI (issue #74)
+
+The Unity Editor install step (`libs/post-install.ps1`) originally drove Unity
+Hub's unofficial `-- --headless` interface (`Unity Hub.exe -- --headless
+install -v <version> -c <changeset> -m <modules...> --cm`). That
+implementation had four real defects: it never checked the process's exit
+code (a failed install still reached "setup complete"), its
+already-installed check ran the declared version string through
+`Select-String -Pattern`, treating it as a regex (so `2022.3.22f1`'s dots
+matched any character), the module list was hardcoded in the script instead
+of declared, and there was no way to detect drift between the declared
+version and what was actually installed, since Hub self-updates outside
+winget and its `--headless` interface is undocumented.
+
+Unity's own CLI (`unity` binary, installed by `libs/unity-cli-installer.ps1`,
+issue #76) replaced Hub CLI for this step because it solves the first,
+second, and fourth defects structurally rather than through workarounds:
+`unity install` has a documented exit-code contract, `unity editors -i
+--format json` gives structured output instead of text to regex-match, and
+comparing that JSON against the declared config is a drift check with no
+extra machinery needed. `libs/unity-editor-installer.ps1` implements this;
+`libs/post-install.ps1` now dot-sources it and calls `Sync-UnityEditor`
+instead of embedding the Hub CLI logic inline.
+
+### The real exit-code table is more granular than assumed
+
+This issue's own body simplified `unity install`'s contract as "0 success /
+1 error / 130 interrupted". Checking Unity's actual CLI reference
+(docs.unity.com/en-us/unity-cli/unity-cli-reference) found a fuller table:
+`0` success, `1` general error, `2` usage error (bad flags/values), `3`
+auth/authorization failure, `4` configuration required, `6` the command's
+primary operation itself failed (e.g. the install failed), `130` interrupted
+(Ctrl+C/SIGINT), `143` terminated (SIGTERM). A real install failure can
+surface as `1`, `2`, `3`, `4`, or `6` depending on the cause -- there is no
+single "the install failed" code to special-case. `Invoke-UnityEditorInstall`
+therefore only special-cases `0` (success) and `130` (user-interrupted, per
+this issue's acceptance criteria), and treats every other non-zero code
+uniformly as a failure, always logging the exact value it saw.
+
+### `unity editors -i --format json`'s per-item shape is not documented
+
+The JSON envelope (`success`/`command`/`data`/`errors`/`warnings`) is
+documented on the CLI reference page's "Format selection" table. The shape
+of each item inside `data` for the `editors` command specifically is not --
+not on that page, not on the CLI intro or usage pages, and no real example
+output was found anywhere. This is the same situation `Test-UnityCliCurrent`
+(issue #76) was in for `unity --version`'s output, and it's handled the same
+way: `Get-InstalledUnityEditors` probes a small, explicit set of plausible
+field names (`version`, then `Version`) per item and skips (rather than
+throws on) any item where neither is present, so an unexpected real shape
+degrades to "not recognized" instead of crashing the install path. This
+could not be verified against a real `unity` binary -- Windows-only, and
+`libs/post-install.ps1` / `boxstarter.ps1` are never executed directly in
+this environment even to smoke-test (see the Unity CLI section above for
+why). Covered by Pester with `unity` itself mocked at the JSON-output level.
+
+### `--cm` is kept, unreconsidered
+
+The prior Hub CLI call always passed `--cm` (install child modules). The
+Unity CLI documents an equivalent `--cm, --childModules` flag.
+`Invoke-UnityEditorInstall` keeps passing it unconditionally, so switching
+install paths doesn't also silently change what gets installed -- reconsidering
+whether child modules are actually wanted is out of scope for this refactor.
+
+### Why Editor still isn't a winget package (re-confirmed, unchanged from issue #73)
+
+Unity's own CLI doesn't change this issue's answer, kept here so a future
+reconsideration doesn't have to redo the research:
+
+- `Unity.Unity.2022` exists in winget per patch version, and `2022.3.22f1` is
+  registered there with the same changeset (`887be4894c44`) this repo already
+  pins -- the underlying installer download is identical either way.
+- That winget package is `Windows64EditorInstaller` -- the Editor alone. The
+  four modules this repo installs (`android`, `documentation`, `ios`,
+  `language-ja`) aren't part of it.
+- winget packages one ID per minor line, so multiple patch versions within
+  the same line can't coexist through winget. This repo's own history hit
+  this: an earlier `boxstarter.ps1` ran `2022.3.6f1` and `2022.3.22f1`
+  side-by-side.
+- Pinning `Version` in a `WinGetPackage`/`Microsoft.WinGet.DSC` resource
+  triggers an uninstall-then-reinstall whenever the installed version
+  differs from the declared one -- unlike `unity install`, which is
+  additive by design (Editors are side-by-side).
+
+### Drift detection is report-only by design
+
+`Get-UnityEditorDrift` reports installed-but-undeclared Editor versions; it
+never removes them. Unity Editors install side-by-side, and a version a
+developer installed manually for an unrelated project must not disappear as
+a side effect of running this repo's setup -- an explicit constraint from
+this issue, not an oversight.
+
 ## Removed files and their relocation
 
 | Removed file | Disposition |
