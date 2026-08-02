@@ -354,7 +354,7 @@ function Sync-WinGetPins {
   $invalidCount = $declaredRaw.Count - $declared.Count
   if ($invalidCount -gt 0) {
     $entryNoun = if ($invalidCount -eq 1) { 'entry' } else { 'entries' }
-    Write-Warning "[winget-pin] Skipping $invalidCount malformed $entryNoun in ${ConfigPath} (missing Id/Source/PinType/Reason, an unknown PinType, or a Gating entry missing VersionRange)."
+    Write-Warning "[winget-pin] Skipping $invalidCount malformed $entryNoun in ${ConfigPath} (Id/Source/PinType/Reason missing or blank, an unknown PinType, or a Gating entry with a missing or blank VersionRange)."
   }
 
   try {
