@@ -68,7 +68,7 @@ Describe 'Invoke-UnityCliInstaller' {
     Mock Start-Process { }
 
     $exitCode = Invoke-UnityCliInstaller -Target '1.0.0-beta.3' -Channel 'beta' -ErrorAction SilentlyContinue
-    $exitCode | Should -Not -Be 0
+    $exitCode | Should -Be 1
 
     Should -Invoke Start-Process -Times 0
   }

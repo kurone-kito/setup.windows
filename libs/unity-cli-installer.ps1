@@ -121,10 +121,13 @@ function Invoke-UnityCliInstaller {
   for both causes rather than two.
 
   .OUTPUTS
-  The child process's exit code, or 1 if the installer script itself
-  could not be downloaded. install.ps1 does not call `exit 0` on its
-  success path, so a clean run's exit code is whatever a script falling
-  off the end returns (0).
+  The child process's exit code, or a non-zero value (currently 1) if
+  the installer script itself could not be downloaded. Callers cannot
+  distinguish a download failure from an install.ps1 failure by exit
+  code value alone -- install.ps1 can itself legitimately exit 1 on
+  its own failure paths -- only by whether it's zero. install.ps1 does
+  not call `exit 0` on its success path, so a clean run's exit code is
+  whatever a script falling off the end returns (0).
   #>
 }
 
