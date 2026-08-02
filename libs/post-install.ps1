@@ -16,8 +16,10 @@ Set-StrictMode -Version Latest
 ### file for each version's EOL/verification info and the reason it is
 ### pinned, and docs/dsc-migration-notes.md for the review cadence.
 ###########################################################################
-$runtimeVersionsFile = Join-Path -Path $PSScriptRoot -ChildPath '..' `
-  -AdditionalChildPath 'configurations', 'runtime-versions.psd1'
+$runtimeVersionsFile = $PSScriptRoot `
+  | Join-Path -ChildPath '..' `
+  | Join-Path -ChildPath 'configurations' `
+  | Join-Path -ChildPath 'runtime-versions.psd1'
 if (-not (Test-Path -Path $runtimeVersionsFile -PathType Leaf)) {
   Write-Error "Runtime versions config not found: $runtimeVersionsFile"
   return
@@ -184,7 +186,6 @@ if ((Test-Path $DockerDesktop) -and -not (Test-Path 'C:\vagrant')) {
     $images = @(
       'hello-world', 'alpine', 'busybox', 'debian', 'ubuntu',
       'docker', 'docker:dind', 'docker:git',
-      'node:20', 'node:20-alpine', 'node:20-slim',
       'node:22', 'node:22-alpine', 'node:22-slim',
       'node:24', 'node:24-alpine', 'node:24-slim'
     )

@@ -314,7 +314,7 @@ went stale and nothing surfaced it. Both are now declared in
 `scripts/Build-Configurations.ps1` and `scripts/Test-PackageIds.ps1`
 already depend on the `powershell-yaml` module to parse `dsc.yaml`, but
 `libs/post-install.ps1` has no module dependency today. `.psd1` is
-parsed by `Import-PowerShellDataFile`, a builtin cmdlet -- so this file
+parsed by `Import-PowerShellDataFile`, a built-in cmdlet -- so this file
 does not add a new module dependency for a Boxstarter phase that
 previously had none. It also allows a `#`-prefixed comment directly
 above each entry, same as the hardcoded declarations it replaces.
