@@ -135,6 +135,51 @@ This project is responsible for **installation only**. OS preferences,
 shell configuration, and dotfiles should be managed separately
 (e.g., via [dotfiles](https://github.com/kurone-kito/dotfiles)).
 
+### Ownership boundary
+
+<!-- cspell:ignore Inno -->
+
+| Layer                          | Owns                                                      | Examples                                                                          |
+| ------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| winget / DSC (this repository) | GUI apps, MSI/Inno/WiX/burn-style installers, OS settings | Git, 7-Zip, GnuPG, Neovim, .NET SDK, Steam, Unity Hub                             |
+| dotfiles (mise)                | Delegated CLI tools, language runtimes                    | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc                             |
+| dotfiles (managed User PATH)   | The Windows User PATH                                     | `mise\shims`, `WinGet\Links`, packages declared in `data.wingetUserPath.packages` |
+| Chocolatey (this repository)   | Fonts, audio drivers                                      | HackGen, VB-CABLE                                                                 |
+
+Not every CLI tool moved to dotfiles — only the five first-wave
+delegation targets in the "Examples" column above did. This
+repository still installs many other CLI tools directly via winget
+(see "CLI Tools" under [What Gets Installed](#what-gets-installed)
+above, e.g. 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert).
+
+This repository's own scripts do not manage or write the Windows User
+PATH — the one exception is the third-party Unity CLI installer
+(`libs/unity-cli-installer.ps1` invokes Unity's own `install.ps1`),
+which persists an entry there as its own documented side effect, not
+something this repository's code does directly. User PATH ownership
+otherwise belongs to dotfiles' managed-path reconciler: dotfiles'
+`docs/winget-user-path.md` documents the mechanism, and
+`home/dot_config/powershell/lib/managed-paths.ps1` is its single
+source of truth for the managed-path set.
+
+### `chezmoi apply` is required after `setup.cmd`
+
+`setup.cmd` alone no longer installs Node.js, GitHub CLI, ghq, GitHub
+Copilot CLI, or git-vrc — all five now come from dotfiles' `mise`
+configuration. This repository installs the `chezmoi` binary itself
+(see [What Gets Installed](#what-gets-installed) above) but never runs
+`chezmoi apply` automatically; run it yourself after `setup.cmd`
+completes, from a fresh shell so `mise` is already on `PATH` (an
+earlier apply, before `mise` is reachable, silently no-ops the
+tool-install step). See
+[`docs/dotfiles-boundary.md`](docs/dotfiles-boundary.md#4-operations-gated-on-chezmoi-apply)
+for the full list of operations that do not work until dotfiles has
+been applied and the recovery path if the first apply ran too early,
+and [§7](docs/dotfiles-boundary.md#7-why-cli-tools-moved-to-dotfiles-at-all)
+for the rationale behind moving these tools to dotfiles in the first
+place (including the operational rule to run `winget upgrade` from a
+local or RDP interactive session, never over SSH).
+
 ## Testing
 
 The legacy Vagrant-based test environment has been removed. Modern testing

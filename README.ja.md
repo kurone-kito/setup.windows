@@ -135,6 +135,53 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 dotfiles は別プロジェクト
 （例: [dotfiles](https://github.com/kurone-kito/dotfiles)）で管理してください。
 
+### 所有境界
+
+<!-- cspell:ignore Inno -->
+
+| 層 | 所有 | 例 |
+| ------------------------ | --------------------------------------- | ---------------------------------------------------------------- |
+| winget / DSC（本リポジトリ） | GUI アプリ、MSI・Inno・WiX・burn 系インストーラ、OS 設定 | Git, 7-Zip, GnuPG, Neovim, .NET SDK, Steam, Unity Hub |
+| dotfiles（mise） | 委譲済みの CLI ツール、言語ランタイム | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc |
+| dotfiles（管理対象 User PATH） | Windows の User PATH | `mise\shims`, `WinGet\Links`, `data.wingetUserPath.packages` 宣言分 |
+| Chocolatey（本リポジトリ） | フォント、オーディオドライバ | HackGen, VB-CABLE |
+
+すべての CLI ツールが dotfiles 側へ移ったわけではありません —
+上表「例」列にある第 1 波の委譲対象 5 つのみです。本リポジトリは
+他にも多くの CLI ツールを winget から直接インストールしています
+（前述の[インストールされるもの](#インストールされるもの)の
+「CLI ツール」を参照。例: 7-Zip, FFmpeg, fzf, jq, yq, chezmoi,
+tealdeer, mkcert）。
+
+本リポジトリ自身のスクリプトは Windows の User PATH を管理・書き込み
+しません。唯一の例外はサードパーティ製の Unity CLI インストーラです
+（`libs/unity-cli-installer.ps1` が Unity 公式の `install.ps1` を呼び出し、
+そのインストーラ自身の既知の副作用として User PATH へエントリを追加します
+— 本リポジトリのコードが直接書き込むものではありません）。それ以外の
+User PATH の所有権は dotfiles の管理対象パス reconciler にあります。
+dotfiles の
+`docs/winget-user-path.md` がその仕組みを、
+`home/dot_config/powershell/lib/managed-paths.ps1` が管理対象パス集合の
+単一の真実の源をそれぞれ記録しています。
+
+### `setup.cmd` の後に `chezmoi apply` が必要
+
+`setup.cmd` 単体では、もう Node.js・GitHub CLI・ghq・GitHub Copilot CLI・
+git-vrc のいずれもインストールされません — この 5 つはすべて dotfiles の
+`mise` 設定から入るようになりました。本リポジトリは `chezmoi` バイナリ
+自体は導入します（前述の[インストールされるもの](#インストールされるもの)
+参照）が、`chezmoi apply` を自動実行することはありません。`mise` が
+`PATH` に反映された状態の新しいシェルで、`setup.cmd` 完了後に自分で
+実行してください（`mise` が未反映のまま先に実行すると、ツール導入
+ステップが黙って no-op になります）。dotfiles を適用しないと成立しない
+操作の詳細な一覧と、先に実行してしまった場合の復旧手順は
+[`docs/dotfiles-boundary.md`](docs/dotfiles-boundary.md#4-operations-gated-on-chezmoi-apply)
+を、これらのツールを dotfiles 側へ寄せた根拠（`winget upgrade` を
+ローカル / RDP の対話セッションから実行し、SSH からは実行しないという
+運用ルールを含む）は
+[§7](docs/dotfiles-boundary.md#7-why-cli-tools-moved-to-dotfiles-at-all)
+を参照してください。
+
 ## テスト環境
 
 レガシーの Vagrant ベースのテスト環境は削除しました。
