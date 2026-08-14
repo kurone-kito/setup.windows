@@ -51,8 +51,9 @@ recorded in `.github/idd/config.json`)
   bot's review has converged on the current PR HEAD, turning the F2
   advisory/disposition sub-gate into a non-bypassable GitHub status
   check. Branch-protection registration of this check as a required
-  status check is tracked separately in #61 (human-blocked; this
-  workflow must exist first).
+  status check is recorded in
+  [CI Gate (Required Status Checks)](#ci-gate-required-status-checks)
+  below (#61).
 - **`ciGate.externalChecks.waivable`**: `[{ "selector":
   "idd-advisory-convergence" }]` — this repository's only waivable
   external check.
@@ -99,6 +100,43 @@ recorded in `.github/idd/config.json`)
   introduces it (GitHub reads `pull_request_target` workflow files from
   the base branch) — that PR's own F4 cleanup goes through the normal
   IDD flow instead.
+
+### CI Gate (Required Status Checks)
+
+Resolves #61. `master`'s `main` ruleset (`~DEFAULT_BRANCH`) now carries a
+`required_status_checks` rule, registered via the GitHub Rulesets API
+(this repository predates classic branch protection and uses rulesets
+instead, so the classic `GET .../branches/{branch}/protection` endpoint
+correctly 404s — that is not a misconfiguration).
+
+- **Required contexts**: `idd-advisory-convergence`, `lint`,
+  `powershell-analyzer`, `pester`, `configuration-drift`. The first
+  turns the F2 advisory/disposition sub-gate into a real GitHub-enforced
+  block (this issue's purpose); the other four are the existing
+  `Linting workflow` jobs that already mirror **pre-push-validate** —
+  registering them closes the gap where a maintainer could merge past
+  red CI through the merge button even though IDD's own F2 checklist
+  already required them to be green.
+- **Not registered**: `CodeRabbit`. It reports as a PR review/comment
+  integration, not a check-run (`status`/`conclusion` are `null` in
+  `statusCheckRollup`), so it can never satisfy a required-status-check
+  context — registering it would permanently block merges.
+- **`strict_required_status_checks_policy`**: `false`. This repository
+  runs several IDD issue branches concurrently; requiring every branch
+  to be re-verified against the latest `master` before its checks count
+  would force a rebase-and-rerun cascade on every unrelated merge. IDD's
+  own F1 branch-currency check (`branch-conflict-state`) and F2/F3
+  re-fetch-before-merge already cover staleness without that
+  GitHub-enforced cascade.
+- **Verification** (2026-08-14, live evidence): before this rule
+  existed, PR #113 (issue #103) sat at `mergeStateStatus: UNSTABLE` with
+  no enforced required checks. After registering the rule, #113 (all
+  five contexts green, including a converged `idd-advisory-convergence`)
+  flipped to `mergeStateStatus: CLEAN`, and concurrently PR #114 (issue
+  #105), whose `idd-advisory-convergence` run had concluded `FAILURE`
+  (not yet converged), showed `mergeStateStatus: BLOCKED` — confirming
+  a PR whose advisory review has not converged is actually blocked from
+  merging by the required check, not merely flagged as advisory.
 
 ### Credential Scope
 
