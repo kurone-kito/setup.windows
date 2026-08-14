@@ -132,6 +132,9 @@ the single Node.js source.
   `winget import` fallbacks) also list the `GitHub.cli`
   `PackageIdentifier` — the same degraded-route consideration as
   Node.js above.
+- `README.md` / `README.ja.md` — both files' "Key categories" package
+  summary lists "GitHub CLI" under **Development** (the full profile's
+  section; #107 will need to update this line too).
 - The IDD execution loop itself is built on the `gh` CLI. This is a
   **local-machine** dependency only — hosted GitHub Actions runners
   ship their own `gh` installation and are unaffected by this
@@ -159,10 +162,14 @@ the single Node.js source.
   actually **executes** `gh` (`gh pr view`, `gh api`, `gh pr comment`)
   — the grep also matches `idd-advisory-convergence.yml`, but only
   because it references a `gh run rerun` recovery command inside a
-  comment; it does not execute `gh` in any step. Everything the grep
-  finds under `.github/instructions/`, `docs/`, and `.claude/skills/`
-  is a file that *instructs* an agent to run `gh`, not one that
-  executes it directly.
+  comment; it does not execute `gh` in any step. The
+  `.github/instructions/`/`docs/`/`.claude/skills/` matches are mostly
+  files instructing an agent to run `gh`, but not exclusively — some
+  (e.g. `docs/onboarding/template-distribution.md`,
+  `docs/permissions.md`) discuss or reference `gh` in prose (a
+  generated-file manifest relationship, a permission-allowlist risk
+  example) without instructing the reader to run it. Treat the grep as
+  a superset needing a skim, not a fully pre-classified list.
 
 Issue #107 removes `GitHub.cli` from both profiles' winget
 definitions (along with ghq and GitHub Copilot CLI, below) once this
