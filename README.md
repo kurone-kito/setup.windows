@@ -69,7 +69,7 @@ The script will:
    **`winget import`** (degraded mode) and report any resources it
    could not apply
 4. Install remaining packages via Chocolatey (fonts and audio drivers)
-5. Run post-install setup (Node.js, Unity, Docker images)
+5. Run post-install setup (Node.js, VPM CLI, Unity, mkcert, Docker images)
 6. Enable Microsoft Update and run Windows Update
 
 Boxstarter handles reboots automatically. If a reboot interrupts the process,

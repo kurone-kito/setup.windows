@@ -69,7 +69,7 @@ setup.cmd                        ← 唯一のエントリーポイント
    （利用できない場合は **`winget import`**（縮退モード）にフォール
    バックし、適用できなかったリソースを報告）
 4. Chocolatey で残りのパッケージ（フォント、オーディオドライバ）をインストール
-5. インストール後セットアップ（Node.js, Unity, Docker イメージ）
+5. インストール後セットアップ（Node.js, VPM CLI, Unity, mkcert, Docker イメージ）
 6. Microsoft Update を有効化し、Windows Update を実行
 
 Boxstarter が自動的に再起動を処理します。再起動により処理が中断した場合は、
