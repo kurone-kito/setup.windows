@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
 Shared reader for configurations/runtime-versions.psd1 -- the single
-source of truth for pinned Node, Unity Editor, and Unity CLI versions.
+source of truth for pinned Unity Editor and Unity CLI versions.
 
 This file is dot-sourced (not imported as a module) from post-install.ps1
 and unity-cli-installer.ps1 -- do not add Export-ModuleMember here.

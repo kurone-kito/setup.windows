@@ -302,12 +302,15 @@ a sound single-file mechanism becomes available.
 
 ## Reviewing pinned Node/Unity versions (issue #73)
 
-`libs/post-install.ps1` installs Node.js (via fnm) and the Unity Editor
-(via Unity Hub CLI). Both used to have hardcoded version numbers,
-including one comment block that named its own EOL dates while
-continuing to install two already-EOL'd Node releases -- the versions
-went stale and nothing surfaced it. Both are now declared in
-`configurations/runtime-versions.psd1` instead.
+`libs/post-install.ps1` used to install Node.js (via fnm) and, at the
+time, the Unity Editor (via Unity Hub CLI -- migrated to the Unity CLI
+by issue #74, below). Both had hardcoded version numbers, including
+one comment block that named its own EOL dates while continuing to
+install two already-EOL'd Node releases -- the versions went stale and
+nothing surfaced it. Both moved to `configurations/runtime-versions.psd1`
+at the time (Node's entry has since been removed entirely -- see
+"Node.js ownership moved to dotfiles (issue #108)" below; Unity's
+entry remains).
 
 ### Why `.psd1`, not YAML or JSON
 
@@ -322,21 +325,21 @@ above each entry, same as the hardcoded declarations it replaces.
 ### Where to look for the next EOL
 
 Every entry in `configurations/runtime-versions.psd1` carries its own
-`Eol` (Node) or `VerifiedDate` (Unity, which has no EOL concept)
-alongside `Reason` -- the file itself is the answer to "when does this
-go stale," no separate tracking needed. `Node.Default` is a distinct
-key (not "first entry wins"), so reordering or trimming `Versions`
-can't silently change which version `fnm default` selects.
+`VerifiedDate` (Unity, which has no EOL concept) alongside `Reason` --
+the file itself is the answer to "when does this go stale," no
+separate tracking needed. (The `Node` entry used the same pattern with
+an `Eol` field and a distinct `Node.Default` key -- not "first entry
+wins," so reordering or trimming `Versions` couldn't silently change
+which version `fnm default` selected -- before Node.js version
+management moved to dotfiles; see "Node.js ownership moved to
+dotfiles (issue #108)" below.)
 
 ### Review cadence
 
-- **Node**: re-check the
-  [official release schedule](https://github.com/nodejs/Release)
-  (`schedule.json`) whenever a version's `Eol` in
-  `runtime-versions.psd1` has passed, or at least whenever an issue
-  like this one revisits the file. Drop any version past its `Eol`,
-  and confirm `fnm` itself supports whichever version is added, since a
-  version fnm doesn't yet recognize will fail `fnm install` outright.
+- **Node**: no longer tracked here -- Node.js version management moved
+  to dotfiles (see
+  ["Node.js ownership moved to dotfiles (issue #108)"](#nodejs-ownership-moved-to-dotfiles-issue-108)
+  below). Review cadence for Node.js releases is now dotfiles' concern.
 - **Unity**: no fixed EOL, so `VerifiedDate` records when the pinned
   version/changeset pair was last confirmed against VRChat's own
   [current-version page](https://creators.vrchat.com/sdk/upgrade/current-unity-version/).
@@ -363,6 +366,23 @@ can't silently change which version `fnm default` selects.
   against Unity's own release API (`services.api.unity.com`), which
   returns that exact changeset for `2022.3.22f1`'s Windows x86_64
   download.
+
+### Node.js ownership moved to dotfiles (issue #108)
+
+Node.js version management (formerly `pkg.fnm` in
+`configurations/packages.dsc.yaml`, the `Node` section above, and the
+fnm block in `libs/post-install.ps1`) has been removed from this
+repository entirely. It is now
+[dotfiles](https://github.com/kurone-kito/dotfiles)'s responsibility,
+via its `home/dot_config/mise/config.toml` (`node = "latest"`), which
+became viable once issue #103 added `jdx.mise` to the `full` profile.
+
+This is an **intentional scope change**, not an oversight: fnm allowed
+multiple Node.js LTS lines to be installed side by side (see the
+"2026-08-02 verification" entry above -- v22 and v24 co-installed).
+`mise` instead resolves to a single version per its config. This
+repository no longer supports co-installed Node LTS lines; anyone who
+needs that must configure it in dotfiles/mise directly, not here.
 
 ## Installing the Unity CLI (issue #76)
 

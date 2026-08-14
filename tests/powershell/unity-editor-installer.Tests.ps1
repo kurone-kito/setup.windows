@@ -265,7 +265,7 @@ Describe 'Sync-UnityEditor' {
 
   It 'writes a non-terminating error and does not throw when the Unity entry is missing' {
     $path = Join-Path -Path $TestDrive -ChildPath 'no-unity.psd1'
-    Set-Content -Path $path -Value "@{ Node = @{} }"
+    Set-Content -Path $path -Value "@{ Other = @{} }"
 
     { Sync-UnityEditor -ConfigPath $path -ErrorAction SilentlyContinue } | Should -Not -Throw
   }
