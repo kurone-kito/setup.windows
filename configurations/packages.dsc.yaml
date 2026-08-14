@@ -688,14 +688,6 @@ properties:
         id: GnuPG.GnuPG
         source: winget
 
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.fnm
-      directives:
-        description: Fast Node Manager (fnm)
-      settings:
-        id: Schniz.fnm
-        source: winget
-
     # ================================================================
     # Text editors
     # ================================================================

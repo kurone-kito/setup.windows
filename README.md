@@ -5,7 +5,7 @@
 🌐 [日本語](README.ja.md)
 
 Automated desktop environment setup for Windows 10 / 11, covering
-development (Node.js, .NET, Rust, VRChat/Unity), gaming, and daily use.
+development (.NET, Rust, VRChat/Unity), gaming, and daily use.
 
 ## Architecture
 
@@ -21,7 +21,6 @@ setup.cmd                        ← single entry point
             ├─ Phase 3: Chocolatey (fonts, vb-cable) + posh-git (PowerShellGet)
             ├─ Phase 4: Architecture-conditional packages
             ├─ Phase 5: Post-install             (libs/post-install.ps1)
-            │    ├─ fnm → Node.js 20/22/24/25
             │    ├─ dotnet tool → VPM CLI
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → local CA
@@ -69,7 +68,7 @@ The script will:
    **`winget import`** (degraded mode) and report any resources it
    could not apply
 4. Install remaining packages via Chocolatey (fonts and audio drivers)
-5. Run post-install setup (Node.js, VPM CLI, Unity, mkcert, Docker images)
+5. Run post-install setup (VPM CLI, Unity, mkcert, Docker images)
 6. Enable Microsoft Update and run Windows Update
 
 Boxstarter handles reboots automatically. If a reboot interrupts the process,
@@ -91,7 +90,7 @@ See [configurations/packages.dsc.yaml](configurations/packages.dsc.yaml) for
 the full list. Key categories:
 
 - **Runtimes:** .NET SDK 8/10, Rust, Visual C++ Redistributable
-- **Development:** Git, GitHub CLI, fnm, Android Studio
+- **Development:** Git, GitHub CLI, Android Studio
 - **VRChat:** Unity Hub, VRChat Creator Companion, VRCX
 - **Editors:** VS Code, Cursor, Sublime Text 4, Vim, Neovim
 - **CLI Tools:** 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
@@ -111,11 +110,14 @@ the full list. Key categories:
 
 ### Via Post-Install Scripts
 
-- **Node.js** (via fnm): v20, v22, v24 (LTS), v25 (Current)
 - **VPM CLI** (via dotnet tool): VRChat package manager
 - **Unity 2022.3.22f1**: Required by VRChat SDK/VCC
 - **mkcert**: Local CA for HTTPS development
 - **Docker images**: Base images (alpine, debian, ubuntu, node variants)
+
+> **Note:** Node.js version management is not handled by this repository.
+> It is [dotfiles](https://github.com/kurone-kito/dotfiles)'s
+> responsibility, via `mise`.
 
 ### Conditional (non-ARM64 only)
 

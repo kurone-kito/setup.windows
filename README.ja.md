@@ -5,7 +5,7 @@
 🌐 [English](README.md)
 
 Windows 10 / 11 向けのデスクトップ環境自動セットアップスクリプトです。
-開発（Node.js, .NET, Rust, VRChat/Unity）、ゲーミング、日常利用まで
+開発（.NET, Rust, VRChat/Unity）、ゲーミング、日常利用まで
 一通りの環境を構築します。
 
 ## アーキテクチャ
@@ -22,7 +22,6 @@ setup.cmd                        ← 唯一のエントリーポイント
             ├─ Phase 3: Chocolatey（フォント、vb-cable）+ posh-git（PowerShellGet）
             ├─ Phase 4: アーキテクチャ依存パッケージ
             ├─ Phase 5: インストール後セットアップ (libs/post-install.ps1)
-            │    ├─ fnm → Node.js 20/22/24/25
             │    ├─ dotnet tool → VPM CLI
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → ローカル CA
@@ -69,7 +68,7 @@ setup.cmd                        ← 唯一のエントリーポイント
    （利用できない場合は **`winget import`**（縮退モード）にフォール
    バックし、適用できなかったリソースを報告）
 4. Chocolatey で残りのパッケージ（フォント、オーディオドライバ）をインストール
-5. インストール後セットアップ（Node.js, VPM CLI, Unity, mkcert, Docker イメージ）
+5. インストール後セットアップ（VPM CLI, Unity, mkcert, Docker イメージ）
 6. Microsoft Update を有効化し、Windows Update を実行
 
 Boxstarter が自動的に再起動を処理します。再起動により処理が中断した場合は、
@@ -91,7 +90,7 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 参照してください。主要カテゴリ:
 
 - **ランタイム:** .NET SDK 8/10, Rust, Visual C++ 再頒布可能パッケージ
-- **開発:** Git, GitHub CLI, fnm, Android Studio
+- **開発:** Git, GitHub CLI, Android Studio
 - **VRChat:** Unity Hub, VRChat Creator Companion, VRCX
 - **エディタ:** VS Code, Cursor, Sublime Text 4, Vim, Neovim
 - **CLI ツール:** 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
@@ -111,11 +110,14 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 
 ### インストール後スクリプト経由
 
-- **Node.js**（fnm 経由）: v20, v22, v24 (LTS), v25 (Current)
 - **VPM CLI**（dotnet tool 経由）: VRChat パッケージマネージャー
 - **Unity 2022.3.22f1**: VRChat SDK/VCC 必須バージョン
 - **mkcert**: HTTPS 開発用ローカル CA
 - **Docker イメージ**: ベースイメージ (alpine, debian, ubuntu, node 各種)
+
+> **注意:** Node.js のバージョン管理はこのリポジトリの責務ではありません。
+> [dotfiles](https://github.com/kurone-kito/dotfiles) が `mise` 経由で
+> 管理します。
 
 ### 条件付き（非ARM64 のみ）
 

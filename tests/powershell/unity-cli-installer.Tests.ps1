@@ -142,7 +142,7 @@ Describe 'Sync-UnityCli' {
 
   It 'writes a non-terminating error and does not throw when the UnityCli entry is missing' {
     $path = Join-Path -Path $TestDrive -ChildPath 'no-unity-cli.psd1'
-    Set-Content -Path $path -Value "@{ Node = @{} }"
+    Set-Content -Path $path -Value "@{ Other = @{} }"
 
     { Sync-UnityCli -ConfigPath $path -ErrorAction SilentlyContinue } | Should -Not -Throw
   }
