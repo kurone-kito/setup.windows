@@ -1,32 +1,4 @@
 @{
-  # Node.js versions installed via fnm (libs/post-install.ps1).
-  #
-  # Source of truth for each entry's Status/Eol: the official Node.js
-  # release schedule (https://github.com/nodejs/Release, schedule.json).
-  # Re-check that file when reviewing this list -- do not hand-roll EOL
-  # dates from memory, since that is exactly how this list went stale
-  # before (issue #73).
-  Node      = @{
-    # Default is the version `fnm default` selects. Kept as its own key
-    # (not "first entry wins") so removing/reordering Versions can't
-    # silently change the default.
-    Default  = 24
-    Versions = @(
-      @{
-        Version = 22
-        Status  = 'Maintenance LTS'
-        Eol     = '2027-04-30'
-        Reason  = 'Still under maintenance support; kept for projects pinned to v22 while v24 is the default for new work.'
-      }
-      @{
-        Version = 24
-        Status  = 'Active LTS'
-        Eol     = '2028-04-30'
-        Reason  = 'Current Active LTS release; the default version for new work.'
-      }
-    )
-  }
-
   # Unity Editor version installed via the Unity CLI (`unity install`,
   # libs/unity-editor-installer.ps1) -- not Unity Hub's unofficial
   # `-- --headless` interface (replaced by issue #74; see

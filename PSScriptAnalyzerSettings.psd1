@@ -19,10 +19,11 @@
 
     # PSAvoidUsingInvokeExpression is intentionally NOT excluded here (flagged
     # by review): a global ExcludeRules entry would also silence any new
-    # Invoke-Expression call added later under libs/. The one existing
-    # occurrence (fnm's `fnm env --use-on-cd | Out-String | Invoke-Expression`
-    # in libs/post-install.ps1) is suppressed at the file scope instead via
-    # [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute], so the rule
-    # stays enabled for every other analyzed file.
+    # Invoke-Expression call added later under libs/. There is no current
+    # occurrence to suppress (the one that existed, fnm's env-init
+    # incantation in libs/post-install.ps1, was removed with fnm itself --
+    # issue #108); if a future occurrence needs one, suppress it at the file
+    # scope via [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute]
+    # instead, so the rule stays enabled for every other analyzed file.
   )
 }

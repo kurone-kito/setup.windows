@@ -5,26 +5,26 @@ after the declarative DSC phase completes.
 
 All steps are idempotent and safe to re-run after a reboot.
 #>
-[System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '', Justification = 'fnm official env-init incantation (fnm env --use-on-cd)')]
 param()
 
 Set-StrictMode -Version Latest
 
 ###########################################################################
-### Runtime version config (issue #73) — Node/Unity versions live in
+### Runtime version config (issue #73) — Unity versions live in
 ### configurations/runtime-versions.psd1, not hardcoded here. See that
 ### file for each version's EOL/verification info and the reason it is
 ### pinned, and docs/dsc-migration-notes.md for the review cadence.
+###
+### Only the path is needed here -- Sync-UnityEditor (below) loads and
+### validates the file itself (non-terminating error, no throw, on a
+### missing/malformed file), so parsing it a second time up front would
+### only make an unrelated config problem skip VPM CLI / Vagrant /
+### mkcert / Docker too, not just the Unity step that actually needs it.
 ###########################################################################
-. (Join-Path -Path $PSScriptRoot -ChildPath 'runtime-versions.ps1')
 $runtimeVersionsFile = $PSScriptRoot `
   | Join-Path -ChildPath '..' `
   | Join-Path -ChildPath 'configurations' `
   | Join-Path -ChildPath 'runtime-versions.psd1'
-$runtimeVersions = Get-RuntimeVersionsConfig -Path $runtimeVersionsFile
-if ($null -eq $runtimeVersions) {
-  return
-}
 
 ###########################################################################
 ### Helper — correct command existence check (fixes the Out-Null bug)
@@ -40,25 +40,6 @@ function Test-CommandExists {
   This avoids the historic `Get-Command ... | Out-Null` bug where the
   pipeline always evaluates to $null ($false).
   #>
-}
-
-###########################################################################
-### Node.js via fnm
-###########################################################################
-if (Test-CommandExists fnm) {
-  Write-Host '[post-install] Setting up Node.js via fnm...' -ForegroundColor Cyan
-  fnm env --use-on-cd | Out-String | Invoke-Expression
-
-  $nodeConfig = $runtimeVersions.Node
-  foreach ($entry in @($nodeConfig.Versions)) {
-    Write-Host "  Installing Node.js v$($entry.Version) ($($entry.Status), EOL $($entry.Eol))..." -ForegroundColor Gray
-    fnm install $entry.Version
-  }
-  fnm default $nodeConfig.Default
-  Write-Host '[post-install] Node.js setup complete.' -ForegroundColor Green
-}
-else {
-  Write-Warning '[post-install] fnm not found — skipping Node.js setup.'
 }
 
 ###########################################################################
