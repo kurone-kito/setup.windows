@@ -6,18 +6,18 @@ repository's winget/DSC definitions to
 [mise](https://mise.jdx.dev/) configuration, in tracked waves. This
 document is issue #104's inventory for the **first wave** —
 Node.js, GitHub CLI, ghq, GitHub Copilot CLI, and git-vrc — recording
-every in-repo dependency on each target. Two of the wave's five
+every in-repo dependency on each target. Three of the wave's five
 implementation tracks merged **while this investigation was in
-progress**: git-vrc (#105, PR #114) and the full-profile `jdx.mise`
-prerequisite for Node.js (#103, PR #113). GitHub CLI/ghq/GitHub
-Copilot CLI (#107) and Node.js's own fnm removal (#108) are still open
-at the time of writing.
+progress**: git-vrc (#105, PR #114), the full-profile `jdx.mise`
+prerequisite for Node.js (#103, PR #113), and Node.js's own fnm
+removal (#108, PR #117). Only GitHub CLI/ghq/GitHub Copilot CLI (#107)
+remains open at the time of writing.
 
 Two other documents in progress cover related but distinct ground:
 
 - #110 (not yet merged) will update `README.md` / `README.ja.md` with
   the user-facing ownership boundary table and the `chezmoi apply`
-  prerequisite, once #104/#107/#108 have shipped (#103 and #105
+  prerequisite, once #104/#107 have shipped (#103, #105, and #108
   already have). It is blocked by this issue and depends on it for the
   "operations that need `chezmoi apply`" list below.
 - Roadmap issue #111 records the full cross-repo design rationale
@@ -28,23 +28,19 @@ Two other documents in progress cover related but distinct ground:
   dependency surface.
 
 Everything below reflects the state of `master` as investigated and
-re-synced on 2026-08-14 (UTC), including after #105 (PR #114) and #103
-(PR #113) each merged mid-investigation the same day. Statements about
-`kurone-kito/dotfiles` content are point-in-time reads of that
-repository on the same date and can drift independently of this
-repository.
+re-synced on 2026-08-14 (UTC), including after #105 (PR #114), #103
+(PR #113), and #108 (PR #117) each merged mid-investigation the same
+day. Statements about `kurone-kito/dotfiles` content are point-in-time
+reads of that repository on the same date and can drift independently
+of this repository.
 
 **Scope note**: this document only records findings. It does not
 change `.github/idd/config.json`, `configurations/*.dsc.yaml`, or (for
-the still-open Node.js/GitHub-CLI/ghq/Copilot-CLI removal work)
+the still-open GitHub-CLI/ghq/Copilot-CLI removal work)
 `libs/post-install.ps1` — those stay exactly as they are until #107
-and #108 ship. `libs/post-install.ps1`'s git-vrc block specifically
-was already removed by #105 before this issue merged (see the
-git-vrc subsection below); `#103`'s merge touched
-`configurations/packages.dsc.yaml` (adding `pkg.mise`) and its
-generated `configurations/packages.import.json` fallback (adding the
-`jdx.mise` `PackageIdentifier`), but not `libs/post-install.ps1` — fnm
-remains Node.js's active provisioning path there until #108.
+ships. `libs/post-install.ps1`'s git-vrc block (removed by #105) and
+fnm block (removed by #108) were both already gone before this issue
+merged (see the git-vrc and Node.js subsections below).
 
 ## 1. First-wave targets: in-repo dependencies
 
@@ -57,69 +53,47 @@ immediately.
 
 ### Node.js
 
-- `configurations/packages.dsc.yaml` — `pkg.fnm` resource
-  (`id: pkg.fnm` / winget id `Schniz.fnm`, full profile only; not
-  present in `packages.min.dsc.yaml`).
-- `configurations/packages.import.json` (generated fallback for the
-  full profile's degraded `winget import` route — `boxstarter.ps1`
-  runs `winget import` against this file only when `libs/strategy.ps1`'s
-  capability detection selects the `import` route upfront because
-  `winget configure` isn't available on this machine; a runtime
-  `winget configure` failure aborts setup outright, it does not fall
-  back to `import`) also lists the `Schniz.fnm` `PackageIdentifier`, an
-  active second installation path for the same package.
-- `libs/post-install.ps1` — the `### Node.js via fnm` block: runs
-  `fnm env --use-on-cd`, then `fnm install` for each version and
-  `fnm default` from `configurations/runtime-versions.psd1`'s `Node`
-  table.
-- `configurations/runtime-versions.psd1` — the `Node` table (pinned
-  versions, EOL dates, default version), consumed only by the
-  `post-install.ps1` block above.
-- `README.md` / `README.ja.md` — the architecture diagram and package
-  list both name `fnm` as the Node.js install path, and both files'
-  setup-step-5 one-line summary ("Run post-install setup (Node.js, VPM
-  CLI, Unity, mkcert, Docker images)") still names Node.js explicitly.
-- `boxstarter.ps1` — the `### Phase 5 — Post-install setup (fnm,
-  cargo, Unity, mkcert, Docker)` banner comment names `fnm`.
-- `PSScriptAnalyzerSettings.psd1` — the comment explaining why
-  `PSAvoidUsingInvokeExpression` isn't globally excluded specifically
-  cites fnm's `fnm env --use-on-cd | Out-String | Invoke-Expression`
-  call in `libs/post-install.ps1` as the one existing occurrence the
-  file-scoped suppression covers; that occurrence disappears with the
-  fnm block.
-- `libs/runtime-versions.ps1` — the dot-sourced reader's own doc
-  comment names it "the single source of truth for pinned Node, Unity
-  Editor, and Unity CLI versions".
-- `docs/dsc-migration-notes.md`'s "Reviewing pinned Node/Unity
-  versions (issue #73)" section owns the fnm/Node review guidance
-  that #108 will need to rewrite once `Schniz.fnm` and the `Node`
-  table are removed.
-- `tests/powershell/unity-cli-installer.Tests.ps1` and
-  `unity-editor-installer.Tests.ps1` both use `@{ Node = @{} }` as a
-  fixture for a config file with an unrelated section present but the
-  Unity-specific one missing — incidental, not a functional
-  dependency, but worth #108 double-checking these fixtures still make
-  sense once the `Node` key disappears from `runtime-versions.psd1`.
+<!-- cspell:ignore Schniz -->
 
-**Both profiles now ship `jdx.mise`** — the min profile already had it
-(`mise-en-place-mise` resource in `packages.min.dsc.yaml`), and #103
-(PR #113) added it to the full profile too (`pkg.mise` resource in
-`packages.dsc.yaml`, same `jdx.mise` winget id), merging while this
-investigation was in progress. On **either** profile, `jdx.mise`
-installs only the `mise` tool itself — not Node.js. Node.js comes from
-`mise` reading dotfiles' `node = "latest"` entry in `mise/config.toml`,
-which requires `chezmoi apply` to deploy; both profiles now have
-`mise` unconditionally (via winget) but still need `chezmoi apply`
-before `mise` actually installs Node.js.
+**Already delegated** — #108 merged as PR #117 on 2026-08-14, while
+this issue was still in progress (its own prerequisite, #103's
+full-profile `jdx.mise` addition, had merged as PR #113 earlier the
+same day). `libs/post-install.ps1` no longer has any Node.js code: the
+`### Node.js via fnm` block (`fnm env --use-on-cd`, `fnm install` per
+version, `fnm default`) was removed in full, along with the
+file-scoped `PSAvoidUsingInvokeExpression`
+`SuppressMessageAttribute` that block needed (no other
+`Invoke-Expression` use remains in the file). Alongside it, #108
+removed: `pkg.fnm` (winget id `Schniz.fnm`) from
+`configurations/packages.dsc.yaml` and its generated
+`configurations/packages.import.json` fallback; the entire `Node` key
+from `configurations/runtime-versions.psd1` (Unity/UnityCli entries
+untouched); Node.js/`fnm` mentions from `README.md`/`README.ja.md`'s
+architecture diagram, package list, and setup-step-5 summary (replaced
+with a note that Node.js version management is dotfiles'
+responsibility); the `fnm`/`Schniz` words from `.cspell.config.yml`;
+and renamed the incidental `@{ Node = @{} }` fixture in
+`tests/powershell/unity-cli-installer.Tests.ps1` /
+`unity-editor-installer.Tests.ps1` to `@{ Other = @{} }`.
+`docs/dsc-migration-notes.md`'s "Reviewing pinned Node/Unity versions"
+section was also rewritten, gaining a new "Node.js ownership moved to
+dotfiles (issue #108)" subsection that records the same delegation
+this document does, independently.
 
-`mise` being present on the full profile does **not** yet change which
-provisioning path is *active* there: `pkg.fnm` and the
-`post-install.ps1` fnm block above are untouched, so a fresh
-full-profile `setup.cmd` run still installs Node.js via fnm today.
-Issue #103 was a prerequisite step — it unblocks #108, which is the
-change that will actually remove `pkg.fnm`, the `post-install.ps1` fnm
-block, and the `Node` table, switching both profiles over to mise as
-the single Node.js source.
+**Current in-repo dependency: none.** dotfiles now owns Node.js
+version management entirely, via `home/dot_config/mise/config.toml`'s
+`node = "latest"` entry (confirmed live against `kurone-kito/dotfiles`
+on 2026-08-14) — viable once #103 added `jdx.mise` to the full
+profile (the min profile already had it). Both profiles have `mise`
+unconditionally via winget today, but Node.js itself only comes from
+it after `chezmoi apply` deploys that config entry — a present-day
+condition, not a future one, same as git-vrc — see
+[§4](#4-operations-gated-on-chezmoi-apply). This is also an
+**intentional scope change**, not just a relocation: fnm allowed
+multiple Node.js LTS lines to be installed side by side; `mise`
+resolves to a single version per its config, so this repository no
+longer supports that co-installed pattern — anyone who needs it must
+configure it in dotfiles/mise directly.
 
 ### GitHub CLI
 
@@ -281,7 +255,7 @@ just `fix-validate`/`pre-push-validate`.
 
 | Tool | Needed by | Provisioning source today | After delegation |
 | --- | --- | --- | --- |
-| `npx` (Node.js) | `fix-validate`, `pre-push-validate`, `post-fix-validate`, every `idd-*` helper call | **full**: `Schniz.fnm` (winget) + `libs/post-install.ps1`'s fnm block, unchanged by #103 — this is the only profile with an active Node.js path today. **min**: `Schniz.fnm` was never in the min profile at all; `libs/post-install.ps1`'s fnm block checks `Test-CommandExists fnm` and silently skips Node.js setup (just a warning) when it's absent, so a stock min-profile machine provisions **no Node.js at all** today. Both profiles now have `jdx.mise` (winget, unconditional, since #103) installed but **inactive** for Node.js provisioning either way — `mise` itself is present, but Node.js only comes from it after `chezmoi apply` deploys dotfiles' `node = "latest"` entry | Both profiles converge on dotfiles' `node = "latest"` (mise) as the sole path once #108 ships and removes the fnm block |
+| `npx` (Node.js) | `fix-validate`, `pre-push-validate`, `post-fix-validate`, every `idd-*` helper call | **Already delegated (#108, PR #117)** — this repository no longer installs Node.js at all, on either profile. Both profiles have `jdx.mise` via winget unconditionally, but Node.js itself only comes from `mise` reading dotfiles' `node = "latest"` entry, which needs `chezmoi apply` to deploy — see the Node.js subsection in [§1](#1-first-wave-targets-in-repo-dependencies) and the cross-cutting caveat in [§4](#4-operations-gated-on-chezmoi-apply) | N/A — already the target state |
 | `gh` | The IDD loop's own bootstrap (not `fix-validate`/`pre-push-validate` directly) | full and min: `GitHub.cli` (winget) | dotfiles' `github:cli/cli` (mise) once #107 ships |
 | `pwsh` (PowerShell 7) | `pre-push-validate`/`post-fix-validate` (`Invoke-ScriptAnalyzer`, `Invoke-Pester`) | Both profiles install PowerShell 7 today, via different package identities: full uses `pkg.pwsh` (Microsoft Store id `9MZ1SNWT0N5D`); min uses `Microsoft.PowerShell` (native winget id). Not a delegation-relevant gap — see [§3](#3-powershell-7-provisioning-in-the-full-profile-conclusion). | Unchanged — no first-wave track touches either `pwsh` package definition. |
 | `PSScriptAnalyzer`, `Pester`, `powershell-yaml` (PowerShell modules) | `pre-push-validate`/`post-fix-validate` (`Invoke-ScriptAnalyzer`/`Invoke-Pester`); `powershell-yaml` is also required by `scripts/Build-Configurations.ps1` / `scripts/Test-PackageIds.ps1` | **No automated winget or dotfiles provisioning on either profile, for any of the three.** `.github/workflows/lint.yml` runs `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` fresh on every CI run for all three. `docs/testing.md` documents the manual command for **local** development for `Pester`; `scripts/Build-Configurations.ps1`'s and `scripts/Test-PackageIds.ps1`'s own help-comment headers document the same manual command for `powershell-yaml`. Only `PSScriptAnalyzer` has no local-install documentation anywhere in this repository — just its CI provisioning in `lint.yml`. Nothing automates any of the three for a fresh local machine (either profile). | Unchanged — out of scope for the winget/dotfiles boundary; these are PowerShell Gallery modules, not OS packages. |
@@ -346,11 +320,12 @@ winget/dotfiles delegation boundary this issue covers.
 
 ## 4. Operations gated on `chezmoi apply`
 
-Rows 1-3 below apply **once** #107/#108 ship; they do not apply to
-today's `master`. Rows 4-5 (git-vrc) already apply **today**, since
-issue #105 merged during this investigation. Row 6 is unrelated to any
-first-wave track and `chezmoi apply` does not fix it either — see the
-PowerShell-modules row in [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate).
+Rows 1-2 below apply **once** #107 ships; they do not apply to today's
+`master`. Rows 3-5 (Node.js, git-vrc) already apply **today**, since
+issues #108 and #105 each merged during this investigation. Row 6 is
+unrelated to any first-wave track and `chezmoi apply` does not fix it
+either — see the PowerShell-modules row in
+[§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate).
 
 **Cross-cutting caveat for every "run `chezmoi apply` first" workaround
 below**: dotfiles' `run_onchange_after_50-install-mise-tools.ps1.tmpl`
@@ -360,18 +335,18 @@ below**: dotfiles' `run_onchange_after_50-install-mise-tools.ps1.tmpl`
 skipping.'; exit 0 }`. It **silently no-ops**, not fails, when `mise`
 itself isn't on `PATH`.
 
-Since #103 (PR #113) merged, both profiles now have `jdx.mise` via
-winget unconditionally, so the predictable "no `mise` package at all"
-failure mode no longer applies to either profile. A subtler version
-remains on **both**: `run_onchange_` scripts are keyed on a content
-hash (the script's own header comment: "Re-runs when mise config
-changes"), not on whether the previous run actually did the work —
-chezmoi has no way to distinguish "did the work" from "successfully
-chose to no-op" once the script exits `0` either way. If `mise` isn't
-yet reachable on `PATH` in the shell `chezmoi apply` runs in on a
-machine's **first** apply (for example, PATH hasn't refreshed in the
-current session since winget just installed `jdx.mise`), the no-op
-still gets recorded against that content hash. Installing `mise`
+Both profiles have `jdx.mise` via winget unconditionally (min always
+did; full gained it via #103), so the predictable "no `mise` package
+at all" failure mode does not apply to either profile. A subtler
+version remains on **both**: `run_onchange_` scripts are keyed on a
+content hash (the script's own header comment: "Re-runs when mise
+config changes"), not on whether the previous run actually did the
+work — chezmoi has no way to distinguish "did the work" from
+"successfully chose to no-op" once the script exits `0` either way. If
+`mise` isn't yet reachable on `PATH` in the shell `chezmoi apply` runs
+in on a machine's **first** apply (for example, PATH hasn't refreshed
+in the current session since winget just installed `jdx.mise`), the
+no-op still gets recorded against that content hash. Installing `mise`
 afterward, or reconnecting the session, does not change the hash — a
 later plain `chezmoi apply` will **not** retry the script. The
 workaround in that case is a manual `mise install && mise reshim` once
@@ -380,8 +355,8 @@ workaround in that case is a manual `mise install && mise reshim` once
 | Operation | Needs | Workaround |
 | --- | --- | --- |
 | IDD `gh`-based operations (claim, PR, review, merge) on a local machine | GitHub CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above), or temporarily `winget install GitHub.cli` |
-| `fix-validate` / `pre-push-validate` / `post-fix-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first (see the cross-cutting caveat above). Temporary alternative: `winget install Schniz.fnm` alone only reinstalls the empty version-manager binary once the `post-install.ps1` fnm block that ran `fnm env`/`fnm install`/`fnm default` is gone — it must be followed by `fnm env --use-on-cd \| Out-String \| Invoke-Expression` (session-scoped; without it `node`/`npx` stay off `PATH` even after installing a version) and a manual `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
 | Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences | ghq / GitHub Copilot CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above), or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
+| `fix-validate` / `pre-push-validate` / `post-fix-validate` / any `idd-*` helper call (needs `npx`) on a local machine — **applies today** | Node.js | Run `chezmoi apply` first (see the cross-cutting caveat above). This repository has **no winget package for Node.js** as of #108 — a temporary local install must either reinstall `fnm` directly from the public winget catalog (`winget install Schniz.fnm`, not defined in this repo anymore) and then run `fnm env --use-on-cd \| Out-String \| Invoke-Expression` plus `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
 | Interactive use of the `git vrc` binary, or any operation needing it — **applies today** | git-vrc | Run `chezmoi apply` first (see the cross-cutting caveat above). This repository has **no winget package id for git-vrc** — a temporary local install must use the command the now-removed `post-install.ps1` block used to run: `cargo install --locked --git https://github.com/anatawa12/git-vrc.git`. That itself needs `cargo`: `Rustlang.Rust.MSVC` is full-profile only (`configurations/packages.min.dsc.yaml` has no Rust entry), so a min-profile machine needs Rust installed some other way (e.g. `winget install Rustlang.Rust.MSVC`) before this fallback works |
 | The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) — **applies today** | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block | Run `chezmoi apply` first (see the cross-cutting caveat above), or manually add the equivalent `[filter "vrc"]` block to the global gitconfig — **and** install the `git-vrc` binary via the cargo command in the row above first, or the filter's `git vrc clean`/`git vrc smudge` invocations fail with no such subcommand |
 | `pre-push-validate`'s `pwsh`-based checks needing `PSScriptAnalyzer`/`Pester`/`powershell-yaml`, on either profile, today | The PowerShell Gallery modules — see [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate); not fixed by `chezmoi apply`, ever, under the current dotfiles definition | Manually run `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` for all three, using the pinned versions in `.github/workflows/lint.yml` (`docs/testing.md` documents this for `Pester`; `scripts/Build-Configurations.ps1`/`Test-PackageIds.ps1`'s help headers document it for `powershell-yaml`; `PSScriptAnalyzer` has no local documentation) |
@@ -431,20 +406,19 @@ first-wave targets. **No deferred targets.**
 
 Roadmap issue #111's tracks list does not defer any of Node.js, GitHub
 CLI, ghq, GitHub Copilot CLI, or git-vrc — all five are first-wave
-tracks with implementation issues (Node.js: #103, merged as PR #113
-while this issue was in progress, plus #108, still open, for the
-remaining fnm removal; GitHub CLI, ghq, and GitHub Copilot CLI: #107,
-open; git-vrc: #105, merged as PR #114 while this issue was in
-progress). The one dependency that could look like a reason to defer —
-the IDD loop's own bootstrap dependency on `gh` (§1, §2) — is handled
-as **sequencing**, not deferral: #111 records that #107 (which removes
-`GitHub.cli` from winget) depends on #104 (this issue) precisely so
-the bootstrap dependency is recorded before the winget definition is
-removed, not so that removal is skipped. This issue does not block
-issue #108, which proceeds independently (#103 and #105 no longer need
-to be listed here — both already shipped). #107 specifically is gated
-on this issue merging first — roadmap #111 records the dependency
-edge "#107 depends on #104", and #107 itself is filed as `Blocked
-by #104`. That is the sequencing this section is about: a deliberate,
-temporary ordering gate on one target, not a deferral of delegation
-itself.
+tracks with implementation issues (Node.js: #103 and #108, both
+merged while this issue was in progress; GitHub CLI, ghq, and GitHub
+Copilot CLI: #107, still open; git-vrc: #105, merged as PR #114 while
+this issue was in progress). The one dependency that could look like a
+reason to defer — the IDD loop's own bootstrap dependency on `gh` (§1,
+§2) — is handled as **sequencing**, not deferral: #111 records that
+issue #107 (which removes `GitHub.cli` from winget) depends on #104
+(this issue) precisely so the bootstrap dependency is recorded before
+the winget definition is removed, not so that removal is skipped.
+Issues #103, #105, and #108 no longer need to be listed here as
+blocked — all three already shipped. #107 specifically is gated on
+this issue merging first — roadmap #111 records the dependency edge
+between #107 and #104 explicitly (as "depends on"), and #107 itself is
+filed as `Blocked by #104`. That is the sequencing this section is
+about: a deliberate, temporary ordering gate on one target, not a
+deferral of delegation itself.
