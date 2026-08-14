@@ -61,6 +61,19 @@ immediately.
   `post-install.ps1` block above.
 - `README.md` / `README.ja.md` — the architecture diagram and package
   list both name `fnm` as the Node.js install path.
+- `libs/runtime-versions.ps1` — the dot-sourced reader's own doc
+  comment names it "the single source of truth for pinned Node, Unity
+  Editor, and Unity CLI versions".
+- `docs/dsc-migration-notes.md`'s "Reviewing pinned Node/Unity
+  versions (issue #73)" section owns the fnm/Node review guidance
+  that #108 will need to rewrite once `Schniz.fnm` and the `Node`
+  table are removed.
+- `tests/powershell/unity-cli-installer.Tests.ps1` and
+  `unity-editor-installer.Tests.ps1` both use `@{ Node = @{} }` as a
+  fixture for a config file with an unrelated section present but the
+  Unity-specific one missing — incidental, not a functional
+  dependency, but worth #108 double-checking these fixtures still make
+  sense once the `Node` key disappears from `runtime-versions.psd1`.
 
 The min profile already ships `jdx.mise` (`mise-en-place-mise`
 resource in `packages.min.dsc.yaml`) via winget, but that installs only
@@ -159,7 +172,7 @@ just `fix-validate`/`pre-push-validate`.
 | `npx` (Node.js) | `fix-validate`, `pre-push-validate`, every `idd-*` helper call | full: `Schniz.fnm` (winget) + `libs/post-install.ps1`. min: `jdx.mise` (winget, unconditional) installs the `mise` tool, but Node.js itself comes from dotfiles' `node = "latest"` entry, which needs `chezmoi apply` to deploy | Both profiles converge on dotfiles' `node = "latest"` (mise) once #108 ships |
 | `gh` | The IDD loop's own bootstrap (not `fix-validate`/`pre-push-validate` directly) | full and min: `GitHub.cli` (winget) | dotfiles' `github:cli/cli` (mise) once #107 ships |
 | `pwsh` (PowerShell 7) | `pre-push-validate` (`Invoke-ScriptAnalyzer`, `Invoke-Pester`) | Both profiles install PowerShell 7 today, via different package identities: full uses `pkg.pwsh` (Microsoft Store id `9MZ1SNWT0N5D`); min uses `Microsoft.PowerShell` (native winget id). Not a delegation-relevant gap — see [§3](#3-powershell-7-provisioning-in-the-full-profile-conclusion). | Unchanged — no first-wave track touches either `pwsh` package definition. |
-| `PSScriptAnalyzer`, `Pester`, `powershell-yaml` (PowerShell modules) | `pre-push-validate` (`Invoke-ScriptAnalyzer`/`Invoke-Pester`); `powershell-yaml` is also required by `scripts/Build-Configurations.ps1` / `scripts/Test-PackageIds.ps1` | **No automated winget or dotfiles provisioning on either profile, for any of the three.** `.github/workflows/lint.yml` runs `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` fresh on every CI run for all three. Of the three, only `docs/testing.md` documents the manual `Install-Module` command for **local** development, and only for `Pester` — `PSScriptAnalyzer` and `powershell-yaml` have no local-install documentation anywhere in this repository, only their CI provisioning in `lint.yml`. Nothing automates any of the three for a fresh local machine (either profile). | Unchanged — out of scope for the winget/dotfiles boundary; these are PowerShell Gallery modules, not OS packages. |
+| `PSScriptAnalyzer`, `Pester`, `powershell-yaml` (PowerShell modules) | `pre-push-validate` (`Invoke-ScriptAnalyzer`/`Invoke-Pester`); `powershell-yaml` is also required by `scripts/Build-Configurations.ps1` / `scripts/Test-PackageIds.ps1` | **No automated winget or dotfiles provisioning on either profile, for any of the three.** `.github/workflows/lint.yml` runs `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` fresh on every CI run for all three. `docs/testing.md` documents the manual command for **local** development for `Pester`; `scripts/Build-Configurations.ps1`'s and `scripts/Test-PackageIds.ps1`'s own help-comment headers document the same manual command for `powershell-yaml`. Only `PSScriptAnalyzer` has no local-install documentation anywhere in this repository — just its CI provisioning in `lint.yml`. Nothing automates any of the three for a fresh local machine (either profile). | Unchanged — out of scope for the winget/dotfiles boundary; these are PowerShell Gallery modules, not OS packages. |
 
 ## 3. PowerShell 7 provisioning in the full profile: conclusion
 
@@ -229,7 +242,7 @@ apply` does not fix either — see the PowerShell-modules row in
 | Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences | ghq / GitHub Copilot CLI, once #107 ships | Run `chezmoi apply` first, or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
 | Interactive use of the `git vrc` binary, or any operation needing it | git-vrc, once #105 ships | Run `chezmoi apply` first. This repository has **no winget package id for git-vrc today** — a temporary local install must use the same command `libs/post-install.ps1` uses: `cargo install --locked --git https://github.com/anatawa12/git-vrc.git` |
 | The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block, once #105 ships | Run `chezmoi apply` first, or manually add the equivalent `[filter "vrc"]` block to the global gitconfig — **and** install the `git-vrc` binary via the cargo command in the row above first, or the filter's `git vrc clean`/`git vrc smudge` invocations fail with no such subcommand |
-| `pre-push-validate`'s `pwsh`-based checks needing `PSScriptAnalyzer`/`Pester`/`powershell-yaml`, on either profile, today | The PowerShell Gallery modules — see [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate); not fixed by `chezmoi apply`, ever, under the current dotfiles definition | Manually run `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` for all three, using the pinned versions in `.github/workflows/lint.yml` (`docs/testing.md` documents this command for `Pester` only) |
+| `pre-push-validate`'s `pwsh`-based checks needing `PSScriptAnalyzer`/`Pester`/`powershell-yaml`, on either profile, today | The PowerShell Gallery modules — see [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate); not fixed by `chezmoi apply`, ever, under the current dotfiles definition | Manually run `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` for all three, using the pinned versions in `.github/workflows/lint.yml` (`docs/testing.md` documents this for `Pester`; `scripts/Build-Configurations.ps1`/`Test-PackageIds.ps1`'s help headers document it for `powershell-yaml`; `PSScriptAnalyzer` has no local documentation) |
 
 **Unrelated existing caveat, noted for accuracy**: this repository's
 own code only ever modifies the current process's `$env:Path`
@@ -283,5 +296,9 @@ bootstrap dependency on `gh` (§1, §2) — is handled as **sequencing**,
 not deferral: #111 records that #107 (which removes `GitHub.cli` from
 winget) depends on #104 (this issue) precisely so the bootstrap
 dependency is recorded before the winget definition is removed, not so
-that removal is skipped. This issue does not block #103, #105, #107,
-or #108 from proceeding.
+that removal is skipped. This issue does not block #103, #105, or #108,
+which proceed independently. #107 specifically is gated on this issue
+merging first — roadmap #111 records "#107 depends on #104", and #107
+itself is filed as `Blocked by #104`. That is the sequencing this
+section is about: a deliberate, temporary ordering gate on one target,
+not a deferral of delegation itself.
