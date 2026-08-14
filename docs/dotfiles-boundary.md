@@ -80,8 +80,14 @@ section was also rewritten, gaining a new "Node.js ownership moved to
 dotfiles (issue #108)" subsection that records the same delegation
 this document does, independently.
 
-**Current in-repo dependency: none.** dotfiles now owns Node.js
-version management entirely, via `home/dot_config/mise/config.toml`'s
+**No in-repo Node.js provisioning definition remains** — that is
+narrower than "no dependency": this repository still has a live
+**runtime** dependency on Node.js/`npx`, documented in full in
+[§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate)
+(`fix-validate`, `pre-push-validate`, `post-fix-validate`, and every
+`idd-*` helper call all need it). What #108 removed is only this
+repository's own means of *installing* Node.js — dotfiles now owns
+that entirely, via `home/dot_config/mise/config.toml`'s
 `node = "latest"` entry (confirmed live against `kurone-kito/dotfiles`
 on 2026-08-14) — viable once #103 added `jdx.mise` to the full
 profile (the min profile already had it). Both profiles have `mise`
