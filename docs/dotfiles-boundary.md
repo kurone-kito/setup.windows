@@ -119,11 +119,13 @@ available on both profiles.
 - The IDD execution loop itself is built on the `gh` CLI. This is a
   **local-machine** dependency only — hosted GitHub Actions runners
   ship their own `gh` installation and are unaffected by this
-  repository's or dotfiles' package choices. Prose enumeration of this
-  surface was found incomplete twice already during this review, so
-  it's recorded here as a **reproducible command** instead of a
-  hand-maintained list — re-run it to get the current, exact set
-  rather than trusting a snapshot that will drift:
+  repository's or dotfiles' package choices. A static count of exactly
+  which files reference `gh` was found stale on every attempt during
+  this review — the surface is large enough, and this repository's own
+  documentation active enough, that a hand-recorded number does not
+  stay current even within one review round. The command below is the
+  actual source of truth; re-run it for the current set instead of
+  trusting any number written here:
 
   ```sh
   grep -rl '\bgh \|gh api\|gh pr\|gh issue\|gh run\|gh repo' \
@@ -132,19 +134,15 @@ available on both profiles.
   ```
 
   (`--exclude` is needed because this file's own prose quotes `gh`
-  commands and would otherwise match itself.) As of this snapshot
-  (2026-08-14): 22 files under `.github/instructions/` (including
-  `lite/`) that instruct an agent to run `gh`; 9 files under `docs/`
-  that do the same (`customization.md`,
-  `idd-advisory-wait-shell-fallback.md`, `idd-autonomy-contract.md`,
-  `idd-comment-minimization.md`, `idd-helper-scripts.md`,
-  `idd-policy.md`, `idd-workflow.md`, `onboarding/template-distribution.md`,
-  `permissions.md`); and, under `.github/workflows/`, only
-  `post-merge-cleanup.yml` actually **executes** `gh` (`gh pr view`,
-  `gh api`, `gh pr comment`) — the grep also matches
-  `idd-advisory-convergence.yml`, but only because it references a
-  `gh run rerun` recovery command inside a comment; it does not
-  execute `gh` in any step.
+  commands and would otherwise match itself.) The one distinction worth
+  recording, because it doesn't drift the same way: under
+  `.github/workflows/`, only `post-merge-cleanup.yml` actually
+  **executes** `gh` (`gh pr view`, `gh api`, `gh pr comment`) — the
+  grep also matches `idd-advisory-convergence.yml`, but only because it
+  references a `gh run rerun` recovery command inside a comment; it
+  does not execute `gh` in any step. Everything the grep finds under
+  `.github/instructions/` and `docs/` is a file that *instructs* an
+  agent to run `gh`, not one that executes it directly.
 
 Issue #107 removes `GitHub.cli` from both profiles' winget
 definitions (along with ghq and GitHub Copilot CLI, below) once this
