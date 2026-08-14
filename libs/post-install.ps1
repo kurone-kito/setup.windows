@@ -14,16 +14,17 @@ Set-StrictMode -Version Latest
 ### configurations/runtime-versions.psd1, not hardcoded here. See that
 ### file for each version's EOL/verification info and the reason it is
 ### pinned, and docs/dsc-migration-notes.md for the review cadence.
+###
+### Only the path is needed here -- Sync-UnityEditor (below) loads and
+### validates the file itself (non-terminating error, no throw, on a
+### missing/malformed file), so parsing it a second time up front would
+### only make an unrelated config problem skip VPM CLI / Vagrant /
+### mkcert / Docker too, not just the Unity step that actually needs it.
 ###########################################################################
-. (Join-Path -Path $PSScriptRoot -ChildPath 'runtime-versions.ps1')
 $runtimeVersionsFile = $PSScriptRoot `
   | Join-Path -ChildPath '..' `
   | Join-Path -ChildPath 'configurations' `
   | Join-Path -ChildPath 'runtime-versions.psd1'
-$runtimeVersions = Get-RuntimeVersionsConfig -Path $runtimeVersionsFile
-if ($null -eq $runtimeVersions) {
-  return
-}
 
 ###########################################################################
 ### Helper — correct command existence check (fixes the Out-Null bug)
