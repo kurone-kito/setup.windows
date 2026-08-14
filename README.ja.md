@@ -142,9 +142,16 @@ dotfiles は別プロジェクト
 | 層 | 所有 | 例 |
 | ------------------------ | --------------------------------------- | ---------------------------------------------------------------- |
 | winget / DSC（本リポジトリ） | GUI アプリ、MSI・Inno・WiX・burn 系インストーラ、OS 設定 | Git, 7-Zip, GnuPG, Neovim, .NET SDK, Steam, Unity Hub |
-| dotfiles（mise） | CLI ツール、言語ランタイム | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc |
+| dotfiles（mise） | 委譲済みの CLI ツール、言語ランタイム | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc |
 | dotfiles（管理対象 User PATH） | Windows の User PATH | `mise\shims`, `WinGet\Links`, `data.wingetUserPath.packages` 宣言分 |
 | Chocolatey（本リポジトリ） | フォント、オーディオドライバ | HackGen, VB-CABLE |
+
+すべての CLI ツールが dotfiles 側へ移ったわけではありません —
+上表「例」列にある第 1 波の委譲対象 5 つのみです。本リポジトリは
+他にも多くの CLI ツールを winget から直接インストールしています
+（前述の[インストールされるもの](#インストールされるもの)の
+「CLI ツール」を参照。例: 7-Zip, FFmpeg, fzf, jq, yq, chezmoi,
+tealdeer, mkcert）。
 
 本リポジトリからは Windows の User PATH を書きません。その所有権は
 dotfiles の管理対象パス reconciler にあります。dotfiles の
@@ -158,10 +165,13 @@ dotfiles の管理対象パス reconciler にあります。dotfiles の
 git-vrc のいずれもインストールされません — この 5 つはすべて dotfiles の
 `mise` 設定から入るようになりました。本リポジトリは `chezmoi` バイナリ
 自体は導入します（前述の[インストールされるもの](#インストールされるもの)
-参照）が、`chezmoi apply` を自動実行することはありません。`setup.cmd`
-完了後に自分で実行してください。dotfiles を適用しないと成立しない操作の
-詳細な一覧と、これらのツールを dotfiles 側へ寄せた根拠（SSH セッション
-外で `winget upgrade` を実行する運用ルールを含む）は
+参照）が、`chezmoi apply` を自動実行することはありません。`mise` が
+`PATH` に反映された状態の新しいシェルで、`setup.cmd` 完了後に自分で
+実行してください（`mise` が未反映のまま先に実行すると、ツール導入
+ステップが黙って no-op になります）。dotfiles を適用しないと成立しない
+操作の詳細な一覧、先に実行してしまった場合の復旧手順、およびこれらの
+ツールを dotfiles 側へ寄せた根拠（`winget upgrade` をローカル / RDP の
+対話セッションから実行し、SSH からは実行しないという運用ルールを含む）は
 [`docs/dotfiles-boundary.md`](docs/dotfiles-boundary.md#4-operations-gated-on-chezmoi-apply)
 を参照してください。
 

@@ -142,9 +142,15 @@ shell configuration, and dotfiles should be managed separately
 | Layer                          | Owns                                                      | Examples                                                                          |
 | ------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | winget / DSC (this repository) | GUI apps, MSI/Inno/WiX/burn-style installers, OS settings | Git, 7-Zip, GnuPG, Neovim, .NET SDK, Steam, Unity Hub                             |
-| dotfiles (mise)                | CLI tools, language runtimes                              | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc                             |
+| dotfiles (mise)                | Delegated CLI tools, language runtimes                    | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc                             |
 | dotfiles (managed User PATH)   | The Windows User PATH                                     | `mise\shims`, `WinGet\Links`, packages declared in `data.wingetUserPath.packages` |
 | Chocolatey (this repository)   | Fonts, audio drivers                                      | HackGen, VB-CABLE                                                                 |
+
+Not every CLI tool moved to dotfiles — only the five first-wave
+delegation targets in the "Examples" column above did. This
+repository still installs many other CLI tools directly via winget
+(see "CLI Tools" under [What Gets Installed](#what-gets-installed)
+above, e.g. 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert).
 
 This repository does not write the Windows User PATH. That ownership
 belongs to dotfiles' managed-path reconciler: dotfiles'
@@ -159,12 +165,15 @@ Copilot CLI, or git-vrc — all five now come from dotfiles' `mise`
 configuration. This repository installs the `chezmoi` binary itself
 (see [What Gets Installed](#what-gets-installed) above) but never runs
 `chezmoi apply` automatically; run it yourself after `setup.cmd`
-completes to get these tools. See
+completes, from a fresh shell so `mise` is already on `PATH` (an
+earlier apply, before `mise` is reachable, silently no-ops the
+tool-install step). See
 [`docs/dotfiles-boundary.md`](docs/dotfiles-boundary.md#4-operations-gated-on-chezmoi-apply)
 for the full list of operations that do not work until dotfiles has
-been applied, and for the rationale behind moving these tools to
-dotfiles in the first place (including the operational rule for
-running `winget upgrade` outside an SSH session).
+been applied, the recovery path if the first apply ran too early, and
+for the rationale behind moving these tools to dotfiles in the first
+place (including the operational rule to run `winget upgrade` from a
+local or RDP interactive session, never over SSH).
 
 ## Testing
 

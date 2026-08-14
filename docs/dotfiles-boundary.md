@@ -510,11 +510,14 @@ cannot be traversed because it contains an untrusted mount point").
 `fsutil behavior set SymlinkEvaluation R2L:1 R2R:1` does not resolve
 it. See
 [ajeetdsouza/zoxide#1180](https://github.com/ajeetdsouza/zoxide/issues/1180)
-for this exact winget-portable/`WinGet\Links` failure. The underlying
-network-logon-token restriction is the same root cause discussed in
+for this exact winget-portable/`WinGet\Links` failure.
 [PowerShell/Win32-OpenSSH#1047](https://github.com/PowerShell/Win32-OpenSSH/issues/1047)
-(a network-share / credential-delegation report, not a portable-package
-one — labeled "Resolution - By Design" and not expected to change).
+documents a separate, analogous restriction — SMB share access under
+public-key auth, not NTFS reparse-point traversal — cited here only
+as background on how a public-key session's network logon token
+behaves more restrictively in general, not as independent proof of
+this exact symlink-traversal failure (labeled "Resolution - By
+Design" there and not expected to change).
 
 With Developer Mode disabled, symlink creation fails outright and
 winget instead falls back to adding each portable package's install
@@ -534,9 +537,16 @@ point, so an SSH session can execute it without hitting
 `ERROR_UNTRUSTED_MOUNT_POINT`. Every mise-managed tool resolves
 through that single fixed PATH entry, so adding tools through mise
 never grows PATH the way per-package winget `portable` entries do.
-This is why Node.js, GitHub CLI, ghq, GitHub Copilot CLI, and git-vrc
-moved to dotfiles' `mise` configuration instead of staying as (or
-becoming) winget `portable` packages in this repository.
+This is why GitHub CLI, ghq, and GitHub Copilot CLI moved to
+dotfiles' `mise` configuration instead of continuing as winget
+packages, and specifically why Node.js moved off its former winget
+`portable` package (`Schniz.fnm` — one of the fifteen `portable`-type
+packages roadmap #111 measured). git-vrc never had a winget/DSC
+definition at all: it previously came from a `cargo install` step in
+`libs/post-install.ps1` (see the git-vrc subsection in
+[§1](#1-first-wave-targets-in-repo-dependencies)) and moved to `mise`
+as part of the same first-wave consolidation, not because of this
+SSH/PATH failure mode specifically.
 
 Portable packages that stay in winget keep SSH reachability through a
 different mechanism: dotfiles declares their install directories in
