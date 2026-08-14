@@ -47,6 +47,11 @@ immediately.
 - `configurations/packages.dsc.yaml` — `pkg.fnm` resource
   (`id: pkg.fnm` / winget id `Schniz.fnm`, full profile only; not
   present in `packages.min.dsc.yaml`).
+- `configurations/packages.import.json` (generated fallback for the
+  full profile's degraded `winget import` route — `boxstarter.ps1`
+  runs `winget import` against this file when `winget configure`
+  fails) also lists `Schniz.fnm` at line 68, an active second
+  installation path for the same package.
 - `libs/post-install.ps1` — the `### Node.js via fnm` block: runs
   `fnm env --use-on-cd`, then `fnm install` for each version and
   `fnm default` from `configurations/runtime-versions.psd1`'s `Node`
@@ -70,9 +75,14 @@ available on both profiles.
 
 ### GitHub CLI
 
-- `configurations/packages.dsc.yaml` (`id: GitHub.cli`, full profile)
-  **and** `configurations/packages.min.dsc.yaml` (`id: GitHub.cli`,
-  min profile) both install it today.
+- `configurations/packages.dsc.yaml` (resource id `pkg.ghCli`, winget
+  id `GitHub.cli`, full profile) **and**
+  `configurations/packages.min.dsc.yaml` (resource id `github-cli`,
+  winget id `GitHub.cli`, min profile) both install it today.
+- `configurations/packages.import.json:84` and
+  `configurations/packages.min.import.json:36` (both profiles'
+  generated `winget import` fallbacks) also list `GitHub.cli` — the
+  same degraded-route consideration as Node.js above.
 - The IDD execution loop itself is built on the `gh` CLI: 22
   `.github/instructions/*.md` files (including their `lite/`
   counterparts) instruct agents to run `gh`, and one
@@ -92,15 +102,18 @@ ordering, not deferral](#6-dependency-ordering-not-deferral).
 ### ghq
 
 - `configurations/packages.min.dsc.yaml` (`id: ghq`, winget id
-  `x-motemen.ghq`, min profile only) is the only reference in this
-  repository. No script, workflow, or instruction file invokes the
-  `ghq` binary. **None.**
+  `x-motemen.ghq`, min profile only), and
+  `configurations/packages.min.import.json:32` (min profile's
+  generated `winget import` fallback, same package). No script,
+  workflow, or instruction file invokes the `ghq` binary. **None.**
 
 ### GitHub Copilot CLI
 
 - `configurations/packages.min.dsc.yaml` (`id: github-copilot-cli`,
-  winget id `GitHub.Copilot`, min profile only) is the only package
-  reference. Every other "Copilot" occurrence in this repository
+  winget id `GitHub.Copilot`, min profile only), and
+  `configurations/packages.min.import.json:7` (min profile's generated
+  `winget import` fallback, same package). Every other "Copilot"
+  occurrence in this repository
   (`docs/`, `.github/instructions/`) refers to GitHub Copilot as a
   reviewer, IDE, or agent surface — the Pull Request Reviewer
   **advisory bot** (`copilot-pull-request-reviewer[bot]`) used by the
