@@ -838,14 +838,6 @@ properties:
     # ================================================================
     # CLI — GitHub / CI
     # ================================================================
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.ghCli
-      directives:
-        description: GitHub CLI
-      settings:
-        id: GitHub.cli
-        source: winget
-
     # NOTE: nektos/act is installed conditionally (non-ARM64) in post-install.ps1
 
     # ================================================================

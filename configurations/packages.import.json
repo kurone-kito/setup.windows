@@ -81,7 +81,6 @@
         { "PackageIdentifier": "dbrgn.tealdeer" },
         { "PackageIdentifier": "junegunn.fzf" },
         { "PackageIdentifier": "Valve.SteamCMD" },
-        { "PackageIdentifier": "GitHub.cli" },
         { "PackageIdentifier": "Amazon.AWSCLI" },
         { "PackageIdentifier": "FiloSottile.mkcert" },
         { "PackageIdentifier": "Ngrok.Ngrok" },

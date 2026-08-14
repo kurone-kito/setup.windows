@@ -63,7 +63,7 @@ The script will:
 
 1. Install **Chocolatey** and **Boxstarter** if not already present
 2. Launch `boxstarter.ps1` via `Install-BoxstarterPackage` (reboot-resilient)
-3. Apply the **WinGet Configuration (DSC)** to install 105 packages
+3. Apply the **WinGet Configuration (DSC)** to install 104 packages
    declaratively when available, otherwise fall back to
    **`winget import`** (degraded mode) and report any resources it
    could not apply
@@ -90,7 +90,7 @@ See [configurations/packages.dsc.yaml](configurations/packages.dsc.yaml) for
 the full list. Key categories:
 
 - **Runtimes:** .NET SDK 8/10, Rust, Visual C++ Redistributable
-- **Development:** Git, GitHub CLI, Android Studio
+- **Development:** Git, Android Studio
 - **VRChat:** Unity Hub, VRChat Creator Companion, VRCX
 - **Editors:** VS Code, Cursor, Sublime Text 4, Vim, Neovim
 - **CLI Tools:** 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
@@ -98,6 +98,10 @@ the full list. Key categories:
 - **Gaming:** Steam, Epic Games, EA Desktop, Minecraft, StepMania
 - **Communication:** Discord, Slack, Zoom
 - **Productivity:** Notion, OneNote, PowerToys, Grammarly, Kindle
+
+> **Note:** GitHub CLI (`gh`) is no longer installed by this repository.
+> It is [dotfiles](https://github.com/kurone-kito/dotfiles)'s
+> responsibility, via `mise`.
 
 ### Via Chocolatey (winget unavailable)
 
