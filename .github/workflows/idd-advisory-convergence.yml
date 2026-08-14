@@ -18,9 +18,12 @@
 #     deleting/renaming the job or the trigger events in a PR makes the
 #     required check simply never report for that PR, rather than
 #     report a false "ready" -- required checks fail closed on absence.
-#     A PR that edits this workflow to always pass is still caught by
-#     ordinary human/bot review of the diff, but can no longer bypass
-#     branch protection by doing so.
+#     This does NOT protect against a PR that keeps the job id but
+#     weakens its steps to an unconditional success: GitHub only checks
+#     that a check-run with this context name reports success, not what
+#     the job actually did, so branch protection alone would accept
+#     that. Ordinary human/bot review of the diff remains the only
+#     defense against that specific weakening, same as before #61.
 # If a future change adds a `ref:` override that resolves to the PR head,
 # vendors the helper script into this repository, or widens
 # `permissions:` below, re-review this trust model before merging that
