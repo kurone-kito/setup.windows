@@ -23,7 +23,6 @@ setup.cmd                        ← 唯一のエントリーポイント
             ├─ Phase 4: アーキテクチャ依存パッケージ
             ├─ Phase 5: インストール後セットアップ (libs/post-install.ps1)
             │    ├─ fnm → Node.js 20/22/24/25
-            │    ├─ cargo → git-vrc
             │    ├─ dotnet tool → VPM CLI
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → ローカル CA
@@ -70,7 +69,7 @@ setup.cmd                        ← 唯一のエントリーポイント
    （利用できない場合は **`winget import`**（縮退モード）にフォール
    バックし、適用できなかったリソースを報告）
 4. Chocolatey で残りのパッケージ（フォント、オーディオドライバ）をインストール
-5. インストール後セットアップ（Node.js, Rust/cargo パッケージ, Unity, Docker イメージ）
+5. インストール後セットアップ（Node.js, Unity, Docker イメージ）
 6. Microsoft Update を有効化し、Windows Update を実行
 
 Boxstarter が自動的に再起動を処理します。再起動により処理が中断した場合は、
@@ -113,7 +112,6 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 ### インストール後スクリプト経由
 
 - **Node.js**（fnm 経由）: v20, v22, v24 (LTS), v25 (Current)
-- **git-vrc**（cargo 経由）: VRChat Git 統合
 - **VPM CLI**（dotnet tool 経由）: VRChat パッケージマネージャー
 - **Unity 2022.3.22f1**: VRChat SDK/VCC 必須バージョン
 - **mkcert**: HTTPS 開発用ローカル CA

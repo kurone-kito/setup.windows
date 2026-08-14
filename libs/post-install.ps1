@@ -62,24 +62,6 @@ else {
 }
 
 ###########################################################################
-### git-vrc (VRChat Git integration via cargo)
-###########################################################################
-if (Test-CommandExists git) {
-  if (Test-CommandExists cargo) {
-    Write-Host '[post-install] Installing git-vrc...' -ForegroundColor Cyan
-    cargo install --locked --git 'https://github.com/anatawa12/git-vrc.git'
-    git vrc install --config --global
-    Write-Host '[post-install] git-vrc setup complete.' -ForegroundColor Green
-  }
-  else {
-    Write-Warning '[post-install] cargo not found — skipping git-vrc.'
-  }
-}
-else {
-  Write-Warning '[post-install] git not found — skipping git-vrc.'
-}
-
-###########################################################################
 ### VRChat Creator Companion CLI (dotnet tool)
 ###########################################################################
 if (Test-CommandExists dotnet) {
