@@ -130,10 +130,18 @@ correctly 404s — that is not a misconfiguration).
 - **`strict_required_status_checks_policy`**: `false`. This repository
   runs several IDD issue branches concurrently; requiring every branch
   to be re-verified against the latest `master` before its checks count
-  would force a rebase-and-rerun cascade on every unrelated merge. IDD's
-  own F1 branch-currency check (`branch-conflict-state`) and F2/F3
-  re-fetch-before-merge already cover staleness without that
-  GitHub-enforced cascade.
+  would force a rebase-and-rerun cascade on every unrelated merge.
+  This is a deliberate tradeoff, not a fully-covered gap: IDD's F1
+  branch-currency check (`branch-conflict-state`) only *prefers* a
+  fresh CI result over an old green one when the base has advanced
+  (`idd-pre-merge.instructions.md`'s `clean`/`behind-no-conflict`
+  routing) rather than requiring it, and a bare CI rerun after the base
+  moves can replay a `pull_request`-triggered run's stale merge-ref
+  (`docs/idd-helper-scripts.md`'s `baseAdvancedSinceMergeBase` note).
+  F2/F3 re-fetch the current HEAD's own status but do not themselves
+  validate that HEAD against the latest `master`. Accepting that
+  narrower, textual-conflict-freeness-only protection is the actual
+  cost of avoiding the GitHub-enforced cascade.
 - **Verification** (2026-08-14, live evidence): before this rule
   existed, PR #113 (issue #103) sat at `mergeStateStatus: UNSTABLE` with
   no enforced required checks. After registering the rule, #113 (all
