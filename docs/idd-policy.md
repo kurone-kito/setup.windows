@@ -136,6 +136,20 @@ correctly 404s — that is not a misconfiguration).
   (not yet converged), showed `mergeStateStatus: BLOCKED` — confirming
   a PR whose advisory review has not converged is actually blocked from
   merging by the required check, not merely flagged as advisory.
+- **`ciGate.trustEmptyProtectionReads`**: `true` (repository override;
+  distributed default is `false`). This repository has no classic
+  branch protection at all — only the `main`/`features` rulesets above
+  — so `GET .../branches/master/protection` genuinely 404s; it is not a
+  permission-scope artifact (the automation identity used to register
+  the ruleset above carries `admin: true` on this repository, so a real
+  classic-protection resource would be readable, not 404, if one
+  existed). `idd-ci.instructions.md`'s required-check-discovery step 4
+  otherwise treats every `404` on that endpoint as fail-closed
+  (structurally indistinguishable from a `403`) regardless of what the
+  ruleset read already found, which would have permanently blocked
+  `pre-merge-readiness` even with the required-status-checks rule above
+  fully satisfied. Opting in here is the documented escape hatch for
+  exactly this verified case.
 
 ### Credential Scope
 
