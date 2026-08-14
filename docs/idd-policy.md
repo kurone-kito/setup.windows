@@ -62,11 +62,6 @@ recorded in `.github/idd/config.json`)
   `externalCheckWaivers` fields (`authorityPolicy`, `maxValidity`) are
   not overridden and use the bundle's distributed defaults
   (`owners-and-maintainers-only`, `PT24H`).
-- **Not yet live until this change merges**: `idd-advisory-convergence.yml`
-  reads `.github/idd/config.json` from `master`, so this `ciGate`
-  addition only takes effect once this PR itself merges. A waiver
-  posted against the PR that introduces it would fail closed as an
-  unknown selector.
 - **Waiver path**: when installed, prefer the helper facade over
   hand-writing marker comments:
 
@@ -112,11 +107,15 @@ correctly 404s — that is not a misconfiguration).
 - **Required contexts**: `idd-advisory-convergence`, `lint`,
   `powershell-analyzer`, `pester`, `configuration-drift`. The first
   turns the F2 advisory/disposition sub-gate into a real GitHub-enforced
-  block (this issue's purpose); the other four are the existing
-  `Linting workflow` jobs that already mirror **pre-push-validate** —
-  registering them closes the gap where a maintainer could merge past
-  red CI through the merge button even though IDD's own F2 checklist
-  already required them to be green.
+  block (this issue's purpose); `lint`, `powershell-analyzer`, and
+  `pester` are the existing `Linting workflow` jobs that mirror
+  **pre-push-validate** (Markdown/cspell lint, PSScriptAnalyzer,
+  Pester); `configuration-drift` goes further — it also regenerates the
+  DSC-derived artifacts and checks for a zero diff, a check
+  **pre-push-validate** does not run locally. Registering all four
+  closes the gap where a maintainer could merge past red CI through the
+  merge button even though IDD's own F2 checklist already required them
+  to be green.
 - **Not registered**: `CodeRabbit`. It reports as a PR review/comment
   integration, not a check-run (`status`/`conclusion` are `null` in
   `statusCheckRollup`), so it can never satisfy a required-status-check

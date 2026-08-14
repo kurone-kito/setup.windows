@@ -1,6 +1,7 @@
-# Trust model: this workflow is a required-check gate (once #61
-# registers its job id in branch protection), so tampering matters more
-# here than in an ordinary lint check. This file is NOT self-protecting:
+# Trust model: this workflow is a required-check gate -- its job id is
+# registered as a required status check on master's `main` ruleset
+# (#61), so tampering matters more here than in an ordinary lint check.
+# This file is NOT self-protecting:
 # for `pull_request`, GitHub runs the PR's own copy of this workflow
 # file (unlike `pull_request_target`, which always resolves from the
 # base branch) -- so a PR editing this file does take effect for its own
@@ -13,13 +14,13 @@
 #     verdict logic (`advisory-convergence.mjs`) runs straight from the
 #     pinned upstream npm tarball below, never from a checked-out copy --
 #     there is no in-repository script for a PR to edit.
-#   - Once #61 registers this job's id as a required status check,
+#   - With this job's id registered as a required status check (#61),
 #     deleting/renaming the job or the trigger events in a PR makes the
 #     required check simply never report for that PR, rather than
 #     report a false "ready" -- required checks fail closed on absence.
-#     Until #61 lands, this workflow is advisory only; a PR that edits
-#     it to always pass would not yet be blocked by branch protection,
-#     only caught by ordinary human/bot review of the diff.
+#     A PR that edits this workflow to always pass is still caught by
+#     ordinary human/bot review of the diff, but can no longer bypass
+#     branch protection by doing so.
 # If a future change adds a `ref:` override that resolves to the PR head,
 # vendors the helper script into this repository, or widens
 # `permissions:` below, re-review this trust model before merging that
@@ -78,9 +79,8 @@ jobs:
   # The job id doubles as this check's required-status-check context name
   # and as the `ciGate.externalChecks.waivable[].selector` value in
   # `.github/idd/config.json` -- keep both in sync if this id ever
-  # changes. Branch-protection registration itself is out of scope here
-  # (tracked separately in #61, which is blocked on this workflow
-  # existing first).
+  # changes. Branch-protection registration (#61) is live: this id is
+  # registered as a required status check on master's `main` ruleset.
   idd-advisory-convergence:
     runs-on: ubuntu-latest
     timeout-minutes: 10
