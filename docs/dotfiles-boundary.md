@@ -146,25 +146,28 @@ the single Node.js source.
   alone:
 
   ```sh
-  grep -rl '\bgh \|\bgh api\|\bgh pr\|\bgh issue\|\bgh run\|\bgh repo' \
+  grep -rl '\bgh\b' \
     .github/instructions/ docs/ .github/workflows/ .claude/skills/ \
     --exclude=dotfiles-boundary.md
   ```
 
   (`--exclude` is needed because this file's own prose quotes `gh`
-  commands and would otherwise match itself. Every alternative in the
-  pattern carries its own `\b` — an earlier version only anchored the
-  first one, `\bgh`, and matched `gh issue`/`gh run` as unanchored
-  substrings, producing a false positive on prose like "high
-  issue(s)"; that false positive is now excluded.)
+  commands and would otherwise match itself. A bare `\bgh\b` replaces
+  an earlier, narrower pattern that required a trailing space or a
+  specific subcommand after `gh` — that version missed `gh` followed
+  by punctuation (`gh-then-REST`, `` `gh` ``) and undercounted this
+  list by 2 files. An earlier version still had a different bug — only
+  the first alternative carried its own `\b`, so unanchored `gh
+  issue`/`gh run` matched inside prose like "high issue(s)" — already
+  fixed before this round.)
 
   <details>
-  <summary>Classified file list (35 files)</summary>
+  <summary>Classified file list (37 files)</summary>
 
   **Executes `gh`** (1): `.github/workflows/post-merge-cleanup.yml`
   (`gh pr view`, `gh api`, `gh pr comment`).
 
-  **Instructs an agent to run `gh`** (25):
+  **Instructs an agent to run `gh`** (26):
   `.claude/skills/issue-authoring/SKILL.md`,
   `.claude/skills/issue-authoring/references/contract.md`,
   `.github/instructions/idd-ci.instructions.md`,
@@ -186,12 +189,17 @@ the single Node.js source.
   `.github/instructions/lite/idd-resume-stall-lite.instructions.md`,
   `.github/instructions/lite/idd-review-fix-lite.instructions.md`,
   `.github/instructions/lite/idd-review-snapshot-lite.instructions.md`,
+  `docs/getting-started.md` (lists an authenticated `gh` CLI as a
+  prerequisite for the agent running IDD),
   `docs/idd-advisory-wait-shell-fallback.md`,
   `docs/idd-comment-minimization.md`, `docs/idd-policy.md`,
   `docs/idd-workflow.md`.
 
-  **Mentions `gh` in prose, without instructing execution** (9):
+  **Mentions `gh` in prose, without instructing execution** (10):
   `.claude/skills/issue-authoring/references/workflow-boundary.md`,
+  `.github/instructions/idd-advisory-wait.instructions.md` (a
+  backward-reference, "same gh-then-REST pattern as E14's...", to
+  commands that actually live in `idd-review-fix.instructions.md`),
   `.github/instructions/idd-overview-core.instructions.md`,
   `.github/instructions/lite/idd-pre-merge-lite.instructions.md`,
   `.github/workflows/idd-advisory-convergence.yml` (a `#` comment
@@ -261,6 +269,7 @@ condition, not a future one — see [§4](#4-operations-gated-on-chezmoi-apply).
 | `install-deps` | `true` (no-op) |
 | `fix-validate` | `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md"` |
 | `pre-push-validate` | `npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer ..." && pwsh -c "Invoke-Pester ..."` |
+| `post-fix-validate` | `npx -y markdownlint-cli2 --fix "**/*.md" && npx -y markdownlint-cli2 "**/*.md" && npx -y cspell lint "**" --no-progress && pwsh -c "Invoke-ScriptAnalyzer ..." && pwsh -c "Invoke-Pester ..."` — the union of `fix-validate` and `pre-push-validate`, so it needs the exact same tooling as both combined |
 
 `install-deps` itself requires nothing directly, but this repository's
 `helperRuntime.profile` is `ephemeral-npx` (see
@@ -272,10 +281,10 @@ just `fix-validate`/`pre-push-validate`.
 
 | Tool | Needed by | Provisioning source today | After delegation |
 | --- | --- | --- | --- |
-| `npx` (Node.js) | `fix-validate`, `pre-push-validate`, every `idd-*` helper call | **full**: `Schniz.fnm` (winget) + `libs/post-install.ps1`'s fnm block, unchanged by #103 — this is the only profile with an active Node.js path today. **min**: `Schniz.fnm` was never in the min profile at all; `libs/post-install.ps1`'s fnm block checks `Test-CommandExists fnm` and silently skips Node.js setup (just a warning) when it's absent, so a stock min-profile machine provisions **no Node.js at all** today. Both profiles now have `jdx.mise` (winget, unconditional, since #103) installed but **inactive** for Node.js provisioning either way — `mise` itself is present, but Node.js only comes from it after `chezmoi apply` deploys dotfiles' `node = "latest"` entry | Both profiles converge on dotfiles' `node = "latest"` (mise) as the sole path once #108 ships and removes the fnm block |
+| `npx` (Node.js) | `fix-validate`, `pre-push-validate`, `post-fix-validate`, every `idd-*` helper call | **full**: `Schniz.fnm` (winget) + `libs/post-install.ps1`'s fnm block, unchanged by #103 — this is the only profile with an active Node.js path today. **min**: `Schniz.fnm` was never in the min profile at all; `libs/post-install.ps1`'s fnm block checks `Test-CommandExists fnm` and silently skips Node.js setup (just a warning) when it's absent, so a stock min-profile machine provisions **no Node.js at all** today. Both profiles now have `jdx.mise` (winget, unconditional, since #103) installed but **inactive** for Node.js provisioning either way — `mise` itself is present, but Node.js only comes from it after `chezmoi apply` deploys dotfiles' `node = "latest"` entry | Both profiles converge on dotfiles' `node = "latest"` (mise) as the sole path once #108 ships and removes the fnm block |
 | `gh` | The IDD loop's own bootstrap (not `fix-validate`/`pre-push-validate` directly) | full and min: `GitHub.cli` (winget) | dotfiles' `github:cli/cli` (mise) once #107 ships |
-| `pwsh` (PowerShell 7) | `pre-push-validate` (`Invoke-ScriptAnalyzer`, `Invoke-Pester`) | Both profiles install PowerShell 7 today, via different package identities: full uses `pkg.pwsh` (Microsoft Store id `9MZ1SNWT0N5D`); min uses `Microsoft.PowerShell` (native winget id). Not a delegation-relevant gap — see [§3](#3-powershell-7-provisioning-in-the-full-profile-conclusion). | Unchanged — no first-wave track touches either `pwsh` package definition. |
-| `PSScriptAnalyzer`, `Pester`, `powershell-yaml` (PowerShell modules) | `pre-push-validate` (`Invoke-ScriptAnalyzer`/`Invoke-Pester`); `powershell-yaml` is also required by `scripts/Build-Configurations.ps1` / `scripts/Test-PackageIds.ps1` | **No automated winget or dotfiles provisioning on either profile, for any of the three.** `.github/workflows/lint.yml` runs `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` fresh on every CI run for all three. `docs/testing.md` documents the manual command for **local** development for `Pester`; `scripts/Build-Configurations.ps1`'s and `scripts/Test-PackageIds.ps1`'s own help-comment headers document the same manual command for `powershell-yaml`. Only `PSScriptAnalyzer` has no local-install documentation anywhere in this repository — just its CI provisioning in `lint.yml`. Nothing automates any of the three for a fresh local machine (either profile). | Unchanged — out of scope for the winget/dotfiles boundary; these are PowerShell Gallery modules, not OS packages. |
+| `pwsh` (PowerShell 7) | `pre-push-validate`/`post-fix-validate` (`Invoke-ScriptAnalyzer`, `Invoke-Pester`) | Both profiles install PowerShell 7 today, via different package identities: full uses `pkg.pwsh` (Microsoft Store id `9MZ1SNWT0N5D`); min uses `Microsoft.PowerShell` (native winget id). Not a delegation-relevant gap — see [§3](#3-powershell-7-provisioning-in-the-full-profile-conclusion). | Unchanged — no first-wave track touches either `pwsh` package definition. |
+| `PSScriptAnalyzer`, `Pester`, `powershell-yaml` (PowerShell modules) | `pre-push-validate`/`post-fix-validate` (`Invoke-ScriptAnalyzer`/`Invoke-Pester`); `powershell-yaml` is also required by `scripts/Build-Configurations.ps1` / `scripts/Test-PackageIds.ps1` | **No automated winget or dotfiles provisioning on either profile, for any of the three.** `.github/workflows/lint.yml` runs `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` fresh on every CI run for all three. `docs/testing.md` documents the manual command for **local** development for `Pester`; `scripts/Build-Configurations.ps1`'s and `scripts/Test-PackageIds.ps1`'s own help-comment headers document the same manual command for `powershell-yaml`. Only `PSScriptAnalyzer` has no local-install documentation anywhere in this repository — just its CI provisioning in `lint.yml`. Nothing automates any of the three for a fresh local machine (either profile). | Unchanged — out of scope for the winget/dotfiles boundary; these are PowerShell Gallery modules, not OS packages. |
 
 ## 3. PowerShell 7 provisioning in the full profile: conclusion
 
@@ -308,16 +317,22 @@ this document searched only for the literal winget id string
 `Microsoft.PowerShell` and missed the Store-sourced entry — a search
 methodology gap, not a real provisioning gap.
 
-The full profile does still omit the rest of the "CLI shell tools"
-cluster that the min profile groups together — `Starship.Starship`,
-`Zellij.Zellij`, `JesseDuffield.lazygit`, and `marlocarlo.psmux` are
-genuinely absent from full and present only in min (`packages.min.dsc.yaml`
-groups them under the same section as `Microsoft.PowerShell`). That
-narrower category split — full skips terminal-prompt/multiplexer/TUI
-tooling but not PowerShell itself — remains consistent with `README.md`'s
-framing (min: "development tools only, no gaming/media"; full: general
-desktop setup including core dev tools like Git, GitHub CLI, fnm,
-Android Studio).
+`Starship.Starship`, `Zellij.Zellij`, `JesseDuffield.lazygit`, and
+`marlocarlo.psmux` are genuinely absent from full and present only in
+min — but this is **not** a coherent "CLI shell tools" category split.
+In `packages.min.dsc.yaml`, these four packages sit under three
+different section comments (`lazygit`: "CLI SCM utilities"; `psmux`/
+`Zellij`: "CLI session management tools"; only `Starship` shares "CLI
+shell tools" with `Microsoft.PowerShell`), and full isn't missing
+prompt-theming tooling generally — it installs `pkg.ohMyPosh` (Oh My
+Posh, another prompt theme engine, msstore id `XP8K0HKJFRXGCK`) as a
+direct counterpart to Starship. The accurate framing is
+package-specific: full and min simply carry different, non-overlapping
+selections of terminal/session tools, not a category full skips
+wholesale. `README.md`'s min: "development tools only, no gaming/media"
+framing still holds at the profile-purpose level; it just doesn't map
+onto a single missing category the way the earlier version of this
+section implied.
 
 **Conclusion.** There is no full-profile PowerShell 7 gap, present-day
 or otherwise: both profiles install it, through different package
@@ -365,7 +380,7 @@ workaround in that case is a manual `mise install && mise reshim` once
 | Operation | Needs | Workaround |
 | --- | --- | --- |
 | IDD `gh`-based operations (claim, PR, review, merge) on a local machine | GitHub CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above), or temporarily `winget install GitHub.cli` |
-| `fix-validate` / `pre-push-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first (see the cross-cutting caveat above). Temporary alternative: `winget install Schniz.fnm` alone only reinstalls the empty version-manager binary once the `post-install.ps1` fnm block that ran `fnm env`/`fnm install`/`fnm default` is gone — it must be followed by `fnm env --use-on-cd \| Out-String \| Invoke-Expression` (session-scoped; without it `node`/`npx` stay off `PATH` even after installing a version) and a manual `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
+| `fix-validate` / `pre-push-validate` / `post-fix-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first (see the cross-cutting caveat above). Temporary alternative: `winget install Schniz.fnm` alone only reinstalls the empty version-manager binary once the `post-install.ps1` fnm block that ran `fnm env`/`fnm install`/`fnm default` is gone — it must be followed by `fnm env --use-on-cd \| Out-String \| Invoke-Expression` (session-scoped; without it `node`/`npx` stay off `PATH` even after installing a version) and a manual `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
 | Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences | ghq / GitHub Copilot CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above), or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
 | Interactive use of the `git vrc` binary, or any operation needing it — **applies today** | git-vrc | Run `chezmoi apply` first (see the cross-cutting caveat above). This repository has **no winget package id for git-vrc** — a temporary local install must use the command the now-removed `post-install.ps1` block used to run: `cargo install --locked --git https://github.com/anatawa12/git-vrc.git`. That itself needs `cargo`: `Rustlang.Rust.MSVC` is full-profile only (`configurations/packages.min.dsc.yaml` has no Rust entry), so a min-profile machine needs Rust installed some other way (e.g. `winget install Rustlang.Rust.MSVC`) before this fallback works |
 | The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) — **applies today** | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block | Run `chezmoi apply` first (see the cross-cutting caveat above), or manually add the equivalent `[filter "vrc"]` block to the global gitconfig — **and** install the `git-vrc` binary via the cargo command in the row above first, or the filter's `git vrc clean`/`git vrc smudge` invocations fail with no such subcommand |
