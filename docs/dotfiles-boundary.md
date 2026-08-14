@@ -25,11 +25,11 @@ Two other documents in progress cover related but distinct ground:
   that rationale; it only records **this repository's** current
   dependency surface.
 
-Everything below reflects the state of `master` as investigated on
-2026-08-14, re-synced on 2026-08-15 after #105 (PR #114) merged
-mid-investigation. Statements about `kurone-kito/dotfiles` content are
-point-in-time reads of that repository on 2026-08-14 and can drift
-independently of this repository.
+Everything below reflects the state of `master` as investigated and
+re-synced on 2026-08-14 (UTC), including after #105 (PR #114) merged
+mid-investigation the same day. Statements about `kurone-kito/dotfiles`
+content are point-in-time reads of that repository on the same date
+and can drift independently of this repository.
 
 **Scope note**: this document only records findings. It does not
 change `.github/idd/config.json`, `configurations/*.dsc.yaml`, or (for
@@ -59,8 +59,8 @@ immediately.
   capability detection selects the `import` route upfront because
   `winget configure` isn't available on this machine; a runtime
   `winget configure` failure aborts setup outright, it does not fall
-  back to `import`) also lists `Schniz.fnm` at line 68, an active second
-  installation path for the same package.
+  back to `import`) also lists the `Schniz.fnm` `PackageIdentifier`, an
+  active second installation path for the same package.
 - `libs/post-install.ps1` — the `### Node.js via fnm` block: runs
   `fnm env --use-on-cd`, then `fnm install` for each version and
   `fnm default` from `configurations/runtime-versions.psd1`'s `Node`
@@ -101,10 +101,11 @@ available on both profiles.
   id `GitHub.cli`, full profile) **and**
   `configurations/packages.min.dsc.yaml` (resource id `github-cli`,
   winget id `GitHub.cli`, min profile) both install it today.
-- `configurations/packages.import.json:84` and
-  `configurations/packages.min.import.json:36` (both profiles'
-  generated `winget import` fallbacks) also list `GitHub.cli` — the
-  same degraded-route consideration as Node.js above.
+- `configurations/packages.import.json` and
+  `configurations/packages.min.import.json` (both profiles' generated
+  `winget import` fallbacks) also list the `GitHub.cli`
+  `PackageIdentifier` — the same degraded-route consideration as
+  Node.js above.
 - The IDD execution loop itself is built on the `gh` CLI. This is a
   **local-machine** dependency only — hosted GitHub Actions runners
   ship their own `gh` installation and are unaffected by this
@@ -133,17 +134,17 @@ ordering, not deferral](#6-dependency-ordering-not-deferral).
 
 - `configurations/packages.min.dsc.yaml` (`id: ghq`, winget id
   `x-motemen.ghq`, min profile only), and
-  `configurations/packages.min.import.json:32` (min profile's
-  generated `winget import` fallback, same package). No script,
+  `configurations/packages.min.import.json` (min profile's generated
+  `winget import` fallback, same `PackageIdentifier`). No script,
   workflow, or instruction file invokes the `ghq` binary. **None.**
 
 ### GitHub Copilot CLI
 
 - `configurations/packages.min.dsc.yaml` (`id: github-copilot-cli`,
   winget id `GitHub.Copilot`, min profile only), and
-  `configurations/packages.min.import.json:7` (min profile's generated
-  `winget import` fallback, same package). Every other "Copilot"
-  occurrence in this repository
+  `configurations/packages.min.import.json` (min profile's generated
+  `winget import` fallback, same `PackageIdentifier`). Every other
+  "Copilot" occurrence in this repository
   (`docs/`, `.github/instructions/`) refers to GitHub Copilot as a
   reviewer, IDE, or agent surface — the Pull Request Reviewer
   **advisory bot** (`copilot-pull-request-reviewer[bot]`) used by the
@@ -277,7 +278,7 @@ unaffected by this caveat.
 | Operation | Needs | Workaround |
 | --- | --- | --- |
 | IDD `gh`-based operations (claim, PR, review, merge) on a local machine | GitHub CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile), or temporarily `winget install GitHub.cli` |
-| `fix-validate` / `pre-push-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile). Temporary alternative: `winget install Schniz.fnm` alone only reinstalls the empty version-manager binary once the `post-install.ps1` fnm block that ran `fnm install`/`fnm default` is gone — it must be followed by a manual `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
+| `fix-validate` / `pre-push-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile). Temporary alternative: `winget install Schniz.fnm` alone only reinstalls the empty version-manager binary once the `post-install.ps1` fnm block that ran `fnm env`/`fnm install`/`fnm default` is gone — it must be followed by `fnm env --use-on-cd \| Out-String \| Invoke-Expression` (session-scoped; without it `node`/`npx` stay off `PATH` even after installing a version) and a manual `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
 | Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences | ghq / GitHub Copilot CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile), or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
 | Interactive use of the `git vrc` binary, or any operation needing it — **applies today** | git-vrc | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile). This repository has **no winget package id for git-vrc** — a temporary local install must use the command the now-removed `post-install.ps1` block used to run: `cargo install --locked --git https://github.com/anatawa12/git-vrc.git` |
 | The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) — **applies today** | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile), or manually add the equivalent `[filter "vrc"]` block to the global gitconfig — **and** install the `git-vrc` binary via the cargo command in the row above first, or the filter's `git vrc clean`/`git vrc smudge` invocations fail with no such subcommand |
