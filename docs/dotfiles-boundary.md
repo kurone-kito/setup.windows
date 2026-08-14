@@ -251,7 +251,51 @@ condition, not a future one — see [§4](#4-operations-gated-on-chezmoi-apply).
 `idd-*` helper invocation (claim markers, review snapshots, CI-wait
 state, merge readiness, this very digest update) runs through `npx`.
 The Node.js dependency below therefore covers the whole IDD loop, not
-just `fix-validate`/`pre-push-validate`.
+just `fix-validate`/`pre-push-validate`. Using the same reproducible
+approach as the GitHub CLI subsection above:
+
+```sh
+grep -rl '\bnpx\b' \
+  .github/instructions/ docs/ .github/workflows/ .claude/skills/ \
+  --exclude=dotfiles-boundary.md
+```
+
+<details>
+<summary>Classified file list (20 files)</summary>
+
+**Executes `npx`** (2): `.github/workflows/idd-advisory-convergence.yml`,
+`.github/workflows/post-merge-cleanup.yml` — both run a pinned
+`npx --yes --package ...` inside an actual `run:` step.
+
+**Instructs an agent to run `npx`** (6): `docs/getting-started.md`
+(lists Node.js/`npx` as a conditional agent prerequisite);
+`docs/idd-policy.md` (the literal `npx --yes --package ...` waiver-helper
+command); `docs/onboarding/placeholders.md` (the literal
+`fix-validate`/`pre-push-validate` `npx` commands as onboarding
+template text); `.github/instructions/idd-overview-core.instructions.md`
+(the same command-table definitions reproduced in section 2's table
+above); `docs/customization.md` and
+`docs/onboarding/policy-decisions.md` (both give an imperative "run
+the manifest helper..." followed by a literal
+`npx --yes --package ...` code block).
+
+**Mentions `npx` in prose, without instructing execution** (12): the
+remaining files reference `npx`/`ephemeral-npx` as a **named helper
+profile or capability**, not as a literal command to run at that
+point — `.claude/skills/issue-authoring/references/contract.md`,
+`docs/idd-advisory-wait-shell-fallback.md`,
+`docs/idd-helper-scripts.md`,
+`docs/onboarding/agent-entry-and-verification.md`,
+`.github/instructions/idd-advisory-wait.instructions.md`,
+`.github/instructions/idd-ci.instructions.md`,
+`.github/instructions/idd-claim.instructions.md`,
+`.github/instructions/idd-discover.instructions.md`,
+`.github/instructions/lite/idd-advisory-wait-lite.instructions.md`,
+`.github/instructions/lite/idd-ci-lite.instructions.md`,
+`.github/instructions/lite/idd-claim-lite.instructions.md`,
+`.github/instructions/lite/idd-review-fix-lite.instructions.md`.
+
+</details>
 
 | Tool | Needed by | Provisioning source today | After delegation |
 | --- | --- | --- | --- |
