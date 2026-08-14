@@ -138,38 +138,69 @@ the single Node.js source.
 - The IDD execution loop itself is built on the `gh` CLI. This is a
   **local-machine** dependency only — hosted GitHub Actions runners
   ship their own `gh` installation and are unaffected by this
-  repository's or dotfiles' package choices. A static count of exactly
-  which files reference `gh` was found stale on every attempt during
-  this review — the surface is large enough, and this repository's own
-  documentation active enough, that a hand-recorded number does not
-  stay current even within one review round. The command below is the
-  actual source of truth; re-run it for the current set instead of
-  trusting any number written here:
+  repository's or dotfiles' package choices. The full path list below
+  is a point-in-time inventory (2026-08-14 UTC), classified by actual
+  use; it will drift as this repository's own documentation changes —
+  re-run the command to re-verify, but the classified list itself is
+  what satisfies "every in-repo dependency location", not the command
+  alone:
 
   ```sh
-  grep -rl '\bgh \|gh api\|gh pr\|gh issue\|gh run\|gh repo' \
+  grep -rl '\bgh \|\bgh api\|\bgh pr\|\bgh issue\|\bgh run\|\bgh repo' \
     .github/instructions/ docs/ .github/workflows/ .claude/skills/ \
     --exclude=dotfiles-boundary.md
   ```
 
   (`--exclude` is needed because this file's own prose quotes `gh`
-  commands and would otherwise match itself. `.claude/skills/` is
-  included because the bundled issue-authoring skill instructs `gh
-  label create` / `gh issue list` too — an earlier version of this
-  command omitted it, missing an active local `gh` dependency.) The
-  one distinction worth recording, because it doesn't drift the same
-  way: under `.github/workflows/`, only `post-merge-cleanup.yml`
-  actually **executes** `gh` (`gh pr view`, `gh api`, `gh pr comment`)
-  — the grep also matches `idd-advisory-convergence.yml`, but only
-  because it references a `gh run rerun` recovery command inside a
-  comment; it does not execute `gh` in any step. The
-  `.github/instructions/`/`docs/`/`.claude/skills/` matches are mostly
-  files instructing an agent to run `gh`, but not exclusively — some
-  (e.g. `docs/onboarding/template-distribution.md`,
-  `docs/permissions.md`) discuss or reference `gh` in prose (a
-  generated-file manifest relationship, a permission-allowlist risk
-  example) without instructing the reader to run it. Treat the grep as
-  a superset needing a skim, not a fully pre-classified list.
+  commands and would otherwise match itself. Every alternative in the
+  pattern carries its own `\b` — an earlier version only anchored the
+  first one, `\bgh`, and matched `gh issue`/`gh run` as unanchored
+  substrings, producing a false positive on prose like "high
+  issue(s)"; that false positive is now excluded.)
+
+  <details>
+  <summary>Classified file list (35 files)</summary>
+
+  **Executes `gh`** (1): `.github/workflows/post-merge-cleanup.yml`
+  (`gh pr view`, `gh api`, `gh pr comment`).
+
+  **Instructs an agent to run `gh`** (25):
+  `.claude/skills/issue-authoring/SKILL.md`,
+  `.claude/skills/issue-authoring/references/contract.md`,
+  `.github/instructions/idd-ci.instructions.md`,
+  `.github/instructions/idd-claim.instructions.md`,
+  `.github/instructions/idd-discover.instructions.md`,
+  `.github/instructions/idd-merge-handoff.instructions.md`,
+  `.github/instructions/idd-merge.instructions.md`,
+  `.github/instructions/idd-pre-merge.instructions.md`,
+  `.github/instructions/idd-pr-submit.instructions.md`,
+  `.github/instructions/idd-resume-stall.instructions.md`,
+  `.github/instructions/idd-review-fix.instructions.md`,
+  `.github/instructions/idd-review-snapshot.instructions.md`,
+  `.github/instructions/idd-review-triage.instructions.md`,
+  `.github/instructions/idd-work.instructions.md`,
+  `.github/instructions/lite/idd-ci-lite.instructions.md`,
+  `.github/instructions/lite/idd-claim-lite.instructions.md`,
+  `.github/instructions/lite/idd-merge-handoff-lite.instructions.md`,
+  `.github/instructions/lite/idd-pr-submit-lite.instructions.md`,
+  `.github/instructions/lite/idd-resume-stall-lite.instructions.md`,
+  `.github/instructions/lite/idd-review-fix-lite.instructions.md`,
+  `.github/instructions/lite/idd-review-snapshot-lite.instructions.md`,
+  `docs/idd-advisory-wait-shell-fallback.md`,
+  `docs/idd-comment-minimization.md`, `docs/idd-policy.md`,
+  `docs/idd-workflow.md`.
+
+  **Mentions `gh` in prose, without instructing execution** (9):
+  `.claude/skills/issue-authoring/references/workflow-boundary.md`,
+  `.github/instructions/idd-overview-core.instructions.md`,
+  `.github/instructions/lite/idd-pre-merge-lite.instructions.md`,
+  `.github/workflows/idd-advisory-convergence.yml` (a `#` comment
+  explaining rerun recovery, not an executed step),
+  `docs/customization.md`, `docs/idd-autonomy-contract.md`,
+  `docs/idd-helper-scripts.md`,
+  `docs/onboarding/template-distribution.md`, `docs/permissions.md`.
+
+  </details>
 
 Issue #107 removes `GitHub.cli` from both profiles' winget
 definitions (along with ghq and GitHub Copilot CLI, below) once this
