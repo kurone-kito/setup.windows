@@ -169,10 +169,12 @@ git-vrc のいずれもインストールされません — この 5 つはす�
 `PATH` に反映された状態の新しいシェルで、`setup.cmd` 完了後に自分で
 実行してください（`mise` が未反映のまま先に実行すると、ツール導入
 ステップが黙って no-op になります）。dotfiles を適用しないと成立しない
-操作の詳細な一覧、先に実行してしまった場合の復旧手順、およびこれらの
-ツールを dotfiles 側へ寄せた根拠（`winget upgrade` をローカル / RDP の
-対話セッションから実行し、SSH からは実行しないという運用ルールを含む）は
+操作の詳細な一覧と、先に実行してしまった場合の復旧手順は
 [`docs/dotfiles-boundary.md`](docs/dotfiles-boundary.md#4-operations-gated-on-chezmoi-apply)
+を、これらのツールを dotfiles 側へ寄せた根拠（`winget upgrade` を
+ローカル / RDP の対話セッションから実行し、SSH からは実行しないという
+運用ルールを含む）は
+[§7](docs/dotfiles-boundary.md#7-why-cli-tools-moved-to-dotfiles-at-all)
 を参照してください。
 
 ## テスト環境

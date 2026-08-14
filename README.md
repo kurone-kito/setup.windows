@@ -170,7 +170,8 @@ earlier apply, before `mise` is reachable, silently no-ops the
 tool-install step). See
 [`docs/dotfiles-boundary.md`](docs/dotfiles-boundary.md#4-operations-gated-on-chezmoi-apply)
 for the full list of operations that do not work until dotfiles has
-been applied, the recovery path if the first apply ran too early, and
+been applied and the recovery path if the first apply ran too early,
+and [§7](docs/dotfiles-boundary.md#7-why-cli-tools-moved-to-dotfiles-at-all)
 for the rationale behind moving these tools to dotfiles in the first
 place (including the operational rule to run `winget upgrade` from a
 local or RDP interactive session, never over SSH).
