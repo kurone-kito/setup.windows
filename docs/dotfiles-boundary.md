@@ -69,7 +69,17 @@ immediately.
   versions, EOL dates, default version), consumed only by the
   `post-install.ps1` block above.
 - `README.md` / `README.ja.md` — the architecture diagram and package
-  list both name `fnm` as the Node.js install path.
+  list both name `fnm` as the Node.js install path, and both files'
+  setup-step-5 one-line summary ("Run post-install setup (Node.js, VPM
+  CLI, Unity, mkcert, Docker images)") still names Node.js explicitly.
+- `boxstarter.ps1` — the `### Phase 5 — Post-install setup (fnm,
+  cargo, Unity, mkcert, Docker)` banner comment names `fnm`.
+- `PSScriptAnalyzerSettings.psd1` — the comment explaining why
+  `PSAvoidUsingInvokeExpression` isn't globally excluded specifically
+  cites fnm's `fnm env --use-on-cd | Out-String | Invoke-Expression`
+  call in `libs/post-install.ps1` as the one existing occurrence the
+  file-scoped suppression covers; that occurrence disappears with the
+  fnm block.
 - `libs/runtime-versions.ps1` — the dot-sourced reader's own doc
   comment names it "the single source of truth for pinned Node, Unity
   Editor, and Unity CLI versions".
@@ -109,21 +119,32 @@ available on both profiles.
 - The IDD execution loop itself is built on the `gh` CLI. This is a
   **local-machine** dependency only — hosted GitHub Actions runners
   ship their own `gh` installation and are unaffected by this
-  repository's or dotfiles' package choices. The dependency spans two
-  kinds of file, and an exact file count is not attempted here because
-  the surface keeps growing as the IDD documentation set does (already
-  found incomplete twice during this review):
-  - **Files that instruct an agent to run `gh`**: most of
-    `.github/instructions/*.md` (including the `lite/` variants) and
-    several `docs/idd-*.md` files (for example
-    `idd-advisory-wait-shell-fallback.md`, the verbatim `gh`/`gh api`
-    command reference `idd-advisory-wait.instructions.md` points to,
-    and `idd-workflow.md`).
-  - **Files that actually execute `gh`**: `.github/workflows/post-merge-cleanup.yml`
-    (`gh pr view`, `gh api`, `gh pr comment`). A second workflow,
-    `idd-advisory-convergence.yml`, only references a `gh run rerun`
-    recovery command inside a comment — it does not execute `gh` in
-    any step.
+  repository's or dotfiles' package choices. Prose enumeration of this
+  surface was found incomplete twice already during this review, so
+  it's recorded here as a **reproducible command** instead of a
+  hand-maintained list — re-run it to get the current, exact set
+  rather than trusting a snapshot that will drift:
+
+  ```sh
+  grep -rl '\bgh \|gh api\|gh pr\|gh issue\|gh run\|gh repo' \
+    .github/instructions/ docs/ .github/workflows/ \
+    --exclude=dotfiles-boundary.md
+  ```
+
+  (`--exclude` is needed because this file's own prose quotes `gh`
+  commands and would otherwise match itself.) As of this snapshot
+  (2026-08-14): 22 files under `.github/instructions/` (including
+  `lite/`) that instruct an agent to run `gh`; 9 files under `docs/`
+  that do the same (`customization.md`,
+  `idd-advisory-wait-shell-fallback.md`, `idd-autonomy-contract.md`,
+  `idd-comment-minimization.md`, `idd-helper-scripts.md`,
+  `idd-policy.md`, `idd-workflow.md`, `onboarding/template-distribution.md`,
+  `permissions.md`); and, under `.github/workflows/`, only
+  `post-merge-cleanup.yml` actually **executes** `gh` (`gh pr view`,
+  `gh api`, `gh pr comment`) — the grep also matches
+  `idd-advisory-convergence.yml`, but only because it references a
+  `gh run rerun` recovery command inside a comment; it does not
+  execute `gh` in any step.
 
 Issue #107 removes `GitHub.cli` from both profiles' winget
 definitions (along with ghq and GitHub Copilot CLI, below) once this
@@ -261,27 +282,42 @@ first-wave track and `chezmoi apply` does not fix it either — see the
 PowerShell-modules row in [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate).
 
 **Cross-cutting caveat for every "run `chezmoi apply` first" workaround
-below, on the full profile specifically**: dotfiles'
-`run_onchange_after_50-install-mise-tools.ps1.tmpl` — the script that
-actually installs mise-managed tools (Node.js, `gh`, `ghq`, the
-GitHub Copilot CLI, git-vrc) — starts with
+below**: dotfiles' `run_onchange_after_50-install-mise-tools.ps1.tmpl`
+— the script that actually installs mise-managed tools (Node.js, `gh`,
+`ghq`, the GitHub Copilot CLI, git-vrc) — starts with
 `if (-not (Get-Command mise ...)) { Write-Host 'mise not found;
 skipping.'; exit 0 }`. It **silently no-ops**, not fails, when `mise`
-itself isn't on `PATH`. Today, only the **min** profile has `mise`
-(`jdx.mise` via winget, unconditional); the **full** profile has no
-`mise` at all until #103 (open PR #113) ships. So on a full-profile
-machine, `chezmoi apply` alone does **not** provision any of these
-tools today — it needs #103 to land first, or a manual `mise install`
-after installing `mise` itself some other way. The min profile is
-unaffected by this caveat.
+itself isn't on `PATH`.
+
+This bites the **full** profile predictably: it has no `mise` at all
+today (only `jdx.mise` via winget, min profile only, unconditional)
+until #103 (open PR #113) ships, so `chezmoi apply` alone does **not**
+provision any of these tools on full today — it needs #103 to land
+first, or a manual `mise install` after installing `mise` itself some
+other way.
+
+It can also bite the **min** profile, more subtly: `run_onchange_`
+scripts are keyed on a content hash (the script's own header comment:
+"Re-runs when mise config changes"), not on whether the previous run
+actually did the work — chezmoi has no way to distinguish "did the
+work" from "successfully chose to no-op" once the script exits `0`
+either way. If `mise` isn't yet reachable on `PATH` in the shell
+`chezmoi apply` runs in on a min-profile machine's **first** apply
+(for example, PATH hasn't refreshed in the current session since
+winget just installed `jdx.mise`), the no-op still gets recorded
+against that content hash. Installing `mise` afterward, or
+reconnecting the session, does not change the hash — a later plain
+`chezmoi apply` will **not** retry the script. The workaround in that
+case is a manual `mise install && mise reshim` once `mise` is
+reachable, not another `chezmoi apply`.
 
 | Operation | Needs | Workaround |
 | --- | --- | --- |
-| IDD `gh`-based operations (claim, PR, review, merge) on a local machine | GitHub CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile), or temporarily `winget install GitHub.cli` |
-| `fix-validate` / `pre-push-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile). Temporary alternative: `winget install Schniz.fnm` alone only reinstalls the empty version-manager binary once the `post-install.ps1` fnm block that ran `fnm env`/`fnm install`/`fnm default` is gone — it must be followed by `fnm env --use-on-cd \| Out-String \| Invoke-Expression` (session-scoped; without it `node`/`npx` stay off `PATH` even after installing a version) and a manual `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
-| Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences | ghq / GitHub Copilot CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile), or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
-| Interactive use of the `git vrc` binary, or any operation needing it — **applies today** | git-vrc | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile). This repository has **no winget package id for git-vrc** — a temporary local install must use the command the now-removed `post-install.ps1` block used to run: `cargo install --locked --git https://github.com/anatawa12/git-vrc.git` |
-| The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) — **applies today** | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile), or manually add the equivalent `[filter "vrc"]` block to the global gitconfig — **and** install the `git-vrc` binary via the cargo command in the row above first, or the filter's `git vrc clean`/`git vrc smudge` invocations fail with no such subcommand |
+| IDD `gh`-based operations (claim, PR, review, merge) on a local machine | GitHub CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above), or temporarily `winget install GitHub.cli` |
+| `fix-validate` / `pre-push-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first (see the cross-cutting caveat above). Temporary alternative: `winget install Schniz.fnm` alone only reinstalls the empty version-manager binary once the `post-install.ps1` fnm block that ran `fnm env`/`fnm install`/`fnm default` is gone — it must be followed by `fnm env --use-on-cd \| Out-String \| Invoke-Expression` (session-scoped; without it `node`/`npx` stay off `PATH` even after installing a version) and a manual `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
+| Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences | ghq / GitHub Copilot CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above), or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
+| Interactive use of the `git vrc` binary, or any operation needing it — **applies today** | git-vrc | Run `chezmoi apply` first (see the cross-cutting caveat above). This repository has **no winget package id for git-vrc** — a temporary local install must use the command the now-removed `post-install.ps1` block used to run: `cargo install --locked --git https://github.com/anatawa12/git-vrc.git` |
+| The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) — **applies today** | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block | Run `chezmoi apply` first (see the cross-cutting caveat above), or manually add the equivalent `[filter "vrc"]` block to the global gitconfig — **and** install the `git-vrc` binary via the cargo command in the row above first, or the filter's `git vrc clean`/`git vrc smudge` invocations fail with no such subcommand |
 | `pre-push-validate`'s `pwsh`-based checks needing `PSScriptAnalyzer`/`Pester`/`powershell-yaml`, on either profile, today | The PowerShell Gallery modules — see [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate); not fixed by `chezmoi apply`, ever, under the current dotfiles definition | Manually run `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` for all three, using the pinned versions in `.github/workflows/lint.yml` (`docs/testing.md` documents this for `Pester`; `scripts/Build-Configurations.ps1`/`Test-PackageIds.ps1`'s help headers document it for `powershell-yaml`; `PSScriptAnalyzer` has no local documentation) |
 
 **Unrelated existing caveat, noted for accuracy**: this repository's
