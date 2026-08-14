@@ -4,7 +4,6 @@
     {
       "Packages": [
         { "PackageIdentifier": "jdx.mise" },
-        { "PackageIdentifier": "GitHub.Copilot" },
         { "PackageIdentifier": "Fastfetch-cli.Fastfetch" },
         { "PackageIdentifier": "marlocarlo.pstop" },
         { "PackageIdentifier": "twpayne.chezmoi" },
@@ -29,11 +28,9 @@
         { "PackageIdentifier": "BurntSushi.ripgrep.MSVC" },
         { "PackageIdentifier": "sxyazi.yazi" },
         { "PackageIdentifier": "ajeetdsouza.zoxide" },
-        { "PackageIdentifier": "x-motemen.ghq" },
         { "PackageIdentifier": "Git.Git" },
         { "PackageIdentifier": "GitHub.GitLFS" },
         { "PackageIdentifier": "GitHub.git-sizer" },
-        { "PackageIdentifier": "GitHub.cli" },
         { "PackageIdentifier": "max-sixty.worktrunk" },
         { "PackageIdentifier": "Amazon.AWSCLI" },
         { "PackageIdentifier": "JesseDuffield.lazygit" },

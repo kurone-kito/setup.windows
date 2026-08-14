@@ -56,16 +56,6 @@ properties:
         source: winget
 
     # =======================================================================
-    # Install the CLI AI agent tools
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: github-copilot-cli
-      directives:
-        description: GitHub Copilot CLI
-      settings:
-        id: GitHub.Copilot
-        source: winget
-
-    # =======================================================================
     # Install the CLI benchmark tools
     - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: fastfetch
@@ -257,13 +247,6 @@ properties:
     # =======================================================================
     # Install the CLI Git tools
     - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: ghq
-      directives:
-        description: ghq
-      settings:
-        id: x-motemen.ghq
-        source: winget
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: git
       directives:
         description: Git
@@ -283,13 +266,6 @@ properties:
         description: git-sizer
       settings:
         id: GitHub.git-sizer
-        source: winget
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: github-cli
-      directives:
-        description: GitHub CLI
-      settings:
-        id: GitHub.cli
         source: winget
     - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: worktrunk
