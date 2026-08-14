@@ -43,6 +43,7 @@
     {
       "Packages": [
         { "PackageIdentifier": "MartiCliment.UniGetUI" },
+        { "PackageIdentifier": "jdx.mise" },
         { "PackageIdentifier": "Microsoft.DirectX" },
         { "PackageIdentifier": "Microsoft.XNARedist" },
         { "PackageIdentifier": "Microsoft.DotNet.Framework.DeveloperPack_4" },

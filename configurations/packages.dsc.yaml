@@ -472,6 +472,14 @@ properties:
         id: MartiCliment.UniGetUI
         source: winget
 
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: pkg.mise
+      directives:
+        description: mise-en-place (mise)
+      settings:
+        id: jdx.mise
+        source: winget
+
     # ================================================================
     # Runtimes & language packs
     # ================================================================
