@@ -58,12 +58,15 @@ immediately.
   list both name `fnm` as the Node.js install path.
 
 The min profile already ships `jdx.mise` (`mise-en-place-mise`
-resource in `packages.min.dsc.yaml`) but does not install Node.js via
-winget at all today; a min-profile machine already needs `chezmoi
-apply` for Node.js. Issue #103 (open PR #113) adds `jdx.mise` to the
-full profile as a prerequisite for #108, which will remove `pkg.fnm`,
-the `post-install.ps1` fnm block, and the `Node` table above once mise
-is available on both profiles.
+resource in `packages.min.dsc.yaml`) via winget, but that installs only
+the `mise` tool itself — not Node.js. Node.js comes from `mise` reading
+dotfiles' `node = "latest"` entry in `mise/config.toml`, which requires
+`chezmoi apply` to deploy; a min-profile machine has `mise` unconditionally
+but still needs `chezmoi apply` before `mise` actually installs Node.js.
+Issue #103 (open PR #113) adds `jdx.mise` to the full profile as a
+prerequisite for #108, which will remove `pkg.fnm`, the
+`post-install.ps1` fnm block, and the `Node` table above once mise is
+available on both profiles.
 
 ### GitHub CLI
 
@@ -72,12 +75,14 @@ is available on both profiles.
   min profile) both install it today.
 - The IDD execution loop itself is built on the `gh` CLI: 22
   `.github/instructions/*.md` files (including their `lite/`
-  counterparts) and 2 `.github/workflows/*.yml` files
-  (`idd-advisory-convergence.yml`, `post-merge-cleanup.yml`) invoke
-  `gh` — 24 files in total. This is a **local-machine**
-  dependency only — hosted GitHub Actions runners ship their own `gh`
-  installation and are unaffected by this repository's or dotfiles'
-  package choices.
+  counterparts) instruct agents to run `gh`, and one
+  `.github/workflows/*.yml` file (`post-merge-cleanup.yml`) executes
+  `gh` (`gh pr view`, `gh api`, `gh pr comment`) — 23 files in total.
+  A second workflow, `idd-advisory-convergence.yml`, only references a
+  `gh run rerun` recovery command inside a comment; it does not execute
+  `gh` in any step. This is a **local-machine** dependency only —
+  hosted GitHub Actions runners ship their own `gh` installation and
+  are unaffected by this repository's or dotfiles' package choices.
 
 Issue #107 removes `GitHub.cli` from both profiles' winget
 definitions (along with ghq and GitHub Copilot CLI, below) once this
@@ -96,11 +101,13 @@ ordering, not deferral](#6-dependency-ordering-not-deferral).
 - `configurations/packages.min.dsc.yaml` (`id: github-copilot-cli`,
   winget id `GitHub.Copilot`, min profile only) is the only package
   reference. Every other "Copilot" occurrence in this repository
-  (`docs/`, `.github/instructions/`) refers to the unrelated GitHub
-  Copilot Pull Request Reviewer **advisory bot**
-  (`copilot-pull-request-reviewer[bot]`) used by the IDD review
-  workflow, not the `copilot` CLI binary. No script or instruction
-  invokes the CLI binary. **None.**
+  (`docs/`, `.github/instructions/`) refers to GitHub Copilot as a
+  reviewer, IDE, or agent surface — the Pull Request Reviewer
+  **advisory bot** (`copilot-pull-request-reviewer[bot]`) used by the
+  IDD review workflow, VS Code Copilot instructions/chat, or the
+  Copilot coding-agent entry listed in `docs/idd-workflow.md`'s
+  entry-points table — never the `copilot` CLI binary itself. No
+  script or instruction invokes the CLI binary. **None.**
 
 ### git-vrc
 
@@ -136,66 +143,80 @@ just `fix-validate`/`pre-push-validate`.
 
 | Tool | Needed by | Provisioning source today | After delegation |
 | --- | --- | --- | --- |
-| `npx` (Node.js) | `fix-validate`, `pre-push-validate`, every `idd-*` helper call | full: `Schniz.fnm` (winget); min: `jdx.mise` (dotfiles, needs `chezmoi apply`) | Both profiles converge on dotfiles' `node = "latest"` (mise) once #108 ships |
+| `npx` (Node.js) | `fix-validate`, `pre-push-validate`, every `idd-*` helper call | full: `Schniz.fnm` (winget) + `libs/post-install.ps1`. min: `jdx.mise` (winget, unconditional) installs the `mise` tool, but Node.js itself comes from dotfiles' `node = "latest"` entry, which needs `chezmoi apply` to deploy | Both profiles converge on dotfiles' `node = "latest"` (mise) once #108 ships |
 | `gh` | The IDD loop's own bootstrap (not `fix-validate`/`pre-push-validate` directly) | full and min: `GitHub.cli` (winget) | dotfiles' `github:cli/cli` (mise) once #107 ships |
-| `pwsh` (PowerShell 7) | `pre-push-validate` (`Invoke-ScriptAnalyzer`, `Invoke-Pester`) | min only: `Microsoft.PowerShell` (winget). **Not present in the full profile, and not present in dotfiles' `mise/config.toml`** (confirmed live against `kurone-kito/dotfiles` on 2026-08-14 — no `powershell`/`pwsh` mise tool entry exists) | Unchanged — no first-wave track adds a `pwsh` provisioning path. See [§3](#3-microsoftpowershell-missing-from-the-full-profile-conclusion). |
-| `PSScriptAnalyzer`, `Pester`, `powershell-yaml` (PowerShell modules) | `pre-push-validate` (`Invoke-ScriptAnalyzer`/`Invoke-Pester`); `powershell-yaml` is also required by `scripts/Build-Configurations.ps1` / `scripts/Test-PackageIds.ps1` | **No winget or dotfiles provisioning at all.** `.github/workflows/lint.yml` runs `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` fresh on every CI run; no equivalent exists for a local machine. | Unchanged — out of scope for the winget/dotfiles boundary; these are PowerShell Gallery modules, not OS packages. |
+| `pwsh` (PowerShell 7) | `pre-push-validate` (`Invoke-ScriptAnalyzer`, `Invoke-Pester`) | Both profiles install PowerShell 7 today, via different package identities: full uses `pkg.pwsh` (Microsoft Store id `9MZ1SNWT0N5D`); min uses `Microsoft.PowerShell` (native winget id). Not a delegation-relevant gap — see [§3](#3-powershell-7-provisioning-in-the-full-profile-conclusion). | Unchanged — no first-wave track touches either `pwsh` package definition. |
+| `PSScriptAnalyzer`, `Pester`, `powershell-yaml` (PowerShell modules) | `pre-push-validate` (`Invoke-ScriptAnalyzer`/`Invoke-Pester`); `powershell-yaml` is also required by `scripts/Build-Configurations.ps1` / `scripts/Test-PackageIds.ps1` | **No automated winget or dotfiles provisioning on either profile.** `.github/workflows/lint.yml` runs `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` fresh on every CI run. `docs/testing.md` documents the same manual `Install-Module` command for local development, but nothing automates it — a fresh machine (either profile) needs this run by hand. | Unchanged — out of scope for the winget/dotfiles boundary; these are PowerShell Gallery modules, not OS packages. |
 
-## 3. `Microsoft.PowerShell` missing from the full profile: conclusion
+## 3. PowerShell 7 provisioning in the full profile: conclusion
 
-**Evidence.** The full profile (`packages.dsc.yaml`) omits the entire
-"CLI shell tools" cluster that the min profile groups together:
-`Starship.Starship`, `Zellij.Zellij`, `JesseDuffield.lazygit`,
-`marlocarlo.psmux`, and `Microsoft.PowerShell` are all absent from
-full and all present in min. This is not a PowerShell-specific
-omission — full still carries several other CLI tools (`jqlang.jq`,
-`MikeFarah.yq`, `twpayne.chezmoi`, `dbrgn.tealdeer`,
-`FiloSottile.mkcert`, `junegunn.fzf`, `dandavison.delta`). The split
-matches `README.md`'s own framing: min is "development tools only, no
-gaming/media" (a CLI/terminal-focused profile), while full is a
-general desktop setup (development, gaming, VRChat, daily use) that
-includes core development requirements (Git, GitHub CLI, fnm, Android
-Studio) but not the terminal power-user shell cluster. Git history
-shows this split was introduced whole, in the initial DSC-migration
-commit (`fe038c8`), with no later commit narrowing PowerShell out on
-its own.
+The issue's premise, as originally investigated, was that
+`Microsoft.PowerShell` exists only in `packages.min.import.json` and is
+absent from the full profile. **That premise is true only at the
+package-identity level, and the functional conclusion it implies —
+that full-profile machines lack PowerShell 7 — is false.**
 
-**Conclusion (two-sided).**
+**Evidence.** `configurations/packages.dsc.yaml` (full profile) has a
+`pkg.pwsh` resource under its "CLI — Shell" section:
 
-- For the full profile's intended audience — a general desktop setup —
-  the omission is **consistent with an intentional category split**,
-  not an isolated gap: it tracks the same terminal-shell-tools cluster
-  as Starship/Zellij/lazygit/psmux, all of which are also absent.
-- For the developer/IDD-agent use case this issue is investigating,
-  the omission is a **real, unresolved functional gap**: a
-  full-profile machine has no automatic path to `pwsh` at all —
-  neither winget (full profile) nor dotfiles (confirmed above, no
-  `mise` entry) provisions it. Unlike the Node.js/GitHub CLI gaps
-  elsewhere in this document, `chezmoi apply` does **not** close this
-  one. No first-wave or first-wave-adjacent tracked issue (#103,
-  #105, #107, #108) adds a `pwsh` provisioning path to either profile
-  or to dotfiles.
+```yaml
+- resource: Microsoft.WinGet.DSC/WinGetPackage
+  id: pkg.pwsh
+  directives:
+    description: PowerShell 7
+  settings:
+    id: "9MZ1SNWT0N5D"
+    source: msstore
+```
 
-Both readings are recorded because they answer different questions:
-the profile design is coherent as shipped, but it leaves
-`pre-push-validate` unusable out of the box on a fresh full-profile
-machine. See the workaround in [§4](#4-operations-gated-on-chezmoi-apply).
+`9MZ1SNWT0N5D` is the Microsoft Store listing for PowerShell 7 — the
+same product as `packages.min.dsc.yaml`'s `Microsoft.PowerShell`
+(native winget id), just distributed through a different source
+(`msstore` vs. `winget`). `configurations/packages.import.json` (full
+profile's generated fallback) also carries `9MZ1SNWT0N5D`, so the
+degraded `winget import` route installs it too. An initial pass over
+this document searched only for the literal winget id string
+`Microsoft.PowerShell` and missed the Store-sourced entry — a search
+methodology gap, not a real provisioning gap.
+
+The full profile does still omit the rest of the "CLI shell tools"
+cluster that the min profile groups together — `Starship.Starship`,
+`Zellij.Zellij`, `JesseDuffield.lazygit`, and `marlocarlo.psmux` are
+genuinely absent from full and present only in min (`packages.min.dsc.yaml`
+groups them under the same section as `Microsoft.PowerShell`). That
+narrower category split — full skips terminal-prompt/multiplexer/TUI
+tooling but not PowerShell itself — remains consistent with `README.md`'s
+framing (min: "development tools only, no gaming/media"; full: general
+desktop setup including core dev tools like Git, GitHub CLI, fnm,
+Android Studio).
+
+**Conclusion.** There is no full-profile PowerShell 7 gap, present-day
+or otherwise: both profiles install it, through different package
+identities. Nothing in this section motivates a `chezmoi apply`
+workaround or a winget-install workaround for `pwsh` itself. The actual
+local-provisioning gap adjacent to this question is the PowerShell
+**modules** (`PSScriptAnalyzer`/`Pester`/`powershell-yaml`) that
+`pre-push-validate` also needs — see the last row of [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate)'s
+table, which affects both profiles equally and is unrelated to the
+winget/dotfiles delegation boundary this issue covers.
 
 ## 4. Operations gated on `chezmoi apply`
 
-The first four rows below apply **once** the named tracked issue
+The first five rows below apply **once** the named tracked issue
 ships; they do not apply to today's `master`. The last row is
 different and included for completeness: it is a **present-day** gap
-(unaffected by any first-wave track shipping) that `chezmoi apply`
-does not fix at all — see [§3](#3-microsoftpowershell-missing-from-the-full-profile-conclusion).
+on both profiles, unrelated to any first-wave track, that `chezmoi
+apply` does not fix either — see the PowerShell-modules row in
+[§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate).
 
 | Operation | Needs | Workaround |
 | --- | --- | --- |
 | IDD `gh`-based operations (claim, PR, review, merge) on a local machine | GitHub CLI, once #107 ships | Run `chezmoi apply` first, or temporarily `winget install GitHub.cli` |
-| `fix-validate` / `pre-push-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first, or temporarily install Node.js (e.g. `winget install Schniz.fnm`) |
-| Interactive use of `ghq`, `copilot`, or `git vrc` as developer conveniences | ghq / GitHub Copilot CLI / git-vrc, once #107 / #105 ship | Run `chezmoi apply` first, or temporarily `winget install <package-id>` |
-| The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block, once #105 ships | Run `chezmoi apply` first, or manually add the equivalent `[filter "vrc"]` block to the global gitconfig |
-| `pre-push-validate`'s `pwsh`-based checks on a full-profile machine, today | `pwsh` — **not** fixed by `chezmoi apply`, ever, under the current dotfiles definition | Manually `winget install Microsoft.PowerShell`, or select the min profile |
+| `fix-validate` / `pre-push-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first. Temporary alternative: `winget install Schniz.fnm` alone only reinstalls the empty version-manager binary once the `post-install.ps1` fnm block that ran `fnm install`/`fnm default` is gone — it must be followed by a manual `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
+| Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences | ghq / GitHub Copilot CLI, once #107 ships | Run `chezmoi apply` first, or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
+| Interactive use of the `git vrc` binary, or any operation needing it | git-vrc, once #105 ships | Run `chezmoi apply` first. This repository has **no winget package id for git-vrc today** — a temporary local install must use the same command `libs/post-install.ps1` uses: `cargo install --locked --git https://github.com/anatawa12/git-vrc.git` |
+| The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block, once #105 ships | Run `chezmoi apply` first, or manually add the equivalent `[filter "vrc"]` block to the global gitconfig — **and** install the `git-vrc` binary via the cargo command in the row above first, or the filter's `git vrc clean`/`git vrc smudge` invocations fail with no such subcommand |
+| `pre-push-validate`'s `pwsh`-based checks needing `PSScriptAnalyzer`/`Pester`/`powershell-yaml`, on either profile, today | The PowerShell Gallery modules — see [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate); not fixed by `chezmoi apply`, ever, under the current dotfiles definition | Manually run the `Install-Module` command from `docs/testing.md` (or `.github/workflows/lint.yml`'s pinned versions) |
 
 **Unrelated existing caveat, noted for accuracy**: this repository's
 own code only ever modifies the current process's `$env:Path`
