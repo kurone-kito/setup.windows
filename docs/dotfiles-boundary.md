@@ -6,16 +6,18 @@ repository's winget/DSC definitions to
 [mise](https://mise.jdx.dev/) configuration, in tracked waves. This
 document is issue #104's inventory for the **first wave** —
 Node.js, GitHub CLI, ghq, GitHub Copilot CLI, and git-vrc — recording
-every in-repo dependency on each target before any of the wave's
-implementation tracks (#103, #105, #107, #108) ship.
+every in-repo dependency on each target. git-vrc (#105, PR #114)
+already merged during this investigation; Node.js/GitHub CLI/ghq/
+GitHub Copilot CLI (#103/#107/#108) are still open at the time of
+writing.
 
 Two other documents in progress cover related but distinct ground:
 
 - #110 (not yet merged) will update `README.md` / `README.ja.md` with
   the user-facing ownership boundary table and the `chezmoi apply`
-  prerequisite, once #104/#105/#107/#108 have shipped. It is blocked
-  by this issue and depends on it for the "operations that need
-  `chezmoi apply`" list below.
+  prerequisite, once #104/#107/#108 have shipped (#105 already has).
+  It is blocked by this issue and depends on it for the "operations
+  that need `chezmoi apply`" list below.
 - Roadmap issue #111 records the full cross-repo design rationale
   (why CLI tools move to dotfiles at all — the winget `portable`
   package / SSH symlink-traversal problem, and the `cmd.exe` PATH
@@ -24,14 +26,18 @@ Two other documents in progress cover related but distinct ground:
   dependency surface.
 
 Everything below reflects the state of `master` as investigated on
-2026-08-14. Statements about `kurone-kito/dotfiles` content are
-point-in-time reads of that repository on the same date and can drift
+2026-08-14, re-synced on 2026-08-15 after #105 (PR #114) merged
+mid-investigation. Statements about `kurone-kito/dotfiles` content are
+point-in-time reads of that repository on 2026-08-14 and can drift
 independently of this repository.
 
 **Scope note**: this document only records findings. It does not
-change `.github/idd/config.json`, `libs/post-install.ps1`, or any
-`configurations/*.dsc.yaml` file — those stay exactly as they are
-today until their own tracked issues (#103/#105/#107/#108) ship.
+change `.github/idd/config.json`, `configurations/*.dsc.yaml`, or (for
+the still-open targets) `libs/post-install.ps1` — those stay exactly
+as they are until their own tracked issues (#103/#107/#108) ship.
+`libs/post-install.ps1`'s git-vrc block specifically was already
+removed by #105 before this issue merged; see the git-vrc subsection
+below.
 
 ## 1. First-wave targets: in-repo dependencies
 
@@ -49,8 +55,11 @@ immediately.
   present in `packages.min.dsc.yaml`).
 - `configurations/packages.import.json` (generated fallback for the
   full profile's degraded `winget import` route — `boxstarter.ps1`
-  runs `winget import` against this file when `winget configure`
-  fails) also lists `Schniz.fnm` at line 68, an active second
+  runs `winget import` against this file only when `libs/strategy.ps1`'s
+  capability detection selects the `import` route upfront because
+  `winget configure` isn't available on this machine; a runtime
+  `winget configure` failure aborts setup outright, it does not fall
+  back to `import`) also lists `Schniz.fnm` at line 68, an active second
   installation path for the same package.
 - `libs/post-install.ps1` — the `### Node.js via fnm` block: runs
   `fnm env --use-on-cd`, then `fnm install` for each version and
@@ -96,16 +105,24 @@ available on both profiles.
   `configurations/packages.min.import.json:36` (both profiles'
   generated `winget import` fallbacks) also list `GitHub.cli` — the
   same degraded-route consideration as Node.js above.
-- The IDD execution loop itself is built on the `gh` CLI: 22
-  `.github/instructions/*.md` files (including their `lite/`
-  counterparts) instruct agents to run `gh`, and one
-  `.github/workflows/*.yml` file (`post-merge-cleanup.yml`) executes
-  `gh` (`gh pr view`, `gh api`, `gh pr comment`) — 23 files in total.
-  A second workflow, `idd-advisory-convergence.yml`, only references a
-  `gh run rerun` recovery command inside a comment; it does not execute
-  `gh` in any step. This is a **local-machine** dependency only —
-  hosted GitHub Actions runners ship their own `gh` installation and
-  are unaffected by this repository's or dotfiles' package choices.
+- The IDD execution loop itself is built on the `gh` CLI. This is a
+  **local-machine** dependency only — hosted GitHub Actions runners
+  ship their own `gh` installation and are unaffected by this
+  repository's or dotfiles' package choices. The dependency spans two
+  kinds of file, and an exact file count is not attempted here because
+  the surface keeps growing as the IDD documentation set does (already
+  found incomplete twice during this review):
+  - **Files that instruct an agent to run `gh`**: most of
+    `.github/instructions/*.md` (including the `lite/` variants) and
+    several `docs/idd-*.md` files (for example
+    `idd-advisory-wait-shell-fallback.md`, the verbatim `gh`/`gh api`
+    command reference `idd-advisory-wait.instructions.md` points to,
+    and `idd-workflow.md`).
+  - **Files that actually execute `gh`**: `.github/workflows/post-merge-cleanup.yml`
+    (`gh pr view`, `gh api`, `gh pr comment`). A second workflow,
+    `idd-advisory-convergence.yml`, only references a `gh run rerun`
+    recovery command inside a comment — it does not execute `gh` in
+    any step.
 
 Issue #107 removes `GitHub.cli` from both profiles' winget
 definitions (along with ghq and GitHub Copilot CLI, below) once this
@@ -137,17 +154,25 @@ ordering, not deferral](#6-dependency-ordering-not-deferral).
 
 ### git-vrc
 
-- `libs/post-install.ps1` — the `### git-vrc (VRChat Git integration
-  via cargo)` block: `cargo install --locked --git
-  https://github.com/anatawa12/git-vrc.git`, followed by `git vrc
-  install --config --global` (writes the `[filter "vrc"]` block into
-  the global gitconfig).
-- For context only (not owned by this repository): dotfiles'
-  `home/dot_config/git/config.tmpl` already defines the equivalent
-  `[filter "vrc"]` block with `clean`/`smudge`/`required` directives,
-  confirmed live against `kurone-kito/dotfiles` on 2026-08-14. Once
-  #105 ships, dotfiles owns both the binary (`github:anatawa12/git-vrc`
-  via mise) and the git filter configuration.
+**Already delegated** — #105 merged as PR #114 on 2026-08-14, while
+this issue was still in progress. `libs/post-install.ps1` no longer
+has any git-vrc code: the `### git-vrc (VRChat Git integration via
+cargo)` block (`cargo install --locked --git
+https://github.com/anatawa12/git-vrc.git`, followed by `git vrc
+install --config --global`) was removed in full, along with the
+git/cargo existence-check guards that existed only for it, and
+`README.md`/`README.ja.md`'s post-install summaries were updated to
+match. `Rustlang.Rust.MSVC` stays in `packages.dsc.yaml` as a language
+runtime — the delegation removed only git-vrc's own install step, not
+Rust generally.
+
+**Current in-repo dependency: none.** dotfiles now owns both the
+binary (`github:anatawa12/git-vrc` via mise) and the git filter
+configuration (`home/dot_config/git/config.tmpl`'s `[filter "vrc"]`
+block with `clean`/`smudge`/`required` directives, confirmed live
+against `kurone-kito/dotfiles` on 2026-08-14). Since #105 already
+shipped, git-vrc's `chezmoi apply` dependency is a present-day
+condition, not a future one — see [§4](#4-operations-gated-on-chezmoi-apply).
 
 ## 2. Tooling required by `install-deps` / `fix-validate` / `pre-push-validate`
 
@@ -228,20 +253,34 @@ winget/dotfiles delegation boundary this issue covers.
 
 ## 4. Operations gated on `chezmoi apply`
 
-The first five rows below apply **once** the named tracked issue
-ships; they do not apply to today's `master`. The last row is
-different and included for completeness: it is a **present-day** gap
-on both profiles, unrelated to any first-wave track, that `chezmoi
-apply` does not fix either — see the PowerShell-modules row in
-[§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate).
+Rows 1-3 below apply **once** #107/#108 ship; they do not apply to
+today's `master`. Rows 4-5 (git-vrc) already apply **today**, since
+issue #105 merged during this investigation. Row 6 is unrelated to any
+first-wave track and `chezmoi apply` does not fix it either — see the
+PowerShell-modules row in [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate).
+
+**Cross-cutting caveat for every "run `chezmoi apply` first" workaround
+below, on the full profile specifically**: dotfiles'
+`run_onchange_after_50-install-mise-tools.ps1.tmpl` — the script that
+actually installs mise-managed tools (Node.js, `gh`, `ghq`, the
+GitHub Copilot CLI, git-vrc) — starts with
+`if (-not (Get-Command mise ...)) { Write-Host 'mise not found;
+skipping.'; exit 0 }`. It **silently no-ops**, not fails, when `mise`
+itself isn't on `PATH`. Today, only the **min** profile has `mise`
+(`jdx.mise` via winget, unconditional); the **full** profile has no
+`mise` at all until #103 (open PR #113) ships. So on a full-profile
+machine, `chezmoi apply` alone does **not** provision any of these
+tools today — it needs #103 to land first, or a manual `mise install`
+after installing `mise` itself some other way. The min profile is
+unaffected by this caveat.
 
 | Operation | Needs | Workaround |
 | --- | --- | --- |
-| IDD `gh`-based operations (claim, PR, review, merge) on a local machine | GitHub CLI, once #107 ships | Run `chezmoi apply` first, or temporarily `winget install GitHub.cli` |
-| `fix-validate` / `pre-push-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first. Temporary alternative: `winget install Schniz.fnm` alone only reinstalls the empty version-manager binary once the `post-install.ps1` fnm block that ran `fnm install`/`fnm default` is gone — it must be followed by a manual `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
-| Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences | ghq / GitHub Copilot CLI, once #107 ships | Run `chezmoi apply` first, or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
-| Interactive use of the `git vrc` binary, or any operation needing it | git-vrc, once #105 ships | Run `chezmoi apply` first. This repository has **no winget package id for git-vrc today** — a temporary local install must use the same command `libs/post-install.ps1` uses: `cargo install --locked --git https://github.com/anatawa12/git-vrc.git` |
-| The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block, once #105 ships | Run `chezmoi apply` first, or manually add the equivalent `[filter "vrc"]` block to the global gitconfig — **and** install the `git-vrc` binary via the cargo command in the row above first, or the filter's `git vrc clean`/`git vrc smudge` invocations fail with no such subcommand |
+| IDD `gh`-based operations (claim, PR, review, merge) on a local machine | GitHub CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile), or temporarily `winget install GitHub.cli` |
+| `fix-validate` / `pre-push-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile). Temporary alternative: `winget install Schniz.fnm` alone only reinstalls the empty version-manager binary once the `post-install.ps1` fnm block that ran `fnm install`/`fnm default` is gone — it must be followed by a manual `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
+| Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences | ghq / GitHub Copilot CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile), or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
+| Interactive use of the `git vrc` binary, or any operation needing it — **applies today** | git-vrc | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile). This repository has **no winget package id for git-vrc** — a temporary local install must use the command the now-removed `post-install.ps1` block used to run: `cargo install --locked --git https://github.com/anatawa12/git-vrc.git` |
+| The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) — **applies today** | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block | Run `chezmoi apply` first (see the cross-cutting caveat above for the full profile), or manually add the equivalent `[filter "vrc"]` block to the global gitconfig — **and** install the `git-vrc` binary via the cargo command in the row above first, or the filter's `git vrc clean`/`git vrc smudge` invocations fail with no such subcommand |
 | `pre-push-validate`'s `pwsh`-based checks needing `PSScriptAnalyzer`/`Pester`/`powershell-yaml`, on either profile, today | The PowerShell Gallery modules — see [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate); not fixed by `chezmoi apply`, ever, under the current dotfiles definition | Manually run `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` for all three, using the pinned versions in `.github/workflows/lint.yml` (`docs/testing.md` documents this for `Pester`; `scripts/Build-Configurations.ps1`/`Test-PackageIds.ps1`'s help headers document it for `powershell-yaml`; `PSScriptAnalyzer` has no local documentation) |
 
 **Unrelated existing caveat, noted for accuracy**: this repository's
@@ -289,16 +328,18 @@ first-wave targets. **No deferred targets.**
 
 Roadmap issue #111's tracks list does not defer any of Node.js, GitHub
 CLI, ghq, GitHub Copilot CLI, or git-vrc — all five are first-wave
-tracks with open implementation issues (Node.js: #103/#108; GitHub
-CLI, ghq, and GitHub Copilot CLI: #107; git-vrc: #105). The one
+tracks with implementation issues (Node.js: #103/#108, both open;
+GitHub CLI, ghq, and GitHub Copilot CLI: #107, open; git-vrc: #105,
+merged as PR #114 while this issue was in progress). The one
 dependency that could look like a reason to defer — the IDD loop's own
 bootstrap dependency on `gh` (§1, §2) — is handled as **sequencing**,
 not deferral: #111 records that #107 (which removes `GitHub.cli` from
 winget) depends on #104 (this issue) precisely so the bootstrap
 dependency is recorded before the winget definition is removed, not so
-that removal is skipped. This issue does not block #103, #105, or #108,
-which proceed independently. #107 specifically is gated on this issue
-merging first — roadmap #111 records "#107 depends on #104", and #107
-itself is filed as `Blocked by #104`. That is the sequencing this
-section is about: a deliberate, temporary ordering gate on one target,
-not a deferral of delegation itself.
+that removal is skipped. This issue does not block #103 or #108, which
+proceed independently (#105 no longer needs to be listed here — it
+already shipped). #107 specifically is gated on this issue merging
+first — roadmap #111 records "#107 depends on #104", and #107 itself
+is filed as `Blocked by #104`. That is the sequencing this section is
+about: a deliberate, temporary ordering gate on one target, not a
+deferral of delegation itself.
