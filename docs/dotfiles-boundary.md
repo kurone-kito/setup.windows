@@ -135,20 +135,23 @@ what satisfies "every in-repo dependency location", not the command
 alone:
 
 ```sh
-grep -rl '\bgh\b' \
+grep -rlw gh \
   .github/instructions/ docs/ .github/workflows/ .claude/skills/ \
   --exclude=dotfiles-boundary.md
 ```
 
 (`--exclude` is needed because this file's own prose quotes `gh`
-commands and would otherwise match itself. A bare `\bgh\b` replaces
-an earlier, narrower pattern that required a trailing space or a
-specific subcommand after `gh` — that version missed `gh` followed
-by punctuation (`gh-then-REST`, `` `gh` ``) and undercounted this
-list by 2 files. An earlier version still had a different bug — only
-the first alternative carried its own `\b`, so unanchored `gh
-issue`/`gh run` matched inside prose like "high issue(s)" — already
-fixed before this round.)
+commands and would otherwise match itself. `-w` (whole-word match) is
+POSIX-portable, unlike `\b`/`\B`, which are GNU/PCRE extensions with
+no defined meaning in strict POSIX BRE — some non-GNU `grep`
+implementations treat a literal `\b` as a backspace character instead
+of a word boundary. `-w` replaces an earlier, narrower pattern that
+required a trailing space or a specific subcommand after `gh` — that
+version missed `gh` followed by punctuation (`gh-then-REST`,
+`` `gh` ``) and undercounted this list by 2 files. An earlier version
+still had a different bug — only the first alternative was
+whole-word-anchored, so unanchored `gh issue`/`gh run` matched inside
+prose like "high issue(s)" — already fixed before this round.)
 
 <details>
 <summary>Classified file list (37 files)</summary>
@@ -274,7 +277,7 @@ just `fix-validate`/`pre-push-validate`. Using the same reproducible
 approach as the GitHub CLI subsection above:
 
 ```sh
-grep -rl '\bnpx\b' \
+grep -rlw npx \
   .github/instructions/ docs/ .github/workflows/ .claude/skills/ \
   --exclude=dotfiles-boundary.md
 ```
