@@ -135,6 +135,36 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 dotfiles は別プロジェクト
 （例: [dotfiles](https://github.com/kurone-kito/dotfiles)）で管理してください。
 
+### 所有境界
+
+<!-- cspell:ignore Inno -->
+
+| 層 | 所有 | 例 |
+| ------------------------ | --------------------------------------- | ---------------------------------------------------------------- |
+| winget / DSC（本リポジトリ） | GUI アプリ、MSI・Inno・WiX・burn 系インストーラ、OS 設定 | Git, 7-Zip, GnuPG, Neovim, .NET SDK, Steam, Unity Hub |
+| dotfiles（mise） | CLI ツール、言語ランタイム | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc |
+| dotfiles（管理対象 User PATH） | Windows の User PATH | `mise\shims`, `WinGet\Links`, `data.wingetUserPath.packages` 宣言分 |
+| Chocolatey（本リポジトリ） | フォント、オーディオドライバ | HackGen, VB-CABLE |
+
+本リポジトリからは Windows の User PATH を書きません。その所有権は
+dotfiles の管理対象パス reconciler にあります。dotfiles の
+`docs/winget-user-path.md` がその仕組みを、
+`home/dot_config/powershell/lib/managed-paths.ps1` が管理対象パス集合の
+単一の真実の源をそれぞれ記録しています。
+
+### `setup.cmd` の後に `chezmoi apply` が必要
+
+`setup.cmd` 単体では、もう Node.js・GitHub CLI・ghq・GitHub Copilot CLI・
+git-vrc のいずれもインストールされません — この 5 つはすべて dotfiles の
+`mise` 設定から入るようになりました。本リポジトリは `chezmoi` バイナリ
+自体は導入します（前述の[インストールされるもの](#インストールされるもの)
+参照）が、`chezmoi apply` を自動実行することはありません。`setup.cmd`
+完了後に自分で実行してください。dotfiles を適用しないと成立しない操作の
+詳細な一覧と、これらのツールを dotfiles 側へ寄せた根拠（SSH セッション
+外で `winget upgrade` を実行する運用ルールを含む）は
+[`docs/dotfiles-boundary.md`](docs/dotfiles-boundary.md#4-operations-gated-on-chezmoi-apply)
+を参照してください。
+
 ## テスト環境
 
 レガシーの Vagrant ベースのテスト環境は削除しました。

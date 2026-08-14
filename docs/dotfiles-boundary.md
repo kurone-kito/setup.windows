@@ -10,22 +10,26 @@ every in-repo dependency on each target. Three of the wave's five
 implementation tracks merged **while this investigation was in
 progress**: git-vrc (#105, PR #114), the full-profile `jdx.mise`
 prerequisite for Node.js (#103, PR #113), and Node.js's own fnm
-removal (#108, PR #117). Only GitHub CLI/ghq/GitHub Copilot CLI (#107)
-remains open at the time of writing.
+removal (#108, PR #117). GitHub CLI/ghq/GitHub Copilot CLI (#107,
+PR #118) merged afterward, so by the time issue #110 records the
+user-facing documentation, all five first-wave targets are delegated —
+see the GitHub CLI/ghq/GitHub Copilot CLI subsections below for the
+resulting update.
 
-Two other documents in progress cover related but distinct ground:
+Two other documents cover related but distinct ground:
 
-- #110 (not yet merged) will update `README.md` / `README.ja.md` with
-  the user-facing ownership boundary table and the `chezmoi apply`
-  prerequisite, once #104/#107 have shipped (#103, #105, and #108
-  already have). It is blocked by this issue and depends on it for the
-  "operations that need `chezmoi apply`" list below.
-- Roadmap issue #111 records the full cross-repo design rationale
+- #110 updates `README.md` / `README.ja.md` with the user-facing
+  ownership boundary table and the `chezmoi apply` prerequisite, now
+  that #104 and #107 have both shipped (#103, #105, and #108 already
+  had). It links to the "operations that need `chezmoi apply`" list
+  below (§4) instead of duplicating it, and adds §7's rationale below.
+- Roadmap issue #111 originated the full cross-repo design rationale
   (why CLI tools move to dotfiles at all — the winget `portable`
   package / SSH symlink-traversal problem, and the `cmd.exe` PATH
-  length limit) and the wave 2 plan. This document does not repeat
-  that rationale; it only records **this repository's** current
-  dependency surface.
+  length limit) and tracks the wave 2 plan. Issue #110 copies that
+  rationale into [§7](#7-why-cli-tools-moved-to-dotfiles-at-all) below
+  so it survives independently of the roadmap issue's own edit
+  history; #111 remains authoritative for the wave 2 plan.
 
 Everything below reflects the state of `master` as investigated and
 re-synced on 2026-08-14 (UTC), including after #105 (PR #114), #103
@@ -34,12 +38,15 @@ day. Statements about `kurone-kito/dotfiles` content are point-in-time
 reads of that repository on the same date and can drift independently
 of this repository.
 
-**Scope note**: this document only records findings. It does not
-change `.github/idd/config.json`, `configurations/*.dsc.yaml`, or (for
-the still-open GitHub-CLI/ghq/Copilot-CLI removal work)
-`libs/post-install.ps1` — those stay exactly as they are until #107
-ships. `libs/post-install.ps1`'s git-vrc block (removed by #105) and
-fnm block (removed by #108) were both already gone before this issue
+**Scope note**: this document only records findings. Within #104's
+own scope it did not change `.github/idd/config.json`,
+`configurations/*.dsc.yaml`, or `libs/post-install.ps1` for the
+GitHub-CLI/ghq/Copilot-CLI removal work — that stayed still-open
+issue #107's job at the time, and #107 shipped as PR #118 afterward,
+updating `configurations/*.dsc.yaml` itself (see the GitHub CLI /
+ghq / GitHub Copilot CLI subsections below).
+`libs/post-install.ps1`'s git-vrc block (removed by #105) and fnm
+block (removed by #108) were both already gone before this issue
 merged (see the git-vrc and Node.js subsections below).
 
 ## 1. First-wave targets: in-repo dependencies
@@ -103,46 +110,48 @@ configure it in dotfiles/mise directly.
 
 ### GitHub CLI
 
-- `configurations/packages.dsc.yaml` (resource id `pkg.ghCli`, winget
-  id `GitHub.cli`, full profile) **and**
-  `configurations/packages.min.dsc.yaml` (resource id `github-cli`,
-  winget id `GitHub.cli`, min profile) both install it today.
-- `configurations/packages.import.json` and
-  `configurations/packages.min.import.json` (both profiles' generated
-  `winget import` fallbacks) also list the `GitHub.cli`
-  `PackageIdentifier` — the same degraded-route consideration as
-  Node.js above.
-- `README.md` / `README.ja.md` — both files' "Key categories" package
-  summary lists "GitHub CLI" under **Development** (the full profile's
-  section; #107 will need to update this line too).
-- The IDD execution loop itself is built on the `gh` CLI. This is a
-  **local-machine** dependency only — hosted GitHub Actions runners
-  ship their own `gh` installation and are unaffected by this
-  repository's or dotfiles' package choices. The full path list below
-  is a point-in-time inventory (2026-08-14 UTC), classified by actual
-  use; it will drift as this repository's own documentation changes —
-  re-run the command to re-verify, but the classified list itself is
-  what satisfies "every in-repo dependency location", not the command
-  alone:
+**Already delegated** — #107 merged as PR #118, after this issue's own
+investigation concluded. `configurations/packages.dsc.yaml` (full
+profile, resource id `pkg.ghCli`) and `configurations/packages.min.dsc.yaml`
+(min profile, resource id `github-cli`) no longer have a `GitHub.cli`
+resource; both profiles' generated `winget import` fallbacks
+(`configurations/packages.import.json` /
+`configurations/packages.min.import.json`) no longer list the
+`GitHub.cli` `PackageIdentifier` either. `README.md` / `README.ja.md`'s
+"Key categories" package summary no longer lists "GitHub CLI" under
+**Development** (the full profile's section), and both files gained a
+note that GitHub CLI is dotfiles' responsibility via `mise`.
 
-  ```sh
-  grep -rl '\bgh\b' \
-    .github/instructions/ docs/ .github/workflows/ .claude/skills/ \
-    --exclude=dotfiles-boundary.md
-  ```
+**No in-repo GitHub CLI provisioning definition remains** — the same
+narrower-than-"no dependency" distinction as Node.js above. The IDD
+execution loop itself is built on the `gh` CLI. This is a
+**local-machine** dependency only — hosted GitHub Actions runners
+ship their own `gh` installation and are unaffected by this
+repository's or dotfiles' package choices. The full path list below
+is a point-in-time inventory (2026-08-14 UTC), classified by actual
+use; it will drift as this repository's own documentation changes —
+re-run the command to re-verify, but the classified list itself is
+what satisfies "every in-repo dependency location", not the command
+alone:
 
-  (`--exclude` is needed because this file's own prose quotes `gh`
-  commands and would otherwise match itself. A bare `\bgh\b` replaces
-  an earlier, narrower pattern that required a trailing space or a
-  specific subcommand after `gh` — that version missed `gh` followed
-  by punctuation (`gh-then-REST`, `` `gh` ``) and undercounted this
-  list by 2 files. An earlier version still had a different bug — only
-  the first alternative carried its own `\b`, so unanchored `gh
-  issue`/`gh run` matched inside prose like "high issue(s)" — already
-  fixed before this round.)
+```sh
+grep -rl '\bgh\b' \
+  .github/instructions/ docs/ .github/workflows/ .claude/skills/ \
+  --exclude=dotfiles-boundary.md
+```
 
-  <details>
-  <summary>Classified file list (37 files)</summary>
+(`--exclude` is needed because this file's own prose quotes `gh`
+commands and would otherwise match itself. A bare `\bgh\b` replaces
+an earlier, narrower pattern that required a trailing space or a
+specific subcommand after `gh` — that version missed `gh` followed
+by punctuation (`gh-then-REST`, `` `gh` ``) and undercounted this
+list by 2 files. An earlier version still had a different bug — only
+the first alternative carried its own `\b`, so unanchored `gh
+issue`/`gh run` matched inside prose like "high issue(s)" — already
+fixed before this round.)
+
+<details>
+<summary>Classified file list (37 files)</summary>
 
   **Executes `gh`** (1): `.github/workflows/post-merge-cleanup.yml`
   (`gh pr view`, `gh api`, `gh pr comment`).
@@ -190,33 +199,37 @@ configure it in dotfiles/mise directly.
 
   </details>
 
-Issue #107 removes `GitHub.cli` from both profiles' winget
-definitions (along with ghq and GitHub Copilot CLI, below) once this
-issue records the IDD-loop bootstrap dependency — see [Dependency
+Issue #107 removed `GitHub.cli` from both profiles' winget
+definitions (along with ghq and GitHub Copilot CLI, below), after this
+issue recorded the IDD-loop bootstrap dependency — see [Dependency
 ordering, not deferral](#6-dependency-ordering-not-deferral).
 
 ### ghq
 
-- `configurations/packages.min.dsc.yaml` (`id: ghq`, winget id
-  `x-motemen.ghq`, min profile only), and
-  `configurations/packages.min.import.json` (min profile's generated
-  `winget import` fallback, same `PackageIdentifier`). No script,
-  workflow, or instruction file invokes the `ghq` binary. **None.**
+**Already delegated** — #107 merged as PR #118. `configurations/packages.min.dsc.yaml`
+no longer has the `ghq` resource (winget id `x-motemen.ghq`, min
+profile only), and `configurations/packages.min.import.json` (min
+profile's generated `winget import` fallback) no longer lists the same
+`PackageIdentifier`. No script, workflow, or instruction file invoked
+the `ghq` binary before this delegation either. **Current in-repo
+dependency: none**, unchanged from before.
 
 ### GitHub Copilot CLI
 
-- `configurations/packages.min.dsc.yaml` (`id: github-copilot-cli`,
-  winget id `GitHub.Copilot`, min profile only), and
-  `configurations/packages.min.import.json` (min profile's generated
-  `winget import` fallback, same `PackageIdentifier`). Every other
-  "Copilot" occurrence in this repository
-  (`docs/`, `.github/instructions/`) refers to GitHub Copilot as a
-  reviewer, IDE, or agent surface — the Pull Request Reviewer
-  **advisory bot** (`copilot-pull-request-reviewer[bot]`) used by the
-  IDD review workflow, VS Code Copilot instructions/chat, or the
-  Copilot coding-agent entry listed in `docs/idd-workflow.md`'s
-  entry-points table — never the `copilot` CLI binary itself. No
-  script or instruction invokes the CLI binary. **None.**
+**Already delegated** — #107 merged as PR #118. `configurations/packages.min.dsc.yaml`
+no longer has the `github-copilot-cli` resource (winget id
+`GitHub.Copilot`, min profile only), and
+`configurations/packages.min.import.json` (min profile's generated
+`winget import` fallback) no longer lists the same `PackageIdentifier`.
+Every other "Copilot" occurrence in this repository
+(`docs/`, `.github/instructions/`) refers to GitHub Copilot as a
+reviewer, IDE, or agent surface — the Pull Request Reviewer
+**advisory bot** (`copilot-pull-request-reviewer[bot]`) used by the
+IDD review workflow, VS Code Copilot instructions/chat, or the
+Copilot coding-agent entry listed in `docs/idd-workflow.md`'s
+entry-points table — never the `copilot` CLI binary itself. No script
+or instruction invoked the CLI binary before this delegation either.
+**Current in-repo dependency: none**, unchanged from before.
 
 ### git-vrc
 
@@ -306,7 +319,7 @@ point — `.claude/skills/issue-authoring/references/contract.md`,
 | Tool | Needed by | Provisioning source today | After delegation |
 | --- | --- | --- | --- |
 | `npx` (Node.js) | `fix-validate`, `pre-push-validate`, `post-fix-validate`, every `idd-*` helper call | **Already delegated (#108, PR #117)** — this repository no longer installs Node.js at all, on either profile. Both profiles have `jdx.mise` via winget unconditionally, but Node.js itself only comes from `mise` reading dotfiles' `node = "latest"` entry, which needs `chezmoi apply` to deploy — see the Node.js subsection in [§1](#1-first-wave-targets-in-repo-dependencies) and the cross-cutting caveat in [§4](#4-operations-gated-on-chezmoi-apply) | N/A — already the target state |
-| `gh` | The IDD loop's own bootstrap (not `fix-validate`/`pre-push-validate` directly) | full and min: `GitHub.cli` (winget) | dotfiles' `github:cli/cli` (mise) once #107 ships |
+| `gh` | The IDD loop's own bootstrap (not `fix-validate`/`pre-push-validate` directly) | **Already delegated (#107, PR #118)** — neither profile installs `GitHub.cli` via winget anymore; `gh` now comes from dotfiles' `github:cli/cli` (mise) | N/A — already the target state |
 | `pwsh` (PowerShell 7) | `pre-push-validate`/`post-fix-validate` (`Invoke-ScriptAnalyzer`, `Invoke-Pester`) | Both profiles install PowerShell 7 today, via different package identities: full uses `pkg.pwsh` (Microsoft Store id `9MZ1SNWT0N5D`); min uses `Microsoft.PowerShell` (native winget id). Not a delegation-relevant gap — see [§3](#3-powershell-7-provisioning-in-the-full-profile-conclusion). | Unchanged — no first-wave track touches either `pwsh` package definition. |
 | `PSScriptAnalyzer`, `Pester`, `powershell-yaml` (PowerShell modules) | `pre-push-validate`/`post-fix-validate` (`Invoke-ScriptAnalyzer`/`Invoke-Pester`); `powershell-yaml` is also required by `scripts/Build-Configurations.ps1` / `scripts/Test-PackageIds.ps1` | **No automated winget or dotfiles provisioning on either profile, for any of the three.** `.github/workflows/lint.yml` runs `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` fresh on every CI run for all three. `docs/testing.md` documents the manual command for **local** development for `Pester`; `scripts/Build-Configurations.ps1`'s and `scripts/Test-PackageIds.ps1`'s own help-comment headers document the same manual command for `powershell-yaml`. Only `PSScriptAnalyzer` has no local-install documentation anywhere in this repository — just its CI provisioning in `lint.yml`. Nothing automates any of the three for a fresh local machine (either profile). | Unchanged — out of scope for the winget/dotfiles boundary; these are PowerShell Gallery modules, not OS packages. |
 
@@ -370,9 +383,8 @@ winget/dotfiles delegation boundary this issue covers.
 
 ## 4. Operations gated on `chezmoi apply`
 
-Rows 1-2 below apply **once** #107 ships; they do not apply to today's
-`master`. Rows 3-5 (Node.js, git-vrc) already apply **today**, since
-issues #108 and #105 each merged during this investigation. Row 6 is
+All of rows 1-5 below apply **today**: #107 (GitHub CLI, ghq, GitHub
+Copilot CLI) and #108/#105 (Node.js, git-vrc) have all merged. Row 6 is
 unrelated to any first-wave track and `chezmoi apply` does not fix it
 either — see the PowerShell-modules row in
 [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate).
@@ -404,8 +416,8 @@ workaround in that case is a manual `mise install && mise reshim` once
 
 | Operation | Needs | Workaround |
 | --- | --- | --- |
-| IDD `gh`-based operations (claim, PR, review, merge) on a local machine | GitHub CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above), or temporarily `winget install GitHub.cli` |
-| Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences | ghq / GitHub Copilot CLI, once #107 ships | Run `chezmoi apply` first (see the cross-cutting caveat above), or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
+| IDD `gh`-based operations (claim, PR, review, merge) on a local machine — **applies today** | GitHub CLI | Run `chezmoi apply` first (see the cross-cutting caveat above), or temporarily `winget install GitHub.cli` |
+| Interactive use of `ghq` or the GitHub Copilot CLI as developer conveniences — **applies today** | ghq / GitHub Copilot CLI | Run `chezmoi apply` first (see the cross-cutting caveat above), or temporarily `winget install x-motemen.ghq` / `winget install GitHub.Copilot` |
 | `fix-validate` / `pre-push-validate` / `post-fix-validate` / any `idd-*` helper call (needs `npx`) on a local machine — **applies today** | Node.js | Run `chezmoi apply` first (see the cross-cutting caveat above). This repository has **no winget package for Node.js** as of #108 — a temporary local install must either reinstall `fnm` directly from the public winget catalog (`winget install Schniz.fnm`, not defined in this repo anymore) and then run `fnm env --use-on-cd \| Out-String \| Invoke-Expression` plus `fnm install <version> && fnm default <version>`, or install a self-contained Node.js package directly (e.g. `winget install OpenJS.NodeJS.LTS`) |
 | Interactive use of the `git vrc` binary, or any operation needing it — **applies today** | git-vrc | Run `chezmoi apply` first (see the cross-cutting caveat above). This repository has **no winget package id for git-vrc** — a temporary local install must use the command the now-removed `post-install.ps1` block used to run: `cargo install --locked --git https://github.com/anatawa12/git-vrc.git`. That itself needs `cargo`: `Rustlang.Rust.MSVC` is full-profile only (`configurations/packages.min.dsc.yaml` has no Rust entry), so a min-profile machine needs Rust installed some other way (e.g. `winget install Rustlang.Rust.MSVC`) before this fallback works |
 | The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) — **applies today** | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block | Run `chezmoi apply` first (see the cross-cutting caveat above), or manually add the equivalent `[filter "vrc"]` block to the global gitconfig — **and** install the `git-vrc` binary via the cargo command in the row above first, or the filter's `git vrc clean`/`git vrc smudge` invocations fail with no such subcommand |
@@ -456,19 +468,96 @@ first-wave targets. **No deferred targets.**
 
 Roadmap issue #111's tracks list does not defer any of Node.js, GitHub
 CLI, ghq, GitHub Copilot CLI, or git-vrc — all five are first-wave
-tracks with implementation issues (Node.js: #103 and #108, both
-merged while this issue was in progress; GitHub CLI, ghq, and GitHub
-Copilot CLI: #107, still open; git-vrc: #105, merged as PR #114 while
-this issue was in progress). The one dependency that could look like a
-reason to defer — the IDD loop's own bootstrap dependency on `gh` (§1,
-§2) — is handled as **sequencing**, not deferral: #111 records that
-issue #107 (which removes `GitHub.cli` from winget) depends on #104
-(this issue) precisely so the bootstrap dependency is recorded before
-the winget definition is removed, not so that removal is skipped.
-Issues #103, #105, and #108 no longer need to be listed here as
-blocked — all three already shipped. #107 specifically is gated on
-this issue merging first — roadmap #111 records the dependency edge
-between #107 and #104 explicitly (as "depends on"), and #107 itself is
-filed as `Blocked by #104`. That is the sequencing this section is
-about: a deliberate, temporary ordering gate on one target, not a
-deferral of delegation itself.
+tracks with implementation issues, and all five have now merged
+(Node.js: #103 and #108; GitHub CLI, ghq, and GitHub Copilot CLI: #107,
+PR #118; git-vrc: #105, PR #114). The one dependency that could
+look like a reason to defer — the IDD loop's own bootstrap dependency
+on `gh` (§1, §2) — was handled as **sequencing**, not deferral: #111
+records that issue #107 (which removes `GitHub.cli` from winget)
+depends on #104 (this issue) precisely so the bootstrap dependency is
+recorded before the winget definition is removed, not so that removal
+is skipped. Issues #103, #105, #107, and #108 no longer need to be
+listed here as blocked — all four already shipped. #107 was
+specifically gated on this issue merging first, and did merge after
+it the same day (#104 as PR #116, then #107 as PR #118) — roadmap #111
+records the dependency edge between #107 and #104 explicitly (as
+"depends on"), and #107 was filed as `Blocked by #104`. That was the
+sequencing this section is about: a deliberate, temporary ordering
+gate on one target, not a deferral of delegation itself.
+
+## 7. Why CLI tools moved to dotfiles at all
+
+Roadmap issue #111 originated this rationale in its own issue body.
+This section copies it here so it survives independently of the
+roadmap issue's own edit history; #111 remains authoritative for the
+wave 2 opt-out plan (which packages stay in winget vs. move to mise).
+
+### winget `portable` packages cannot run over an SSH session
+
+<!-- cspell:ignore fsutil -->
+
+winget's `portable` installer type extracts a package's files under
+`%LOCALAPPDATA%\Microsoft\WinGet\Packages\` and, with Windows
+Developer Mode enabled, creates an NTFS symlink for its executable
+under `%LOCALAPPDATA%\Microsoft\WinGet\Links\`. Windows OpenSSH's
+public-key-authenticated sessions use a network logon token, and that
+token cannot traverse an NTFS reparse point — running the symlinked
+executable fails with `ERROR_UNTRUSTED_MOUNT_POINT` (448, "The path
+cannot be traversed because it contains an untrusted mount point").
+`fsutil behavior set SymlinkEvaluation R2L:1 R2R:1` does not resolve
+it. See
+[ajeetdsouza/zoxide#1180](https://github.com/ajeetdsouza/zoxide/issues/1180)
+for this exact winget-portable/`WinGet\Links` failure. The underlying
+network-logon-token restriction is the same root cause discussed in
+[PowerShell/Win32-OpenSSH#1047](https://github.com/PowerShell/Win32-OpenSSH/issues/1047)
+(a network-share / credential-delegation report, not a portable-package
+one — labeled "Resolution - By Design" and not expected to change).
+
+With Developer Mode disabled, symlink creation fails outright and
+winget instead falls back to adding each portable package's install
+directory to PATH individually — roughly 115-170 characters per
+entry — pushing PATH toward `cmd.exe`'s 8191-character limit
+([KB830473](https://learn.microsoft.com/en-us/troubleshoot/windows-client/shell-experience/command-line-string-limitation)).
+`cmd.exe` does not truncate a PATH value that exceeds this limit; it
+discards the variable entirely, breaking PATH resolution wherever a
+tool (for example `npm run`) launches `cmd.exe` as its script-shell.
+
+### How mise's shim mechanism avoids both failure modes
+
+mise's default Windows shim mode (`windows_shim_mode = "exe"`) copies
+a real `mise-shim.exe` binary as `<tool>.exe` under
+`%LOCALAPPDATA%\mise\shims` — a plain file, not a symlink or reparse
+point, so an SSH session can execute it without hitting
+`ERROR_UNTRUSTED_MOUNT_POINT`. Every mise-managed tool resolves
+through that single fixed PATH entry, so adding tools through mise
+never grows PATH the way per-package winget `portable` entries do.
+This is why Node.js, GitHub CLI, ghq, GitHub Copilot CLI, and git-vrc
+moved to dotfiles' `mise` configuration instead of staying as (or
+becoming) winget `portable` packages in this repository.
+
+Portable packages that stay in winget keep SSH reachability through a
+different mechanism: dotfiles declares their install directories in
+`data.wingetUserPath.packages`, and its managed User PATH reconciler
+(see [§5](#5-user-path-ownership)) adds each declared directory as a
+normal string PATH entry, not a symlink — sidestepping the same
+`ERROR_UNTRUSTED_MOUNT_POINT` failure without moving the package to
+mise.
+
+### Operational rule: run `winget upgrade` from an interactive session
+
+The `wingetUserPath` mechanism above fixes PATH *resolution* for an
+already-installed portable package. It does not fix the separate
+problem that `winget` itself — running `install`, `upgrade`, or
+`uninstall` against a package it already tracks as `portable` — still
+tries to traverse that package's own `WinGet\Links` symlink and fails
+with the same `ERROR_UNTRUSTED_MOUNT_POINT` (448), confirmed live in
+[microsoft/winget-cli#4936](https://github.com/microsoft/winget-cli/issues/4936)
+(reproduced there against `junegunn.fzf`'s `WinGet\Links\fzf.exe`
+entry).
+
+**Run `winget upgrade` — and any other `winget` command that touches
+an already-installed portable package — from a local or RDP
+interactive session, never over SSH.** `chezmoi apply` and every IDD
+`gh`-based operation are unaffected by this rule: they exercise
+mise-managed tools, not `winget` itself, so the rule applies narrowly
+to invoking `winget` against portable packages.

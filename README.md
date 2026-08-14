@@ -135,6 +135,37 @@ This project is responsible for **installation only**. OS preferences,
 shell configuration, and dotfiles should be managed separately
 (e.g., via [dotfiles](https://github.com/kurone-kito/dotfiles)).
 
+### Ownership boundary
+
+<!-- cspell:ignore Inno -->
+
+| Layer                          | Owns                                                      | Examples                                                                          |
+| ------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| winget / DSC (this repository) | GUI apps, MSI/Inno/WiX/burn-style installers, OS settings | Git, 7-Zip, GnuPG, Neovim, .NET SDK, Steam, Unity Hub                             |
+| dotfiles (mise)                | CLI tools, language runtimes                              | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc                             |
+| dotfiles (managed User PATH)   | The Windows User PATH                                     | `mise\shims`, `WinGet\Links`, packages declared in `data.wingetUserPath.packages` |
+| Chocolatey (this repository)   | Fonts, audio drivers                                      | HackGen, VB-CABLE                                                                 |
+
+This repository does not write the Windows User PATH. That ownership
+belongs to dotfiles' managed-path reconciler: dotfiles'
+`docs/winget-user-path.md` documents the mechanism, and
+`home/dot_config/powershell/lib/managed-paths.ps1` is its single
+source of truth for the managed-path set.
+
+### `chezmoi apply` is required after `setup.cmd`
+
+`setup.cmd` alone no longer installs Node.js, GitHub CLI, ghq, GitHub
+Copilot CLI, or git-vrc — all five now come from dotfiles' `mise`
+configuration. This repository installs the `chezmoi` binary itself
+(see [What Gets Installed](#what-gets-installed) above) but never runs
+`chezmoi apply` automatically; run it yourself after `setup.cmd`
+completes to get these tools. See
+[`docs/dotfiles-boundary.md`](docs/dotfiles-boundary.md#4-operations-gated-on-chezmoi-apply)
+for the full list of operations that do not work until dotfiles has
+been applied, and for the rationale behind moving these tools to
+dotfiles in the first place (including the operational rule for
+running `winget upgrade` outside an SSH session).
+
 ## Testing
 
 The legacy Vagrant-based test environment has been removed. Modern testing
