@@ -36,10 +36,11 @@ today until their own tracked issues (#103/#105/#107/#108) ship.
 ## 1. First-wave targets: in-repo dependencies
 
 For each target, "today" describes current `master`; "after delegation"
-describes the change once the named tracked issue ships. Anchors are
-DSC `resource`/`id` values and named script blocks, which are stable
-across `packages.dsc.yaml` regeneration; line numbers are given only as
-a secondary locator and will drift on the next regeneration.
+describes the change once the named tracked issue ships. Anchors below
+are DSC `resource`/`id` values and named script blocks rather than line
+numbers — those are stable across `packages.dsc.yaml` regeneration,
+while line numbers would drift on the next regeneration and go stale
+immediately.
 
 ### Node.js
 
@@ -69,10 +70,11 @@ is available on both profiles.
 - `configurations/packages.dsc.yaml` (`id: GitHub.cli`, full profile)
   **and** `configurations/packages.min.dsc.yaml` (`id: GitHub.cli`,
   min profile) both install it today.
-- The IDD execution loop itself is built on the `gh` CLI: 24
-  `.github/instructions/*.md` files and 2 `.github/workflows/*.yml`
-  files (`idd-advisory-convergence.yml`,
-  `post-merge-cleanup.yml`) invoke `gh`. This is a **local-machine**
+- The IDD execution loop itself is built on the `gh` CLI: 22
+  `.github/instructions/*.md` files (including their `lite/`
+  counterparts) and 2 `.github/workflows/*.yml` files
+  (`idd-advisory-convergence.yml`, `post-merge-cleanup.yml`) invoke
+  `gh` — 24 files in total. This is a **local-machine**
   dependency only — hosted GitHub Actions runners ship their own `gh`
   installation and are unaffected by this repository's or dotfiles'
   package choices.
@@ -177,12 +179,15 @@ its own.
 Both readings are recorded because they answer different questions:
 the profile design is coherent as shipped, but it leaves
 `pre-push-validate` unusable out of the box on a fresh full-profile
-machine. See the workaround in [§4](#4-operations-that-only-work-after-chezmoi-apply).
+machine. See the workaround in [§4](#4-operations-gated-on-chezmoi-apply).
 
-## 4. Operations that only work after `chezmoi apply`
+## 4. Operations gated on `chezmoi apply`
 
-These apply **once** the named tracked issue ships; they do not apply
-to today's `master`.
+The first four rows below apply **once** the named tracked issue
+ships; they do not apply to today's `master`. The last row is
+different and included for completeness: it is a **present-day** gap
+(unaffected by any first-wave track shipping) that `chezmoi apply`
+does not fix at all — see [§3](#3-microsoftpowershell-missing-from-the-full-profile-conclusion).
 
 | Operation | Needs | Workaround |
 | --- | --- | --- |
@@ -190,7 +195,7 @@ to today's `master`.
 | `fix-validate` / `pre-push-validate` / any `idd-*` helper call (needs `npx`) on a local machine | Node.js, once #108 ships | Run `chezmoi apply` first, or temporarily install Node.js (e.g. `winget install Schniz.fnm`) |
 | Interactive use of `ghq`, `copilot`, or `git vrc` as developer conveniences | ghq / GitHub Copilot CLI / git-vrc, once #107 / #105 ship | Run `chezmoi apply` first, or temporarily `winget install <package-id>` |
 | The `git vrc` clean/smudge filter for VRChat assets (unitypackage/prefab-friendly diffs) | dotfiles' `home/dot_config/git/config.tmpl` `[filter "vrc"]` block, once #105 ships | Run `chezmoi apply` first, or manually add the equivalent `[filter "vrc"]` block to the global gitconfig |
-| `pre-push-validate`'s `pwsh`-based checks on a full-profile machine | `pwsh` — **not** fixed by `chezmoi apply` (see [§3](#3-microsoftpowershell-missing-from-the-full-profile-conclusion)) | Manually `winget install Microsoft.PowerShell`, or select the min profile |
+| `pre-push-validate`'s `pwsh`-based checks on a full-profile machine, today | `pwsh` — **not** fixed by `chezmoi apply`, ever, under the current dotfiles definition | Manually `winget install Microsoft.PowerShell`, or select the min profile |
 
 **Unrelated existing caveat, noted for accuracy**: this repository's
 own code only ever modifies the current process's `$env:Path`
@@ -224,7 +229,7 @@ under `libs/` or `scripts/` calls
 `[System.Environment]::SetEnvironmentVariable(..., 'User')` or
 otherwise touches the `HKCU\Environment` registry key (verified by
 repository-wide search). The one process-scope `$env:Path` write, and
-the one third-party persistent-PATH side effect, are noted in [§4](#4-operations-that-only-work-after-chezmoi-apply)'s
+the one third-party persistent-PATH side effect, are noted in [§4](#4-operations-gated-on-chezmoi-apply)'s
 caveat — neither is this repository writing User PATH itself. This
 repository must continue to avoid writing User PATH: doing so would
 create a second writer racing dotfiles' reconciler over the same
