@@ -152,8 +152,12 @@ repository still installs many other CLI tools directly via winget
 (see "CLI Tools" under [What Gets Installed](#what-gets-installed)
 above, e.g. 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert).
 
-This repository does not write the Windows User PATH. That ownership
-belongs to dotfiles' managed-path reconciler: dotfiles'
+This repository's own scripts do not manage or write the Windows User
+PATH — the one exception is the third-party Unity CLI installer
+(`libs/unity-cli-installer.ps1` invokes Unity's own `install.ps1`),
+which persists an entry there as its own documented side effect, not
+something this repository's code does directly. User PATH ownership
+otherwise belongs to dotfiles' managed-path reconciler: dotfiles'
 `docs/winget-user-path.md` documents the mechanism, and
 `home/dot_config/powershell/lib/managed-paths.ps1` is its single
 source of truth for the managed-path set.

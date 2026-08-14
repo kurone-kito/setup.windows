@@ -141,11 +141,14 @@ grep -rlw gh \
 ```
 
 (`--exclude` is needed because this file's own prose quotes `gh`
-commands and would otherwise match itself. `-w` (whole-word match) is
-POSIX-portable, unlike `\b`/`\B`, which are GNU/PCRE extensions with
-no defined meaning in strict POSIX BRE — some non-GNU `grep`
-implementations treat a literal `\b` as a backspace character instead
-of a word boundary. `-w` replaces an earlier, narrower pattern that
+commands and would otherwise match itself. `-w` (whole-word match)
+isn't in the POSIX base specification either, but it's a far more
+broadly supported de facto standard than `\b`/`\B` — GNU, BSD, and
+BusyBox `grep` all implement `-w`, while `\b`/`\B` are GNU/PCRE-only
+extensions with no defined meaning in strict POSIX BRE, so some
+non-GNU `grep` implementations treat a literal `\b` as a backspace
+character instead of a word boundary. `-w` replaces an earlier,
+narrower pattern that
 required a trailing space or a specific subcommand after `gh` — that
 version missed `gh` followed by punctuation (`gh-then-REST`,
 `` `gh` ``) and undercounted this list by 2 files. An earlier version

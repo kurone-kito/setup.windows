@@ -153,8 +153,13 @@ dotfiles は別プロジェクト
 「CLI ツール」を参照。例: 7-Zip, FFmpeg, fzf, jq, yq, chezmoi,
 tealdeer, mkcert）。
 
-本リポジトリからは Windows の User PATH を書きません。その所有権は
-dotfiles の管理対象パス reconciler にあります。dotfiles の
+本リポジトリ自身のスクリプトは Windows の User PATH を管理・書き込み
+しません。唯一の例外はサードパーティ製の Unity CLI インストーラです
+（`libs/unity-cli-installer.ps1` が Unity 公式の `install.ps1` を呼び出し、
+そのインストーラ自身の既知の副作用として User PATH へエントリを追加します
+— 本リポジトリのコードが直接書き込むものではありません）。それ以外の
+User PATH の所有権は dotfiles の管理対象パス reconciler にあります。
+dotfiles の
 `docs/winget-user-path.md` がその仕組みを、
 `home/dot_config/powershell/lib/managed-paths.ps1` が管理対象パス集合の
 単一の真実の源をそれぞれ記録しています。
