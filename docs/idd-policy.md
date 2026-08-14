@@ -100,8 +100,8 @@ recorded in `.github/idd/config.json`)
 
 Resolves #61. `master`'s `main` ruleset (`~DEFAULT_BRANCH`) now carries a
 `required_status_checks` rule, registered via the GitHub Rulesets API
-(this repository predates classic branch protection and uses rulesets
-instead, so the classic `GET .../branches/{branch}/protection` endpoint
+(this repository uses rulesets rather than classic branch protection,
+so the classic `GET .../branches/{branch}/protection` endpoint
 correctly 404s — that is not a misconfiguration).
 
 - **Required contexts**: `idd-advisory-convergence`, `lint`,
@@ -116,10 +116,17 @@ correctly 404s — that is not a misconfiguration).
   closes the gap where a maintainer could merge past red CI through the
   merge button even though IDD's own F2 checklist already required them
   to be green.
-- **Not registered**: `CodeRabbit`. It reports as a PR review/comment
-  integration, not a check-run (`status`/`conclusion` are `null` in
-  `statusCheckRollup`), so it can never satisfy a required-status-check
-  context — registering it would permanently block merges.
+- **Not registered**: `CodeRabbit`. Unlike `idd-advisory-convergence`
+  and the four lint jobs, it is not itself an assertion of anything;
+  it reports its own progress as a legacy commit status with context
+  `CodeRabbit` (confirmed live: `state: success` even while its
+  description reads `Review rate limited`). Registering it as a
+  required check would therefore risk the opposite failure from a
+  missing context — a rate-limited or otherwise-skipped review could
+  still report `success` and satisfy the gate without having reviewed
+  anything. The E1 activity-universe snapshot plus `review-watermark`
+  delta remains the load-bearing safety net for CodeRabbit findings
+  (see [Scope — Copilot-only settle/wait window](../.github/instructions/idd-advisory-wait.instructions.md#scope--copilot-only-settlewait-window)).
 - **`strict_required_status_checks_policy`**: `false`. This repository
   runs several IDD issue branches concurrently; requiring every branch
   to be re-verified against the latest `master` before its checks count
@@ -139,17 +146,28 @@ correctly 404s — that is not a misconfiguration).
 - **`ciGate.trustEmptyProtectionReads`**: `true` (repository override;
   distributed default is `false`). This repository has no classic
   branch protection at all — only the `main`/`features` rulesets above
-  — so `GET .../branches/master/protection` genuinely 404s; it is not a
-  permission-scope artifact (the automation identity used to register
-  the ruleset above carries `admin: true` on this repository, so a real
-  classic-protection resource would be readable, not 404, if one
-  existed). `idd-ci.instructions.md`'s required-check-discovery step 4
-  otherwise treats every `404` on that endpoint as fail-closed
-  (structurally indistinguishable from a `403`) regardless of what the
-  ruleset read already found, which would have permanently blocked
-  `pre-merge-readiness` even with the required-status-checks rule above
-  fully satisfied. Opting in here is the documented escape hatch for
-  exactly this verified case.
+  — so `GET .../branches/master/protection` genuinely 404s. Per this
+  repository's own [Credential Scope](#credential-scope) policy, no
+  separate least-privilege worker identity exists: every IDD session in
+  this repository (interactive or delegated) authenticates as the same
+  account that registered the ruleset above. Read with `--include`
+  under that exact identity: the ruleset read returns a raw `HTTP/2.0
+  200 OK`, and the classic-protection read returns a raw `HTTP/2.0 404
+  Not Found` (not a `403` reported as `404`) — confirmed
+  2026-08-14. This is not a permission-scope artifact for *this*
+  identity; a differently-scoped credential without `administration:
+  read` (for example, a third-party review bot's own sandboxed
+  credential, unrelated to any identity that actually runs
+  `pre-merge-readiness` in this repository) could still see a `403` on
+  the same endpoint, which is exactly the ambiguity
+  `idd-ci.instructions.md`'s required-check-discovery step 4 is
+  designed to fail closed on for an *unverified* identity — it does not
+  apply once the specific identity in use has been read-verified, as
+  here. That step otherwise treats every `404` on that endpoint as
+  fail-closed regardless of what the ruleset read already found, which
+  would have permanently blocked `pre-merge-readiness` even with the
+  required-status-checks rule above fully satisfied. Opting in here is
+  the documented escape hatch for exactly this verified case.
 
 ### Credential Scope
 
