@@ -51,8 +51,9 @@ recorded in `.github/idd/config.json`)
   bot's review has converged on the current PR HEAD, turning the F2
   advisory/disposition sub-gate into a non-bypassable GitHub status
   check. Branch-protection registration of this check as a required
-  status check is tracked separately in #61 (human-blocked; this
-  workflow must exist first).
+  status check is recorded in
+  [CI Gate (Required Status Checks)](#ci-gate-required-status-checks)
+  below (#61).
 - **`ciGate.externalChecks.waivable`**: `[{ "selector":
   "idd-advisory-convergence" }]` — this repository's only waivable
   external check.
@@ -61,11 +62,6 @@ recorded in `.github/idd/config.json`)
   `externalCheckWaivers` fields (`authorityPolicy`, `maxValidity`) are
   not overridden and use the bundle's distributed defaults
   (`owners-and-maintainers-only`, `PT24H`).
-- **Not yet live until this change merges**: `idd-advisory-convergence.yml`
-  reads `.github/idd/config.json` from `master`, so this `ciGate`
-  addition only takes effect once this PR itself merges. A waiver
-  posted against the PR that introduces it would fail closed as an
-  unknown selector.
 - **Waiver path**: when installed, prefer the helper facade over
   hand-writing marker comments:
 
@@ -99,6 +95,87 @@ recorded in `.github/idd/config.json`)
   introduces it (GitHub reads `pull_request_target` workflow files from
   the base branch) — that PR's own F4 cleanup goes through the normal
   IDD flow instead.
+
+### CI Gate (Required Status Checks)
+
+Resolves #61. `master`'s `main` ruleset (`~DEFAULT_BRANCH`) now carries a
+`required_status_checks` rule, registered via the GitHub Rulesets API
+(this repository uses rulesets rather than classic branch protection,
+so the classic `GET .../branches/{branch}/protection` endpoint
+correctly 404s — that is not a misconfiguration).
+
+- **Required contexts**: `idd-advisory-convergence`, `lint`,
+  `powershell-analyzer`, `pester`, `configuration-drift`. The first
+  turns the F2 advisory/disposition sub-gate into a real GitHub-enforced
+  block (this issue's purpose); `lint`, `powershell-analyzer`, and
+  `pester` are the existing `Linting workflow` jobs that mirror
+  **pre-push-validate** (Markdown/cspell lint, PSScriptAnalyzer,
+  Pester); `configuration-drift` goes further — it also regenerates the
+  DSC-derived artifacts and checks for a zero diff, a check
+  **pre-push-validate** does not run locally. Registering all four
+  closes the gap where a maintainer could merge past red CI through the
+  merge button even though IDD's own F2 checklist already required them
+  to be green.
+- **Not registered**: `CodeRabbit`. Unlike `idd-advisory-convergence`
+  and the four lint jobs, it is not itself an assertion of anything;
+  it reports its own progress as a legacy commit status with context
+  `CodeRabbit` (confirmed live: `state: success` even while its
+  description reads `Review rate limited`). Registering it as a
+  required check would therefore risk the opposite failure from a
+  missing context — a rate-limited or otherwise-skipped review could
+  still report `success` and satisfy the gate without having reviewed
+  anything. The E1 activity-universe snapshot plus `review-watermark`
+  delta remains the load-bearing safety net for CodeRabbit findings
+  (see [Scope — Copilot-only settle/wait window](../.github/instructions/idd-advisory-wait.instructions.md#scope--copilot-only-settlewait-window)).
+- **`strict_required_status_checks_policy`**: `false`. This repository
+  runs several IDD issue branches concurrently; requiring every branch
+  to be re-verified against the latest `master` before its checks count
+  would force a rebase-and-rerun cascade on every unrelated merge.
+  This is a deliberate tradeoff, not a fully-covered gap: IDD's F1
+  branch-currency check (`branch-conflict-state`) only *prefers* a
+  fresh CI result over an old green one when the base has advanced
+  (`idd-pre-merge.instructions.md`'s `clean`/`behind-no-conflict`
+  routing) rather than requiring it, and a bare CI rerun after the base
+  moves can replay a `pull_request`-triggered run's stale merge-ref
+  (`docs/idd-helper-scripts.md`'s `baseAdvancedSinceMergeBase` note).
+  F2/F3 re-fetch the current HEAD's own status but do not themselves
+  validate that HEAD against the latest `master`. Accepting that
+  narrower, textual-conflict-freeness-only protection is the actual
+  cost of avoiding the GitHub-enforced cascade.
+- **Verification** (2026-08-14, live evidence): before this rule
+  existed, PR #113 (issue #103) sat at `mergeStateStatus: UNSTABLE` with
+  no enforced required checks. After registering the rule, #113 (all
+  five contexts green, including a converged `idd-advisory-convergence`)
+  flipped to `mergeStateStatus: CLEAN`, and concurrently PR #114 (issue
+  #105), whose `idd-advisory-convergence` run had concluded `FAILURE`
+  (not yet converged), showed `mergeStateStatus: BLOCKED` — confirming
+  a PR whose advisory review has not converged is actually blocked from
+  merging by the required check, not merely flagged as advisory.
+- **`ciGate.trustEmptyProtectionReads`**: `true` (repository override;
+  distributed default is `false`). This repository has no classic
+  branch protection at all — only the `main`/`features` rulesets above
+  — so `GET .../branches/master/protection` genuinely 404s. Per this
+  repository's own [Credential Scope](#credential-scope) policy, no
+  separate least-privilege worker identity exists: every IDD session in
+  this repository (interactive or delegated) authenticates as the same
+  account that registered the ruleset above. Read with `--include`
+  under that exact identity: the ruleset read returns a raw `HTTP/2.0
+  200 OK`, and the classic-protection read returns a raw `HTTP/2.0 404
+  Not Found` (not a `403` reported as `404`) — confirmed
+  2026-08-14. This is not a permission-scope artifact for *this*
+  identity; a differently-scoped credential without `administration:
+  read` (for example, a third-party review bot's own sandboxed
+  credential, unrelated to any identity that actually runs
+  `pre-merge-readiness` in this repository) could still see a `403` on
+  the same endpoint, which is exactly the ambiguity
+  `idd-ci.instructions.md`'s required-check-discovery step 4 is
+  designed to fail closed on for an *unverified* identity — it does not
+  apply once the specific identity in use has been read-verified, as
+  here. That step otherwise treats every `404` on that endpoint as
+  fail-closed regardless of what the ruleset read already found, which
+  would have permanently blocked `pre-merge-readiness` even with the
+  required-status-checks rule above fully satisfied. Opting in here is
+  the documented escape hatch for exactly this verified case.
 
 ### Credential Scope
 

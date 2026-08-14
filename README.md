@@ -22,7 +22,6 @@ setup.cmd                        ← single entry point
             ├─ Phase 4: Architecture-conditional packages
             ├─ Phase 5: Post-install             (libs/post-install.ps1)
             │    ├─ fnm → Node.js 20/22/24/25
-            │    ├─ cargo → git-vrc
             │    ├─ dotnet tool → VPM CLI
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → local CA
@@ -70,7 +69,7 @@ The script will:
    **`winget import`** (degraded mode) and report any resources it
    could not apply
 4. Install remaining packages via Chocolatey (fonts and audio drivers)
-5. Run post-install setup (Node.js, Rust/cargo packages, Unity, Docker images)
+5. Run post-install setup (Node.js, VPM CLI, Unity, mkcert, Docker images)
 6. Enable Microsoft Update and run Windows Update
 
 Boxstarter handles reboots automatically. If a reboot interrupts the process,
@@ -113,7 +112,6 @@ the full list. Key categories:
 ### Via Post-Install Scripts
 
 - **Node.js** (via fnm): v20, v22, v24 (LTS), v25 (Current)
-- **git-vrc** (via cargo): VRChat Git integration
 - **VPM CLI** (via dotnet tool): VRChat package manager
 - **Unity 2022.3.22f1**: Required by VRChat SDK/VCC
 - **mkcert**: Local CA for HTTPS development

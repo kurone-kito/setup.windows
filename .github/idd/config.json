@@ -48,6 +48,7 @@
     "externalChecks": {
       "waivable": [{ "selector": "idd-advisory-convergence" }]
     },
-    "externalCheckWaivers": { "mode": "maintainer-authorized" }
+    "externalCheckWaivers": { "mode": "maintainer-authorized" },
+    "trustEmptyProtectionReads": true
   }
 }
