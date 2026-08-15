@@ -15,6 +15,13 @@ plain, hand-maintained index instead of a generated one.
 
 ## Reference Map
 
+The table below is maintained by hand in this repository. The
+`audit:generated` marker around it is retained only as an
+import/template-drift aid for future pin bumps (it lets a diff against
+upstream's generated version locate the matching block quickly) — no
+local tooling in this repository actually regenerates this table from
+it.
+
 <!-- audit:generated id=idd-template-docs-index-okf-table -->
 
 <!-- dprint-ignore-start -->
