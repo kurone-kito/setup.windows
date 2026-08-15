@@ -121,7 +121,7 @@ clone itself instead of the adopter repository). `$CLONE_DIR` and
 `$TARGET_REPO` are shell variables the executor sets at run time, not
 angle-bracket author-time fills — keep them as shell variables (never
 angle brackets) in the generated issue body, since the issue-authoring
-release contract's checklist requires no unsubstituted placeholder
+release contract's checklist requires no unsubstituted placeholders
 remain before the authoring hold is released
 (`.claude/skills/issue-authoring/references/contract.md`, "Authoring
 hold and release" — this repository's install location, matching the
@@ -194,7 +194,7 @@ defaults to the current directory, which would import into the clone
 itself if left unset while running from inside it. `$CLONE_DIR` and
 `$TARGET_REPO` stay shell variables (never angle brackets) in the
 published issue body: the release checklist requires no unsubstituted
-placeholder remain before the authoring hold is released, and these
+placeholders remain before the authoring hold is released, and these
 have nothing to substitute until the executor runs the command. The
 single-file direct download documented in `template-distribution.md`'s
 "Profile-conditional helper files" section supplies only
