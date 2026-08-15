@@ -353,12 +353,35 @@ race-safe checks below:
    forced-handoff, where steps 1–4 see nothing to disagree about (both
    `{claim-id}`s genuinely match). No marker posted: treat as passed.
 
-If any check fails, treat the claim as contested. Return to Discover
-using the same selection mode that produced this target and pick the
-next eligible issue (orphan-first: continue the A0-O capable path;
-roadmap mode: continue the A3-ready path). Do not retry the same issue.
-For explicit-target A0-T runs, report the contested claim and stop
-unless the operator has explicitly switched to normal discovery.
+If any check fails, treat the claim as contested.
+
+**Release before walking away when you provably own the active claim
+(step 4 failure only).** When steps 1–3 passed — the active claim
+genuinely uses your `{claim-id}` — and step 4 is the sole failing check
+(a trusted competing `claimed-by` with a different `{claim-id}` landed
+in a strictly later `created_at` second), post `unclaimed-by` for your
+own `{agent-id}` / `{claim-id}` (see
+[Unclaim format](idd-overview-core.instructions.md#unclaim-format))
+before returning to Discover. You provably hold the active claim, so
+releasing it is safe and restores the issue to unclaimed — without this
+release, the issue would stay locked against mechanical reclaim
+(including the 24 h stale-takeover) with no live owner, since the
+losing side of a different-second claim race never activates. Verify
+step 5 independently before releasing — do not infer "step 4 only"
+merely from a helper's single `reason` field, since a combined
+`later-competing-claim-and-activation-nonce-mismatch` verdict means
+step 5 also failed. Do **not** release whenever step 5
+(activation-nonce) fails, alone or together with step 4: a nonce
+mismatch means a second, independent activation shares your exact
+`{agent-id}` / `{claim-id}` pair, and releasing it would also evict
+that other session's legitimate claim.
+
+Return to Discover using the same selection mode that produced this
+target and pick the next eligible issue (orphan-first: continue the
+A0-O capable path; roadmap mode: continue the A3-ready path). Do not
+retry the same issue. For explicit-target A0-T runs, report the
+contested claim and stop unless the operator has explicitly switched to
+normal discovery.
 
 Once verified, record this `{claim-id}` as your current claim token for
 the rest of the workflow.

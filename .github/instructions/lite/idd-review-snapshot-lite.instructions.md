@@ -18,17 +18,15 @@ standard review-snapshot instructions instead.
 
 ## Triage hand-off boundary (E4-E8 excluded)
 
-This file only fetches, freezes, and routes ReviewItems_snapshot. It
-never classifies findings, scores severity, or decides Accept/Reject —
-those are E4-E8 judgment calls, excluded from every lite profile, the
-same boundary `idd-review-fix-lite.instructions.md` states on its own
-downstream side (it only executes dispositions an E4-E8 pass already
-made).
+This file only fetches, freezes, and routes ReviewItems_snapshot — it
+never classifies findings, scores severity, or decides Accept/Reject;
+those are excluded E4-E8 judgment calls, the same boundary
+`idd-review-fix-lite.instructions.md` states on its downstream side.
 
 1. E3's non-empty-list outcome hands off to
-   `idd-review-triage.instructions.md` (E4-E8). A stronger session or a
-   human runs that pass — this lite file never runs E4-E8 itself, even
-   when a finding looks trivial to classify.
+   `idd-review-triage.instructions.md` (E4-E8) for a stronger session
+   or a human — never run E4-E8 yourself, even for a trivial-looking
+   finding.
 2. If you catch yourself judging severity, deciding Accept/Reject, or
    assigning a PATH before handing off to E4, stop and ask instead.
 
@@ -241,10 +239,11 @@ watermark. The same "nothing after the note" rule applies here too.
 
 ## E3 — Empty/non-empty routing
 
-- **ReviewItems_snapshot is empty** → proceed to the E-phase branch-sync
-  check in `idd-review-triage.instructions.md`.
-- **ReviewItems_snapshot is non-empty** → this lite session's job for
-  this PR ends here. Do not classify or disposition any item yourself
-  (see Triage hand-off boundary above); hand off to
+- **ReviewItems_snapshot is empty** → proceed to
+  `idd-pre-merge-lite.instructions.md` (F1), which covers the
+  branch-sync decision. Do not route this case directly to the
+  excluded `idd-review-triage.instructions.md`.
+- **ReviewItems_snapshot is non-empty** → this lite session's job ends
+  here (see Triage hand-off boundary above); hand off to
   `idd-review-triage.instructions.md` (E4) for a stronger session or a
   human to run.

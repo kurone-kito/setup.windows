@@ -305,7 +305,9 @@ hold/escalation path above.
 Schedule a wake, or background this wait only if the
 topology-safety condition holds (confirmed to route completion back to
 this turn); otherwise wait synchronously — see
-[wake-up discipline](idd-ci.instructions.md#wake-up-discipline).
+[wake-up discipline](idd-ci.instructions.md#wake-up-discipline) for
+the blocking commands and caveats; do not `run_in_background` this
+wait absent the confirmed condition above.
 
 Use `idd-ci.instructions.md` for the polling mechanics and timing. E15
 reuses the same resolved `ciWait.runningTimeout`,

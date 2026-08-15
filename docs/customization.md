@@ -200,6 +200,54 @@ merge-ready before the selected acknowledgement appears. Branch
 protection conversation-resolution requirements still override any local
 profile.
 
+## Authoring Language
+
+The distributed default is fail-safe: an absent `authoringLanguage`
+behaves as `en`, codifying today's actual emergent behavior, so no
+adopter's existing setup changes. Set `authoringLanguage` in
+`.github/idd/config.json` to make issue/PR body prose language an
+explicit, schema-validated choice instead:
+
+- A fixed BCP-47-shaped language tag (for example `en`, `ja`, `fr`,
+  `zh-Hans`, `pt-BR`) makes every newly-authored issue and PR body's
+  human-readable prose use that language.
+- The literal `match-source` matches the operator's live conversational
+  language during an interactive/hearing session (issue-authoring,
+  onboarding), and the language of the issue body being implemented
+  during unattended execution with no live operator (for example
+  PR-submit implementing an already-claimed issue).
+
+**Scope carve-out**: `authoringLanguage` governs human-readable prose
+sections only (Background, Proposed change, Acceptance criteria, PR
+descriptions, roadmap Goal/Tracks/Success criteria, and similar). It
+never changes any HTML-comment marker's machine-parsed format, nor any
+visible-line mirror whose exact wording a mechanical regex parses —
+concretely, the autopilot-suitability and effort footers' visible lines
+(`_Autopilot suitability: N / 5 ...` / `_Effort: S|M|L ...`), which
+upstream's `src/scripts/audit-authored-issue.mts` (in the
+`kurone-kito/idd-skill` source repository — this repository has no
+`src/` tree of its own) matches against a fixed English-phrase regex,
+must stay in their exact canonical English wording regardless of the
+configured language.
+
+**Cross-references**:
+
+- Adjacent bot configs keep their own independent language settings —
+  for example this repository's own `.coderabbit.yaml` sets
+  `language: en` — so an operator switching `authoringLanguage` away
+  from English should align those separately.
+- `idd-review-snapshot.instructions.md`'s existing "detect the PR body's
+  language for the visible note" rule already composes correctly with
+  this field with no code change required: now that PR-submit applies
+  `authoringLanguage` (`kurone-kito/idd-skill#1982`), that rule keeps
+  following whatever language the PR body ends up in.
+
+**Landed vs. pending**: this field is schema-defined and documented now.
+PR-submit's D3 "Create PR" step applies it to PR body prose
+(`kurone-kito/idd-skill#1982`), and the issue-authoring skill's contract
+applies it to drafted issue prose (`kurone-kito/idd-skill#1983`); the
+distributed discover and claim runtime does not read or apply it yet.
+
 ## Policy Constants
 
 Start with [IDD policy constants](policy-constants.md) when a

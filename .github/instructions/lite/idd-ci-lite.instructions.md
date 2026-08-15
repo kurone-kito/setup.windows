@@ -20,9 +20,10 @@ CI-polling instructions instead of this file.
 
 - A required helper is missing, fails, returns invalid JSON, or
   disagrees with live state.
-- Any required-check discovery read below is unreadable (a confirmed
-  `403`, or an untrusted `404`) — the ruleset list, any per-ruleset
-  detail call, or the branch-protection read.
+- `requiredChecks.status` is `source-pinned` (a real, pinned gating
+  check whose provenance the helper cannot verify — its name may be
+  unresolvable, or resolvable-and-passing but not confirmably from the
+  pinned source).
 - A non-pass check is not clearly code-caused or recognized
   infra-flaky/pre-existing, except the sole-failing
   `idd-advisory-convergence` exception the caller's own routing names.
@@ -36,8 +37,9 @@ CI-polling instructions instead of this file.
 ## Helper-first canonical path
 
 1. Resolve policy: `node scripts/ci-wait-policy.mjs` (append
-   `--rerun-count <count>` for the rerun-budget decision). Resolve the
-   package-manager / ephemeral-npx equivalent from
+   `--run-id <run-id>` — preferred, derives the rerun budget from
+   `run_attempt` — or `--rerun-count <count>` as a manual fallback).
+   Resolve the package-manager / ephemeral-npx equivalent from
    `docs/idd-helper-scripts.md`. This helper already resolves
    `ciWait.*` from `.github/idd/config.json` and emits the final
    `runningTimeout` / `generationTimeout` / `rerunPolicy` values
@@ -68,24 +70,28 @@ hand:
 
 ## Required-check discovery
 
-Before interpreting checks, determine the required-check set:
+Never derive this by hand — the Helper-first canonical path's
+`ci-wait-state` call already resolves the required-check set as
+`requiredChecks`; manual `gh api .../rulesets` / `.../protection`
+derivation belongs only to `idd-ci.instructions.md` (the full-size
+CI-polling shared helper file), never this one. Read
+`requiredChecks.status`:
 
-1. `gh api repos/{owner}/{repo}/rulesets --paginate`, then
-   `gh api repos/{owner}/{repo}/rulesets/{ruleset-id}` for each id
-   returned.
-2. `gh api repos/{owner}/{repo}/branches/{url-encoded-base-branch}/protection`.
-3. A `403` on any of these reads is unreadable — stop and ask; never
-   substitute an empty result. Treat a `404` the same as a `403`
-   (unreadable) unless `.github/idd/config.json` sets
-   `ciGate.trustEmptyProtectionReads: true`, in which case a `404`
-   means genuinely empty.
-4. Union the enforcing-ruleset checks and branch-protection checks from
-   the genuine (non-unreadable) reads only.
-5. If neither source yields a required-check set and no read was
-   unreadable, derive from the PR head SHA's actual runs instead: all
-   passing → proceed to the caller's on-success target; any pending →
-   keep polling; any failing, or no runs at all → stop and ask. Never
-   treat an empty required-check set as a vacuous pass.
+- `success`: every required check passed — proceed per Interpretation
+  below.
+- `pending` or `missing`: keep polling (a required check is still
+  running, or one expected has not posted a result yet).
+- `failing`: at least one required check is non-passing — apply
+  Interpretation below to it.
+- `no-required-checks`: a repository can legitimately have none while
+  still running normal CI — fall back to `checks[]`'s own per-check
+  `status` (already bucketed by the helper as `success` / `pending` /
+  `failure` / `unknown`, distinct from step 2's raw-state normalization
+  below): every entry `success` → proceed; any `pending`/`unknown` →
+  keep polling (`unknown` isn't settled yet, so treat it like
+  `pending`); any `failure`, or `checks[]` itself empty → stop and ask.
+  Never treat an empty required-check set as a vacuous pass.
+- `source-pinned`: stop and ask (see Stop-and-ask conditions above).
 
 ## Polling algorithm
 
@@ -97,7 +103,9 @@ Before interpreting checks, determine the required-check set:
    Commit-Status `expected` → running; `failure` / `cancelled` /
    `timed_out` / `action_required` / `startup_failure` / `stale` →
    non-pass.
-3. Evaluate only checks in the required-check set.
+3. Evaluate only checks in the required-check set — except the
+   `no-required-checks` fallback above, which evaluates every present
+   check instead.
 4. Repeat at a reasonable interval until a terminal outcome below is
    reached. Anchor every timeout to the check's own server `startedAt`,
    never a client clock.

@@ -87,6 +87,14 @@ the manual quiet-window check described in S2.
   stalled-session takeover case. Return to
   `idd-resume.instructions.md` Step 1 and use the forced-handoff route
   instead. Do not apply the quiet-window or stale-threshold gates here.
+- If the active claim satisfies Step 0's full operator-present release
+  condition in `idd-resume.instructions.md` — including that this
+  session has received the operator-supplied input — this is not a
+  stalled-session takeover case either. Return to
+  `idd-resume.instructions.md` Step 0 and use that path instead. Do not
+  apply the quiet-window or stale-threshold gates here. Pause evidence
+  alone, with the input not yet received, does not match this bullet;
+  fall through to the next.
 - If the active claim belongs to another `{claim-id}`, continue.
 
 ### S2 — Quiet-window check (stall evidence, not ownership transfer)

@@ -33,8 +33,8 @@ post via direct HTTP `POST` with a JSON body; see
 `docs/idd-helper-scripts.md` for the full `gh api` pitfalls. When
 helper runtime is enabled, the `post-idd-marker` helper (`--type claim
 --target issue <number> --apply` plus the claim fields) posts this
-marker through that JSON path (dry-run, posting nothing, without
-`--apply`); the direct `POST` stays the canonical fallback.
+marker through that JSON path (dry-run without `--apply`); the direct
+`POST` is the fallback.
 
 Every new HTML-comment operational marker must include a short visible
 note after the token: `review-watermark`/`review-baseline` use the
@@ -52,11 +52,9 @@ but never create new hidden-only claim comments.
   and is the portable ownership token used with trusted actor and
   session-record checks. Generate a fresh value on every fresh claim or
   stale takeover. Reuse the same `{claim-id}` only for heartbeats of
-  that already-verified claim. A matching `{agent-id}` is never
-  ownership proof by itself, because separate live sessions can share
-  the same agent ID. Reading an existing `{claim-id}` from issue comments
-  during discovery or resume does not by itself prove ownership; the
-  current session must have already recorded that token before the
+  that already-verified claim. Reading an existing `{claim-id}` from
+  issue comments does not by itself prove ownership; the current
+  session must have recorded that token before the
   revalidation step.
 - `{prior-claim-id}` is `none` for a fresh claim on an unclaimed issue.
   For a stale-claim takeover, set it to the currently active claim's
@@ -75,8 +73,7 @@ _{agent-id}: issue claim released — IDD automation marker. Do not edit._
 When helper runtime is enabled, post this with `post-idd-marker --type
 unclaim --target issue <number> --apply` (plus agent-id / claim-id /
 timestamp; see `docs/idd-helper-scripts.md`); without `--apply` it is
-dry-run. The direct HTTP `POST` above is the fallback when helper
-runtime is unavailable.
+dry-run. The direct HTTP `POST` above is the fallback.
 
 ## Trusted marker actors
 
@@ -223,6 +220,9 @@ Out of scope and explicitly **not** blocked:
 - F4 post-merge cleanup (F4 itself removes the sibling worktree;
   subsequent local `main` updates run from the primary worktree by
   design).
+- [Operator-present release](idd-resume.instructions.md#operator-present-release)
+  steps 1-2 (pre-claim for the resuming session; the issue's own
+  active claim is untouched until step 2).
 
 The claim and cwd checks are read-only and pre-mutation; the lock
 acquisition is the final local guard. When in scope, all of these checks
@@ -297,11 +297,11 @@ file that matches your current situation.
 | --- | --- |
 | Starting fresh (no active claim) | `idd-discover.instructions.md`, then `idd-claim.instructions.md` |
 | Starting fresh with one explicit issue target | `idd-discover.instructions.md` A0-T, then `idd-claim.instructions.md` |
-| Resuming after crash / rate-limit / handoff | `idd-resume.instructions.md` |
+| Resuming after crash / rate-limit / handoff / operator-present deliberate pause | `idd-resume.instructions.md` |
 | Claimed, branch exists, no PR yet | `idd-work.instructions.md` |
 | PR open, CI running, no reviews yet | `idd-pr-submit.instructions.md` |
 | PR open, CI running, reviews exist | `idd-review-snapshot.instructions.md` (E1–E3) |
-| PR open, CI passed, no reviews yet | `idd-review-snapshot.instructions.md` (E3 empty-list → merge) |
+| PR open, CI passed, no reviews yet | `idd-review-snapshot.instructions.md` (E3 empty-list → branch-sync → F1) |
 | PR open, CI passed, reviews pending | `idd-review-snapshot.instructions.md` |
 | Snapshot done, ReviewItems_snapshot non-empty | `idd-review-triage.instructions.md` (E4–E8) |
 | Review feedback accepted, pushing fixes | `idd-review-fix.instructions.md` |

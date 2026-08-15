@@ -82,7 +82,16 @@ outside the selected roadmap graph.
   inside the recursive roadmap graph, preserve that evidence and treat
   the affected path as unresolved until the graph can be interpreted
   safely. Do not guess at a closure order when the traversal graph is
-  ambiguous.
+  ambiguous. **Root-preserving exemption for cycles only** (duplicate
+  references are unaffected): define the cycle's **segment** as the
+  suffix of the recorded path starting at the first occurrence of the
+  back-edge target. When the segment excludes the roadmap under audit
+  AND every node in it is CLOSED, treat the cycle as informational
+  provenance instead of a blocker, regardless of relationship type —
+  such a loop has no closure order left to get wrong. A cycle whose
+  segment includes the audited roadmap, or holds any node that is open,
+  inaccessible, unresolved, or absent from the traversal's node set,
+  still blocks.
 - If all referenced child and descendant work is closed or otherwise
   complete, compare the roadmap success criteria against the closed
   child issues, linked merged PRs, task-list state, follow-up comments,

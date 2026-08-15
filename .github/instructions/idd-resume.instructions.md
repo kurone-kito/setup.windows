@@ -1,9 +1,12 @@
 # IDD — Resume Phase
 
 Use this file when taking over a crashed or rate-limited session with no
-prior session context. Read `idd-overview-core.instructions.md` for shared
-definitions (claim format, stale threshold, abort, hold). For full narrative
-detail on each routing branch, see
+prior session context, or when a fresh session resumes an issue whose prior
+session left an active claim after its own deliberate, announced pause (see
+[Operator-present release](#operator-present-release)
+below). Read `idd-overview-core.instructions.md` for shared definitions
+(claim format, stale threshold, abort, hold). For full narrative detail on
+each routing branch, see
 [`docs/idd-resume-detail.md`](../../docs/idd-resume-detail.md).
 
 Resume stale checks use the `claim-stale-age` policy default from
@@ -32,13 +35,14 @@ Collect all signals before routing. Use GitHub server timestamps only.
 
 Evaluate in order; take the first matching row.
 
-| Condition                                                                                 | Route                                                              |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Issue closed or PR merged                                                                 | Step 1 (cleanup only)                                              |
-| `forced-handoff: human-gated` + valid evidence matching active/inheritable state          | Step 1 forced-handoff path (skip stall check)                      |
-| `forced-handoff: human-gated` + evidence exists but mismatches live claim/branch/PR state | STOP — report mismatch; do not claim, push, or mutate review state |
-| Non-owned active claim + no valid forced-handoff evidence                                 | `idd-resume-stall.instructions.md`; then Step 1 if unblocked       |
-| Otherwise                                                                                 | Step 1                                                             |
+| Condition                                                                                                               | Route                                                              |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Issue closed or PR merged                                                                                               | Step 1 (cleanup only)                                              |
+| `forced-handoff: human-gated` + valid evidence matching active/inheritable state                                        | Step 1 forced-handoff path (skip stall check)                      |
+| `forced-handoff: human-gated` + evidence exists but mismatches live claim/branch/PR state                               | STOP — report mismatch; do not claim, push, or mutate review state |
+| Non-owned active claim + evidence satisfying the operator-present release path below + operator-supplied input received | Operator-present release path (below); skip the stall file         |
+| Non-owned active claim + no valid forced-handoff evidence                                                               | `idd-resume-stall.instructions.md`; then Step 1 if unblocked       |
+| Otherwise                                                                                                               | Step 1                                                             |
 
 Autopilot and unattended agents must never invent, request, or broaden
 forced handoff; they may only consume already-recorded human-gated evidence.
@@ -63,6 +67,56 @@ If stalled-session routing returns hold/inconclusive, stop.
   `instructions-only` (no helper runtime vended), the operator instead
   posts the manual consent text and marker documented in
   `docs/customization.md` themselves.
+
+### Operator-present release
+
+Use this path only when the non-owned active claim carries a
+claimant-authored comment, postdating that claim's latest valid
+`claimed-by` `created_at`, explicitly recording a deliberate pause and
+the awaited input, with no later trusted claimant activity (heartbeat,
+branch/PR movement, or claimant-authored comment/review activity --
+this path's own step-1 input comment excepted) postdating that
+comment — later activity means work resumed, so fall back to the
+stale-takeover procedure in `idd-resume-stall.instructions.md`
+instead, per the shared fail-closed default. The needs-decision label
+(`labels.needsDecisionLabelName`) can corroborate but never substitute
+-- automation can apply it unattended. This session must have received
+the awaited operator input. Mere silence or staleness does not qualify
+either.
+
+Steps 1-2 are pre-claim actions, like a fresh A5 claim's own pre-claim
+state; the shared claim revalidation gate's own-claim-id precondition
+attaches from step 4, not before. The operator's chat input is never
+itself the release: it is recorded as the separate normal comment in
+step 1, and the trusted-marker-actor `unclaimed-by` in step 2 (rule 5)
+alone carries the canonical marker body (same nothing-appended rule as
+other operational markers) and performs the release. This path is
+unrelated to the TTY-gated forced-handoff safeguard above: it opts
+into no `forcedHandoff` policy and requires no `idd-force-handoff`
+`y/N` confirmation, and it does not loosen that safeguard.
+
+Sequence:
+
+1. Post the operator-supplied input (with any acceptance-criteria
+   amendment it implies) as a normal issue comment. If a configured
+   needs-decision/blocked-by-human label is present, also ask the
+   operator to remove it -- a human action only, never this session.
+2. Re-read the issue and confirm the active claim and the predicate
+   above still hold — stop and restart if either changed since Step 0 —
+   then post a trusted-marker-actor-authored `unclaimed-by` matching the
+   held claim's exact `{agent-id}` and `{claim-id}` (Claim-state
+   parsing rule 5, `idd-claim.instructions.md`). GitHub comments have no
+   compare-and-swap, so this narrows, not closes, the recheck-to-release
+   window; an accepted, bounded risk, since a resumed claimant's own
+   next revalidation check surfaces the loss rather than staying silent.
+3. Re-read the issue and confirm it now parses as unclaimed — the
+   release registered — before continuing; if not, stop and restart.
+4. Post a normal fresh A5 claim with `supersedes: none`, then continue
+   to Step 1.
+
+The 30-minute quiet window and 24h stale threshold in
+`idd-resume-stall.instructions.md` surface an _unannounced_ stall
+only; this path's own already-announced pause waits on neither.
 
 ## Step 1 — Identify claim state
 

@@ -66,7 +66,7 @@ recorded in `.github/idd/config.json`)
   hand-writing marker comments:
 
   ```sh
-  npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/4e8c7043edcb00dd8447dee83e7a17e5b2604d5d \
+  npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/cac92e3eb21d978e1e039a8d88cb7d50fd9d640e \
     idd-external-check-waiver --pr <number> \
     --check idd-advisory-convergence \
     --reason "<short reason>" \
@@ -197,7 +197,7 @@ Helper scripts run via `npx` against the pinned upstream package spec
 into this repository or installed as a project dependency:
 
 ```sh
-npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/4e8c7043edcb00dd8447dee83e7a17e5b2604d5d <idd-command>
+npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/cac92e3eb21d978e1e039a8d88cb7d50fd9d640e <idd-command>
 ```
 
 ### Issue-Author Approval Gate
@@ -255,7 +255,7 @@ clone.
 Template files and helper scripts are pinned to:
 
 ```text
-kurone-kito/idd-skill @ 4e8c7043edcb00dd8447dee83e7a17e5b2604d5d
+kurone-kito/idd-skill @ cac92e3eb21d978e1e039a8d88cb7d50fd9d640e
 ```
 
 When a future change bumps this pin, treat it as a **named-gap
