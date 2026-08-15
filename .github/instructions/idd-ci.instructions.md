@@ -194,7 +194,7 @@ does **not** reliably refresh the PR's required-check rollup for current
 HEAD — a manually dispatched run has no `pull_request` context to
 associate with the PR's HEAD SHA (full investigation: this repo's
 dogfooded
-[`.github/workflows/idd-advisory-convergence.yml`](https://github.com/kurone-kito/idd-skill/blob/main/.github/workflows/idd-advisory-convergence.yml)
+[`.github/workflows/idd-advisory-convergence.yml`](https://github.com/kurone-kito/idd-skill/blob/cac92e3eb21d978e1e039a8d88cb7d50fd9d640e/.github/workflows/idd-advisory-convergence.yml)
 header comment — not present in the portable stub this template
 ships). For a stuck or stale rollup entry, rerun the _existing_
 PR-linked run (`gh run rerun <run-id>`) instead of `workflow_dispatch`.
