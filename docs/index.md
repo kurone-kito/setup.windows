@@ -5,11 +5,13 @@ are an agent working in this repository for the first time, start with
 [Getting started](getting-started.md) or [Core concepts](concepts.md);
 otherwise use the table below to find a page by topic.
 
-Every page in this bundle follows the OKF (Open Knowledge Format)
-frontmatter convention this table is generated from — see
-[Customizing IDD § Docs Bundle Frontmatter Convention
-(OKF)](customization.md#docs-bundle-frontmatter-convention-okf) before
-adding a page of your own.
+Upstream (`kurone-kito/idd-skill`) generates this table from an OKF
+(Open Knowledge Format) frontmatter block on each page. This
+repository's own `docs/` bundle does not carry that frontmatter — it
+was intentionally stripped from imported pages to match this
+repository's existing plain-`# Heading`-only convention (no local
+`docs-bundle-frontmatter` checker is configured) — so this table is a
+plain, hand-maintained index instead of a generated one.
 
 ## Reference Map
 

@@ -99,13 +99,14 @@ you read were pinned.
 
 **If the confirmed helper runtime profile is `vendored-node`**, its
 profile-conditional helper bundle needs more than a pin. The
-single-file direct download in
-[Profile-conditional helper files](template-distribution.md#profile-conditional-helper-files-vendored-node)
-supplies only `minimize-superseded-markers.mjs`, not the complete
-`vendored-node` bundle — per that section, getting every file the
-profile requires needs a full `idd-skill` clone (not just the
-`idd-template/` subtree), checked out at the same `<tag-or-sha>`, with
-this run from it:
+single-file direct download in upstream's
+[Profile-conditional helper files](https://github.com/kurone-kito/idd-skill/blob/main/idd-template/docs/onboarding/template-distribution.md#profile-conditional-helper-files-vendored-node)
+section (not carried into this repository's own copy of
+`template-distribution.md`, which does not use `vendored-node`) supplies
+only `minimize-superseded-markers.mjs`, not the complete `vendored-node`
+bundle — per that section, getting every file the profile requires
+needs a full `idd-skill` clone (not just the `idd-template/` subtree),
+checked out at the same `<tag-or-sha>`, with this run from it:
 
 ```sh
 node scripts/idd-onboard.mjs --import \
@@ -380,7 +381,7 @@ examples ("start issue authoring to implement {inferred gap}", "run the
 IDD loop"). Derive `{inferred gap}` and the other prompt content using
 the same repository-evidence-read method the optional Dry-run readiness
 report already performs
-([Dry-run — Readiness assessment](../../ONBOARDING.md#dry-run--readiness-assessment))
+([Dry-run — Readiness assessment](https://github.com/kurone-kito/idd-skill/blob/main/idd-template/ONBOARDING.md#dry-run--readiness-assessment))
 — detected package manager, missing prerequisites, and so on — rather
 than inventing a new inference mechanism. Run that read **fresh, after
 this merge**, not reused from the pre-import dry-run's stored output:
