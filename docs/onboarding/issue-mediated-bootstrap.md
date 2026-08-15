@@ -87,7 +87,10 @@ independent fetch loops that each need pinning separately:
   `?ref=<tag-or-sha>` to that endpoint;
 - the `curl` fallback loop uses a hardcoded `Base URL:`
   (`https://raw.githubusercontent.com/kurone-kito/idd-skill/main/idd-template/`)
-  — pin it by replacing `main` with the same `<tag-or-sha>` there.
+  — pin it by replacing `main` with the same `<tag-or-sha>` there, i.e.
+  `https://raw.githubusercontent.com/kurone-kito/idd-skill/main/idd-template/`
+  becomes
+  `https://raw.githubusercontent.com/kurone-kito/idd-skill/<tag-or-sha>/idd-template/`.
 
 Option B copies whatever revision is currently checked out in the local
 clone — pin it by checking out that exact tag or SHA before running
