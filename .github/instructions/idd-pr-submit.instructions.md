@@ -314,8 +314,12 @@ completion.
    the output as binary:
 
    ```sh
-   git log origin/main..HEAD --pretty=format:'%H%n%B%n===commit-boundary==='
+   git log origin/HEAD..HEAD --pretty=format:'%H%n%B%n===commit-boundary==='
    ```
+
+   Use `origin/HEAD` (the remote's own default-branch pointer), not a
+   hardcoded `origin/main`, so this command works unchanged on
+   repositories whose default branch is `master` or any other name.
 
    For each commit's full message, search using step 3's same keyword
    alternation, generalized to any issue number instead of the fixed

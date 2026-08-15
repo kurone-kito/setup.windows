@@ -306,18 +306,20 @@ Before any mutating action in F3, apply the
    **Duplicate-success-record skip rule**: before posting any evidence
    comment below, skip it if the PR already carries a
    `<!-- idd-cleanup-evidence:` comment recording a successful outcome
-   (`applied` or `clean`) **whose author is a trusted marker actor**
-   (`github-actions[bot]`, the identity `post-merge-cleanup.yml` posts
-   under, or a configured `trustedMarkerActors` login) — for example one
-   the `post-merge-cleanup` workflow posted within seconds of the merge —
-   to avoid a duplicate success record. An untrusted commenter's
-   marker-prefixed comment never counts as evidence and must not suppress
-   this post — the same trust-scoping every other IDD operational marker
-   already applies (see the shared
+   (`applied` or `clean`) **whose author is a trusted marker actor** —
+   the current session actor, a configured `trustedMarkerActors` login,
+   or another configured trusted bot/GitHub App login for IDD automation
+   (see the shared
    [Trusted marker actors](idd-overview-core.instructions.md#trusted-marker-actors)
-   rule). Otherwise post (a fresh success record, or a correction of an
-   existing `failed` / `incomplete` / `permission-blocked` record, or a
-   correction of an untrusted-author record).
+   rule; the identity `post-merge-cleanup.yml` posts under, commonly
+   `github-actions[bot]`, only qualifies when the repository has
+   actually configured it as trusted) — to avoid a duplicate success
+   record. An untrusted commenter's marker-prefixed comment never counts
+   as evidence and must not suppress this post — the same trust-scoping
+   every other IDD operational marker already applies. Otherwise post (a
+   fresh success record, or a correction of an existing `failed` /
+   `incomplete` / `permission-blocked` record, or a correction of an
+   untrusted-author record).
 
    Evaluate the dry-run `status` field (this is a dry-run status; apply
    mode emits different values and is never invoked unless dry-run
