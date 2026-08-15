@@ -718,14 +718,6 @@ properties:
         id: Fastfetch-cli.Fastfetch
         source: winget
 
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.pstop
-      directives:
-        description: pstop — system information tool
-      settings:
-        id: marlocarlo.pstop
-        source: winget
-
     # ================================================================
     # CLI — Binary tools
     # ================================================================
