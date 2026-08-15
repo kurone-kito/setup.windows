@@ -69,7 +69,6 @@
         { "PackageIdentifier": "vim.vim" },
         { "PackageIdentifier": "Neovim.Neovim" },
         { "PackageIdentifier": "Fastfetch-cli.Fastfetch" },
-        { "PackageIdentifier": "marlocarlo.pstop" },
         { "PackageIdentifier": "7zip.7zip" },
         { "PackageIdentifier": "Gyan.FFmpeg" },
         { "PackageIdentifier": "ImageMagick.ImageMagick" },

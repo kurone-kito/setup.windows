@@ -5,7 +5,6 @@
       "Packages": [
         { "PackageIdentifier": "jdx.mise" },
         { "PackageIdentifier": "Fastfetch-cli.Fastfetch" },
-        { "PackageIdentifier": "marlocarlo.pstop" },
         { "PackageIdentifier": "twpayne.chezmoi" },
         { "PackageIdentifier": "hpjansson.Chafa" },
         { "PackageIdentifier": "ImageMagick.ImageMagick" },

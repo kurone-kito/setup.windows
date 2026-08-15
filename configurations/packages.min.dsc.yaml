@@ -64,13 +64,6 @@ properties:
       settings:
         id: Fastfetch-cli.Fastfetch
         source: winget
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pstop-htop-for-windows
-      directives:
-        description: pstop (htop for Windows)
-      settings:
-        id: marlocarlo.pstop
-        source: winget
 
     # =======================================================================
     # Install the CLI configuration tools
