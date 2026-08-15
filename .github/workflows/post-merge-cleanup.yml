@@ -88,7 +88,7 @@ jobs:
             echo "::error::PR_NUMBER is empty"
             exit 1
           fi
-          JSON=$(npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/4e8c7043edcb00dd8447dee83e7a17e5b2604d5d \
+          JSON=$(npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/cac92e3eb21d978e1e039a8d88cb7d50fd9d640e \
             idd-audit-pr-cleanup \
             --pr "$PR_NUMBER" \
             --apply \

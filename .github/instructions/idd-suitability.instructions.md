@@ -242,5 +242,17 @@ and treat as a PASS so work is not blocked by agent capability limits.
 classify as `invalid` and stop rather than treating it as a PASS.
 Failing open on a safety check is a concrete security risk.
 
+**Escape-hatch acceptance criteria**: an either/or acceptance-criteria
+bullet where one branch is a substantive change and the other reads as
+"or document the gap/tradeoff" is not a Check 7 (Verifiability) PASS by
+default just because the second branch sounds safer. Worked example:
+"Add retry logic to the flaky network call, or document why retries are
+unsafe here" leaves an unresolved subjective call — whether a piece of
+documentation adequately discloses a known gap has no automated check
+unless the acceptance criteria state exactly what the documentation must
+say. Evaluate the documentation branch on its own merits, not as an
+automatic pass; if it only restates the bullet without disclosing the
+tradeoff, classify as `needs-decision` rather than PASS.
+
 After A4.5 passes, proceed to `idd-claim.instructions.md`; for rejected
 candidates follow the Failure Outcomes section above.

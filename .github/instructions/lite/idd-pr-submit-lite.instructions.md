@@ -111,12 +111,12 @@ This section's rebase only applies **before the branch's first push**.
      package-manager-profile `idd:branch-conflict-state` command
      (resolve the exact command from `docs/idd-helper-scripts.md` if
      unsure). This is the same helper `idd-review-triage.instructions.md`
-     uses for its own branch-sync check (the standard `idd-pr-submit.
-     instructions.md` file does not reference it directly, since D1 there
-     only covers the pre-first-push case), so it already accounts for
-     whether a merely-`BEHIND` head actually needs a resync (branch
-     protection requiring an up-to-date head) rather than treating every
-     non-`CLEAN` state the same:
+     uses for its own branch-sync check (the standard
+     `idd-pr-submit.instructions.md` file does not reference it directly,
+     since D1 there only covers the pre-first-push case), so it already
+     accounts for whether a merely-`BEHIND` head actually needs a resync
+     (branch protection requiring an up-to-date head) rather than treating
+     every non-`CLEAN` state the same:
      - `syncRecommendation: "none"`: D1-D3 already happened in an
        earlier session. Run D3.5's closing-keyword check first — it is
        idempotent even if an earlier session already verified it, and
@@ -208,7 +208,14 @@ loop instead of returning to this D1 rebase path.
    background/rationale only when it materially affects review. Ground
    any background/rationale only in the issue discussion, commits,
    diff, or explicit operator instructions — omit rather than
-   speculate.
+   speculate. The prose sections follow the resolved `authoringLanguage` value
+   from `.github/idd/config.json` (fixed tag, the claimed issue's own body
+   language for `match-source`, or English if absent — see
+   [Authoring Language](../../../docs/customization.md#authoring-language));
+   this never changes any machine-parsed marker or exact-regex-matched visible
+   line, which stays canonical regardless — concretely, the closing keyword line
+   stays canonical English: GitHub's parser and D3.5's verification regex below
+   match only the English keyword forms.
 4. **Closing keyword**: write a plain-text line such as `Closes #N` for
    the claimed issue number, on its own line. GitHub recognizes these
    keyword forms (case-insensitive): `close`, `closes`, `closed`, `fix`,
@@ -364,18 +371,19 @@ than the run it supersedes. Once both have completed, the later
    external target rather than an Actions run; or its entry has `type:
    "check-run"` but an empty `url` (the upstream `detailsUrl` was
    itself absent). Otherwise resolve the rerun
-   decision from the
-   run's own history: `gh run view <run-id-from-url> --json attempt` —
-   GitHub's `attempt` starts at `1` for a never-rerun run, so pass
-   `attempt - 1` as `<count>` to `node scripts/ci-wait-policy.mjs
-   --rerun-count <count>`, never this wait's own memory. If it allows
+   decision directly from the run's own live state:
+   `node scripts/ci-wait-policy.mjs --run-id <run-id-from-url>`
+   (`--owner`/`--repo` when targeting a different repository) — this
+   derives the budget mechanically from the run's own `run_attempt`
+   field, never this wait's own memory. If it allows
    a rerun, rerun that check once as a **whole-run rerun, not
    `--failed`** (`gh run rerun <run-id-from-url>`) — a stalled check
    has no failed jobs to selectively rerun, only a run that never
    finished — and resume polling. If it is `hold`, or the timeout
    recurs after a rerun, stop per the condition above and post a hold
    note.
-7. **`success`**: proceed to `idd-review-snapshot.instructions.md` (E1).
+7. **`success`**: proceed to `idd-review-snapshot-lite.instructions.md`
+   (E1).
 8. **Exception**: if `idd-advisory-convergence` is the only
    non-passing required check, and that check's own run-log JSON verdict
    reports `pending: false` with outstanding review reasons (thread

@@ -82,7 +82,12 @@ Before any mutating action in F3, apply the
    is an instant state read, not itself a wait. If it escalates to a
    genuine wait, return to the F2 advisory bot wait check (backgrounds
    only if the topology-safety condition holds — confirmed to route
-   completion back to this turn — otherwise waits synchronously).
+   completion back to this turn — otherwise waits synchronously): no
+   single `gh` command blocks on Copilot review state, so run the AW
+   poll loop as a foreground wait, never via `run_in_background` absent
+   the confirmed condition — see
+   [idd-ci.instructions.md's Wake-up
+   discipline](idd-ci.instructions.md#wake-up-discipline).
    Re-fetch the HEAD SHA:
 
    ```sh
@@ -281,7 +286,8 @@ Before any mutating action in F3, apply the
      `OUTDATED` only after merge, once the marker is no longer needed
      for resume, advisory wait, or review-currency checks. Candidate
      prefixes: `<!-- review-watermark:`, `<!-- review-baseline:`,
-     `advisory-wait:`, `advisory-wait-recovery:`, `<!-- advisory-wait:`.
+     `advisory-wait:`, `advisory-wait-recovery:`, `<!-- advisory-wait:`,
+     `advisory-reroll:`.
    - Do not minimize comments with unresolved maintainer decisions,
      active holds, failed-CI context maintainers still need,
      non-operational human discussion, or content still in active F2/F3
@@ -300,11 +306,18 @@ Before any mutating action in F3, apply the
    **Duplicate-success-record skip rule**: before posting any evidence
    comment below, skip it if the PR already carries a
    `<!-- idd-cleanup-evidence:` comment recording a successful outcome
-   (`applied` or `clean`) — for example one the `post-merge-cleanup`
-   workflow posted within seconds of the merge — to avoid a duplicate
-   success record; otherwise post (a fresh success record, or a
-   correction of an existing `failed` / `incomplete` /
-   `permission-blocked` record).
+   (`applied` or `clean`) **whose author is a trusted marker actor**
+   (`github-actions[bot]`, the identity `post-merge-cleanup.yml` posts
+   under, or a configured `trustedMarkerActors` login) — for example one
+   the `post-merge-cleanup` workflow posted within seconds of the merge —
+   to avoid a duplicate success record. An untrusted commenter's
+   marker-prefixed comment never counts as evidence and must not suppress
+   this post — the same trust-scoping every other IDD operational marker
+   already applies (see the shared
+   [Trusted marker actors](idd-overview-core.instructions.md#trusted-marker-actors)
+   rule). Otherwise post (a fresh success record, or a correction of an
+   existing `failed` / `incomplete` / `permission-blocked` record, or a
+   correction of an untrusted-author record).
 
    Evaluate the dry-run `status` field (this is a dry-run status; apply
    mode emits different values and is never invoked unless dry-run
@@ -332,10 +345,32 @@ Before any mutating action in F3, apply the
      `viewer-cannot-minimize` counts for `applied`, or a converged
      `clean` record) so this run's work is recorded. Proceed to step 3.
 
-     If the apply `status` is `failed` or `incomplete`: post the
-     cleanup-failure comment format instead, including the
-     `viewer-cannot-minimize` count when non-zero. Explicit evidence,
-     not a merge gate — the merge already succeeded. Proceed to step 3.
+     The helper internally retries a whole scan-and-minimize pass, bounded,
+     when a fresh rescan still reports candidates after applying (a
+     candidate that only became eligible after the previous pass, e.g.
+     GraphQL read-after-write lag) — the common case still converges to
+     `applied`/`clean` within this one invocation. If the output also
+     reports `retryBoundExhausted: true` (visible as
+     `retryBoundExhausted=true` in table format), the retry bound was
+     reached while a rescan still found candidates. Route by the apply
+     `status` exactly as above, even then: if `status` is still
+     `applied`/`clean`, follow that evidence-comment path and note the
+     `retryAttempts` count as an informational, non-blocking
+     residual-lag signal rather than a defect; if `status` came back
+     `incomplete` (the fresh rescan found a genuine permission-blocked
+     remainder) or `failed`, follow the `failed`/`incomplete`
+     cleanup-failure path below instead — `retryBoundExhausted: true`
+     never overrides a non-success `status`.
+
+     If the apply `status` is `failed`, `incomplete`, or
+     `rescan-failed`: post the cleanup-failure comment format instead,
+     including the `viewer-cannot-minimize` count when non-zero.
+     `rescan-failed` means the confirming rescan itself errored after a
+     mutation (already-applied work is preserved in the report but
+     convergence was never confirmed) — note that distinction in the
+     comment and re-run `--apply` to confirm convergence. Explicit
+     evidence, not a merge gate — the merge already succeeded. Proceed
+     to step 3.
 
    - **`permission-blocked`**: skipped items exist with
      `viewerCanMinimize: false` and no apply-eligible candidates found.

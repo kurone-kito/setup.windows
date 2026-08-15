@@ -79,25 +79,28 @@ gate.
 
 ## S4 — Race-safe recheck (immediately before write)
 
-1. Re-run `resume-claim-routing.mjs --issue <N>`.
-2. Active claim still the same non-owned `{claim-id}`.
-3. Still stale (≥ 12 h) now.
-4. Fresh server `NOW` + re-run quiet-check; if new activity, STOP and
+1. Run `idd-claim-lite.instructions.md` pre-checks (d)/(e); either
+   failing → STOP.
+2. Re-run `resume-claim-routing.mjs --issue <N>`.
+3. Active claim still the same non-owned `{claim-id}`.
+4. Still stale (≥ 12 h) now.
+5. Fresh server `NOW` + re-run quiet-check; if new activity, STOP and
    restart from resume discovery.
-5. Issue still open; PR not merged.
-6. Plan A5 takeover with settle delay (`claim.verifySettleDelay`, default
+6. Issue still open; PR not merged.
+7. Plan A5 takeover with settle delay (`claim.verifySettleDelay`, default
    `PT5S`) and same-second claim-id tie-break.
 
 Any failure → STOP and restart. Do not post takeover on stale evidence.
 
 ## S5 — Takeover
 
-1. Post claim with fresh `{claim-id}` and `supersedes: <prior-claim-id>`
-   via `post-idd-marker --type claim ... --apply` (or equivalent).
-2. Wait settle delay; re-parse; confirm active claim is yours.
-3. If lost: STOP.
-4. If verified: return to `idd-resume-lite.instructions.md` Step 1, then
-   Step 2/3.
+1. Post claim (fresh `{claim-id}`, `supersedes: <prior-claim-id>`) via
+   `post-idd-marker --type claim ... --apply`, then an
+   activation-nonce (`idd-claim-lite.instructions.md` step 5).
+2. Wait settle delay; re-parse; confirm claim and nonce winner are
+   yours.
+3. Lost → STOP. Verified → record nonce; return to
+   `idd-resume-lite.instructions.md` Step 1, Step 2/3.
 
 ## Hold behavior
 

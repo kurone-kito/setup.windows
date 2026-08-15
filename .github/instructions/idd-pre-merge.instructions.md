@@ -150,11 +150,24 @@ nonce was recorded for the active claim.
   A current-claim agent's own post-watermark disposition replies are
   expected convergence activity, not reviewer input, and the watermark
   refresh on the E-phase branch-sync `clean` / `behind-no-conflict`
-  route already re-covers them. If a return-to-E1 is triggered solely by
-  those replies, refresh the watermark instead.
+  route already re-covers them. The same holds for any other
+  own-agent-authored procedural or status comment posted after the
+  watermark (for example, a hold comment explaining a blocker) that
+  introduces no reviewer or bot finding of its own — it is expected
+  convergence activity too, though the branch-sync route's own
+  refresh does not independently re-cover it. If a return-to-E1 is
+  triggered solely by disposition replies, other own-agent
+  procedural or status comments of that kind, or both, refresh the
+  watermark directly instead; every other F2 trigger and gate is
+  unaffected.
 - **Advisory bot wait** (restart-safe enforcement): schedule a wake, or
   background only if the topology-safety condition holds (confirmed to
-  route completion back to this turn) — otherwise wait synchronously.
+  route completion back to this turn) — otherwise wait synchronously:
+  no single `gh` command blocks on Copilot review state (unlike a CI
+  run), so run the AW poll loop below as a foreground wait, never via
+  `run_in_background` absent the confirmed condition — see
+  [idd-ci.instructions.md's Wake-up
+  discipline](idd-ci.instructions.md#wake-up-discipline).
   `PR_HEAD_SHA` is already available from the review-currency check
   above. Apply the advisory-wait protocol
   (`idd-advisory-wait.instructions.md`):

@@ -20,7 +20,10 @@ see A0), A3 (default; see decision tree).
 
 The configured authoring label is `issueAuthoring.authoringLabelName`
 (default: `status:authoring`); the stale threshold is
-`issueAuthoring.authoringStaleAge` (default: `PT4H`).
+`issueAuthoring.authoringStaleAge` (default: `PT4H`). The label doubles
+as the draft marker for a held issue (issue-authoring skill's Stage 1)
+and the claim-suppression lock this guard enforces — Discover treats
+either role the same way: skip the issue while the label is present.
 
 A0-T, A0-O, and A3 must treat a matching label as not startable. A0-T
 reports `Issue #N is currently being authored` and stops before claim;
@@ -282,6 +285,19 @@ authorizes an alternate scope for the current run:
   unresolvable with the reason, skip that branch, and continue
   traversal. Not an enumeration failure.
 
+**Termination.** Do not re-expand a target already on the current
+traversal path; record the back-edge as a cycle with its path and
+continue with the next reference.
+
+**Single visit.** A node is identified by issue number; a node
+reached again through another path is the same node — collect it
+once, never enter it into the candidate set twice.
+
+**Provenance.** Keep and report every distinct path that reaches a
+node, not only the first — the same rule the cross-roadmap union
+below already applies to a leaf reachable from several roadmap
+roots.
+
 **Helper read timing.** The `discover-roadmap-graph` helper (see
 [IDD helper script evaluation](../../docs/idd-helper-scripts.md)) is
 long-running on large graphs, emitting the whole graph in one final
@@ -289,9 +305,9 @@ stdout write. Redirect stdout to a file and wait for process exit before
 parsing — a zero-byte or mid-run read is **"still running," not** an A2
 enumeration failure.
 
-Report every A2 execution candidate with its provenance path (e.g.
-`#222 → #228 → #257`), any open roadmap nodes, and unresolvable
-references before passing to A3.
+Report every A2 execution candidate with its provenance paths (e.g.
+`#222 → #228 → #257`), any open roadmap nodes, cycles, duplicate
+references, and unresolvable references before passing to A3.
 
 **Autopilot cross-roadmap union (optional, additive).** When A1 elected
 the cross-roadmap mode, enumerate from **each** open roadmap root and
@@ -350,7 +366,7 @@ apply this decision tree — do not silently expand scope:
    filtered out): report each candidate and the filter criterion it
    failed, then proceed to step 5.
 
-   See [Discover — A3 Diagnostic](../../docs/idd-design-rationale.md#a3---diagnostic-all-candidates-blocked-by-an-open-roadmap)
+   See [Discover — A3 Diagnostic](../../docs/idd-design-rationale.md#a3--diagnostic-all-candidates-blocked-by-an-open-roadmap)
    for the marker-misuse pattern this case typically indicates.
 
 5. **Request explicit opt-in** — ask the operator: "No roadmap-scoped
@@ -526,9 +542,21 @@ for how the remaining tie-breakers below apply after this rule.
 highest-score tie band has more than one eligible candidate, pick the
 band entry at index `selectDesyncedIndex(session-token, band-size)`
 instead of index 0 — a pure `hash(session-token) mod band-size` over
-the band ordered by ascending issue number, `session-token` being this
-session's `{agent-id}`. Compute it with the CLI instead of hand-tracing
-`scripts/policy-helpers.mjs`:
+the band ordered by ascending issue number.
+
+`session-token` **must be per-session-unique**: the bare, session-shared
+`{agent-id}` from `idd-overview-core.instructions.md` alone is **not** a
+compliant token. Use the session-suffixed `{agent-id}` (e.g.,
+`copilot-8122ca35`) when this session already appends one; otherwise
+generate a session-local token once at Discover entry — it must carry
+enough entropy to stay distinct across sessions launched at the same
+moment (a random or UUID-derived value; a bare timestamp alone is not
+sufficient, since same-second concurrent launches would still collide)
+— and reuse that same value for every A4 Step 2 selection this session
+makes, including re-entry after a collision. See
+[rationale](../../docs/idd-design-rationale.md#a4-step-2--rationale-concurrent-selection-desync)
+for why a bare shared token defeats this mechanism. Compute the index
+with the CLI instead of hand-tracing `scripts/policy-helpers.mjs`:
 
 ```sh
 # source repo / vendored-node
@@ -597,7 +625,7 @@ roadmap is open belong in the roadmap's task list as `- [ ] #NNN`
 entries; `blocked-by` is reserved for issues that must wait for a
 separate, prior roadmap to close (cross-phase sequential dependency) —
 see the
-[A3 diagnostic](../../docs/idd-design-rationale.md#a3---diagnostic-all-candidates-blocked-by-an-open-roadmap)
+[A3 diagnostic](../../docs/idd-design-rationale.md#a3--diagnostic-all-candidates-blocked-by-an-open-roadmap)
 for the resulting deadlock pattern.
 
 ## Scope invariant (summary)

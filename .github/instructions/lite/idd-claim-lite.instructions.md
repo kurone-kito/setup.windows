@@ -1,7 +1,8 @@
 # IDD — Claim Phase (Lite) A5
 
 Lite profile for weak / local models. Same semantics as
-`idd-claim.instructions.md`. Prefer helpers over prose.
+`idd-claim.instructions.md`, except the forced-handoff bind below.
+Prefer helpers over prose.
 
 **Load this file alone** for the claim phase. Do not open the standard
 claim file in the same turn.
@@ -9,8 +10,7 @@ claim file in the same turn.
 **Scope note**: this file always covers a single, already-selected
 issue (the lite profile excludes open-ended Discover). Every "return
 to Discover and pick the next candidate" branch in the standard file
-therefore collapses to a single outcome here: **STOP and report; do
-not claim**. There is no fallback issue to select.
+collapses to a single outcome here: **STOP and report; do not claim**.
 
 ## Helper runtime contract
 
@@ -26,11 +26,11 @@ not claim**. There is no fallback issue to select.
 
 Every `node scripts/<name>.mjs` command below is the **source-repo /
 vendored-node** invocation form. Under `package-manager` /
-`ephemeral-npx` profiles, `scripts/` is not vendored into the repo —
-resolve each command's profile-selected equivalent from
-`docs/idd-helper-scripts.md` instead of running the vendored form
-verbatim. A helper missing on the active profile is a missing-helper
-case under rule 1 (stop and ask), not a reason to fall through.
+`ephemeral-npx` profiles, `scripts/` is not vendored — resolve each
+command's profile-selected equivalent from
+`docs/idd-helper-scripts.md`. A helper missing on the active profile
+is a missing-helper case under rule 1 (stop and ask), not a reason to
+fall through.
 
 `{agent-id}` is a tool/agent identifier shared across concurrent
 sessions of the same agent type — pick or confirm one before the first
@@ -186,15 +186,17 @@ takeover, migrate with a fresh `{claim-id}` and `supersedes: none`.
 **Forced-handoff** (`<!-- forced-handoff: {...} -->`): transfers the
 active claim to `newAgentId` / `newClaimId` only when **all** hold: the
 comment author is a trusted marker actor; the author (case-insensitive)
-equals the marker's `forcedBy` field — this blocks a same-identity
-self-signed hijack where a displaced session spoofs a different
-`forcedBy` name while posting the marker itself; that author is
-authorized under `forcedHandoff.authorityPolicy`; `forcedHandoff.mode`
-is `human-gated`; `oldAgentId` / `oldClaimId` / `branch` all match
-the active claim; and, when an open PR already backs this claim, the
-marker's evidence has `contextScope` of `issue-plus-pr` with `linkedPr`
-naming that PR — an issue-only handoff is not enough once a PR exists.
-On success, the
+equals the marker's `forcedBy` field — unconditionally, a
+deliberately stricter bind than the full spec's opt-in
+(`requireAuthorMatchesForcedBy`) — this blocks a
+same-identity self-signed hijack where a displaced session spoofs a
+different `forcedBy` name while posting the marker itself; that author
+is authorized under `forcedHandoff.authorityPolicy`;
+`forcedHandoff.mode` is `human-gated`; `oldAgentId` / `oldClaimId` /
+`branch` all match the active claim; and, when an open PR already backs
+this claim, the marker's evidence has `contextScope` of
+`issue-plus-pr` with `linkedPr` naming that PR — an issue-only
+handoff is not enough once a PR exists. On success, the
 successor claim is **sticky**: adopt
 `newAgentId` / `newClaimId` **verbatim** as your own for the rest of
 the run (do not mint a fresh pair), and still post your own
@@ -357,7 +359,11 @@ comments, and check:
    its winner and confirm it is yours (no marker posted → treat as
    passed).
 
-Any failure → claim contested → **STOP**, do not proceed.
+Any failure → claim contested → **STOP**, do not proceed. **Exception:
+only step 4 fails** (1-3 passed — the claim is genuinely yours) → post
+`unclaimed-by` for your own `{agent-id}`/`{claim-id}` first (safe: you
+provably hold it), **then STOP**. Step 5 also failing (alone or with
+step 4) → never release (shares that exact pair) — STOP as usual.
 
 **Forced-handoff adopt-verbatim** only: skip steps 1-4 (no
 `claimed-by` was posted for this path); only step 5 applies — wait the
@@ -412,7 +418,6 @@ first, then `--fresh-claim-gate` if not `already_owned`):
 No release step: `git worktree remove` at F4 deletes the lock with the
 worktree.
 
-Then continue to `idd-work-lite.instructions.md` — except on the
-`instructions-only` profile, where that file explicitly declines the
-profile in its own header; continue to the standard
-`idd-work.instructions.md` instead.
+Then continue to `idd-work-lite.instructions.md` — except on
+`instructions-only`, where that file declines the profile in its own
+header; use `idd-work.instructions.md` instead.

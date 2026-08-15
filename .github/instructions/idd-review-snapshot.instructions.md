@@ -111,8 +111,9 @@ single italic note — any deviation fails the parser's whole-body anchor
 and the comment isn't recognized as a live watermark, though it is
 still detectable as a malformed marker
 (`detectMalformedOperationalMarker` in `marker-helpers.mts`). See
-`idd-claim.instructions.md` for the full rule and the related
-disposition-marker no-code-fence note.
+`idd-claim.instructions.md` for the full rule and
+`idd-review-triage.instructions.md` for the related disposition-marker
+no-code-fence note.
 
 - **`{head-SHA}`**: the value read at the very start of Step 1, before
   any fetching. F2 uses this to detect pushes that occurred between E1's

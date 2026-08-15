@@ -133,6 +133,26 @@ when one exists:
   Include only context grounded in the issue discussion, commits, diff,
   or explicit operator instructions; omit rather than speculate.
 
+### PR body language
+
+The PR body's prose sections above (summary, background/rationale,
+follow-up notes) follow the resolved `authoringLanguage` value from
+`.github/idd/config.json`: a fixed language tag when configured, the
+claimed issue's own body language when the value is `match-source`
+(this file's unattended-execution case, with no live operator), or
+English when the field is absent. See the
+[Authoring Language](../../docs/customization.md#authoring-language)
+section for the full field definition.
+
+This never changes a machine-parsed marker or an exact-regex-matched
+visible line, which always stays in its canonical form regardless of
+`authoringLanguage`. Concretely here, the closing keyword line below
+(`Closes #N` and its variants) must keep its exact English keyword
+form: GitHub's own closing-keyword parser and this file's D3.5
+verification regex both match only the English keyword forms
+(`close[sd]?`/`fix(e[sd])?`/`resolve[sd]?`), so translating that line
+would silently break auto-close detection.
+
 ### Closing keyword
 
 The closing keyword must appear in the PR **body** (not the title) as
@@ -147,7 +167,10 @@ constraint applies only to the actual PR body content that GitHub
 must parse.
 
 GitHub recognizes the following keyword forms: close, closes, closed,
-fix, fixes, fixed, resolve, resolves, resolved.
+fix, fixes, fixed, resolve, resolves, resolved. GitHub's merge-time
+detection reads these same forms in the branch's commit messages too,
+not only the PR body — see Mirror false-positive below for the
+structural-separation rule that covers both surfaces.
 
 #### Anti-patterns
 
@@ -165,28 +188,35 @@ merge and the issue↔PR linking surfaces (sidebar, timeline) will not
 populate.
 
 **Mirror false-positive — negation-blind detection**: the same literal
-matching runs in the other direction too. GitHub's detector matches a
-recognized keyword form immediately adjacent to a `#N` reference and
-has no concept of negation — wrapping the keyword in surrounding
-"not" / "deliberately" / "isn't" wording does not stop detection when
-the keyword itself still sits next to the `#N` it must not close. Keep
-every recognized keyword form (`close`, `closes`, `closed`, `fix`,
-`fixes`, `fixed`, `resolve`, `resolves`, `resolved`) structurally apart
-from any reference it must not close:
+matching runs in the other direction too, and it is not limited to the
+PR body — GitHub's merge-time scan reads the same recognized keyword
+forms in the branch's commit messages (subject and body) as well.
+GitHub's detector matches a recognized keyword form immediately
+adjacent to a `#N` reference and has no concept of negation —
+wrapping the keyword in surrounding "not" / "deliberately" / "isn't"
+wording does not stop detection when the keyword itself still sits
+next to the `#N` it must not close, whether that text lives in the PR
+body or in a commit message. Keep every recognized keyword form
+(`close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`,
+`resolves`, `resolved`) structurally apart from any reference it must
+not close, in both locations:
 
 - Risky — a keyword sits directly before the reference, even inside a
-  negation clause: "this PR does not close #42" (`close` is
-  immediately adjacent to `#42`; GitHub cannot see the "not").
+  negation clause, whether in the PR body or a commit message: "this
+  PR does not close #42" (`close` is immediately adjacent to `#42`;
+  GitHub cannot see the "not").
 - Safe — reorder so no recognized keyword is adjacent to the
   reference: "Refs #42 (deliberately not a closing keyword — see the
   discussion there for why this PR does not resolve it directly)".
   Here `resolve` is followed by "it", not a `#N` token, so nothing
-  adjacent to `#42` matches.
+  adjacent to `#42` matches. The same reordering works verbatim inside
+  a commit subject or body.
 
 Do not rely on careful phrasing alone as the only safeguard — the
-strengthened check in D3.5 below verifies `closingIssuesReferences`
-against the deliberate closing set exactly, catching a spurious extra
-close even if phrasing slips.
+strengthened checks in D3.5 below verify `closingIssuesReferences`
+against the deliberate closing set exactly and scan the branch's own
+commit messages, catching a spurious extra close even if phrasing
+slips.
 
 #### Multiple closing issues
 
@@ -275,11 +305,75 @@ completion.
    hold note on the issue citing the PR URL and stop. Do not proceed to
    D4.
 
+7. **Scan the branch's own commit messages**: GitHub's merge-time
+   closing-keyword scan also reads commit messages (subject and body),
+   not only the PR body, so a stray keyword there can auto-close an
+   issue outside the deliberate set even when the PR body is clean.
+   List the branch's own commits, using a visible delimiter rather
+   than a NUL byte so common terminals and search tools don't treat
+   the output as binary:
+
+   ```sh
+   git log origin/main..HEAD --pretty=format:'%H%n%B%n===commit-boundary==='
+   ```
+
+   For each commit's full message, search using step 3's same keyword
+   alternation, generalized to any issue number instead of the fixed
+   `<N>`:
+
+   ```text
+   (?im)\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\s+#(\d+)\b
+   ```
+
+   A match against any issue number in the deliberate closing set from
+   D3 is expected (deliberate — this covers both the single-issue `<N>`
+   case and "Multiple closing issues" above); only a captured number
+   **outside** that set is a stray commit-message close.
+
+   **On a stray match**: amend the offending commit (`git commit
+   --amend` for the tip commit, or an interactive rebase for an
+   earlier one) using the same safe reordering as the Mirror
+   false-positive example above. If the branch already carries a merge
+   commit (for example, from an E-phase `main` sync), rebase with
+   `--rebase-merges` instead of a plain interactive rebase, so the
+   merge and its recorded conflict resolution aren't silently
+   linearized or dropped. On a signed-commit repo whose primary
+   signing is non-interactive-hostile, run the amend or rebase through
+   the same D1 fallback-signing wrapper noted above, including any
+   rebase continuation — the plain command can stall the same way D1
+   already documents. Then force-push the correction (`git push
+   --force-with-lease`) only when repository policy permits
+   force-pushing a published branch, mirroring D2's own force-push
+   restriction; if it does not, hold for operator intervention instead
+   of rewriting published history. **Amend before merge** — this scan
+   runs at merge time, so the fix must land before the PR merges; a
+   commit message caught only after merge cannot be amended, and
+   recovery requires reopening the affected issue by hand. Repeat this
+   step once after the amendment. If it still finds a stray match,
+   post a hold note on the issue citing the PR URL and stop. Do not
+   proceed to D4.
+
+   **Re-run before merge**: this scan only covers commits present at
+   D3.5 time. Later branch commits — accepted review fixes
+   (`idd-review-fix.instructions.md` E9-E12) or a `main` merge — are
+   not automatically covered; re-run this step against the final HEAD
+   before F3 merges.
+
 ## D4 — Wait for CI
 
 Schedule a wake, or background this wait only if the
 topology-safety condition holds (confirmed to route completion back to
-this turn); otherwise wait synchronously. Delegate polling mechanics to
+this turn); otherwise wait synchronously — block with:
+
+- `gh run watch <run-id> --exit-status` (single workflow run; not
+  usable on a fine-grained PAT)
+- `gh pr checks <pr-number> --watch --required` (PR required-check
+  rollup)
+
+See [idd-ci.instructions.md's Wake-up
+discipline](idd-ci.instructions.md#wake-up-discipline) for the
+caveats on both. Do not `run_in_background` this wait absent the
+confirmed condition above. Delegate polling mechanics to
 `idd-ci.instructions.md`.
 
 - **On success** → proceed to `idd-review-snapshot.instructions.md`
