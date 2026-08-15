@@ -224,9 +224,11 @@ never changes any HTML-comment marker's machine-parsed format, nor any
 visible-line mirror whose exact wording a mechanical regex parses —
 concretely, the autopilot-suitability and effort footers' visible lines
 (`_Autopilot suitability: N / 5 ...` / `_Effort: S|M|L ...`), which
-`src/scripts/audit-authored-issue.mts` matches against a fixed
-English-phrase regex, must stay in their exact canonical English wording
-regardless of the configured language.
+upstream's `src/scripts/audit-authored-issue.mts` (in the
+`kurone-kito/idd-skill` source repository — this repository has no
+`src/` tree of its own) matches against a fixed English-phrase regex,
+must stay in their exact canonical English wording regardless of the
+configured language.
 
 **Cross-references**:
 
@@ -237,14 +239,14 @@ regardless of the configured language.
 - `idd-review-snapshot.instructions.md`'s existing "detect the PR body's
   language for the visible note" rule already composes correctly with
   this field with no code change required: now that PR-submit applies
-  `authoringLanguage` (#1982), that rule keeps following whatever
-  language the PR body ends up in.
+  `authoringLanguage` (`kurone-kito/idd-skill#1982`), that rule keeps
+  following whatever language the PR body ends up in.
 
 **Landed vs. pending**: this field is schema-defined and documented now.
-PR-submit's D3 "Create PR" step applies it to PR body prose (#1982), and
-the issue-authoring skill's contract applies it to drafted issue prose
-(#1983); the distributed discover and claim runtime does not read or
-apply it yet.
+PR-submit's D3 "Create PR" step applies it to PR body prose
+(`kurone-kito/idd-skill#1982`), and the issue-authoring skill's contract
+applies it to drafted issue prose (`kurone-kito/idd-skill#1983`); the
+distributed discover and claim runtime does not read or apply it yet.
 
 ## Policy Constants
 
