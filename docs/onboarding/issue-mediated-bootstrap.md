@@ -123,8 +123,11 @@ angle-bracket author-time fills — keep them as shell variables (never
 angle brackets) in the generated issue body, since the issue-authoring
 release contract's checklist requires no unsubstituted placeholder
 remain before the authoring hold is released
-(`skills/issue-authoring/references/contract.md`, "Authoring hold and
-release"), and this value has nothing to substitute until the
+(`.claude/skills/issue-authoring/references/contract.md`, "Authoring
+hold and release" — this repository's install location, matching the
+same reference in
+[`docs/dotfiles-boundary.md`](../dotfiles-boundary.md)), and this value
+has nothing to substitute until the
 executor actually runs the command. Direct the issue's process
 section to that full-clone path rather than the single-file download,
 so this issue's own acceptance criterion below ("every file required
