@@ -14,26 +14,23 @@ without scanning every phase file.
 
 ## Live status digest
 
-The optional live status digest is a human-facing issue or pull request
-comment whose first line is `<!-- idd-live-status: current -->`,
-summarizing phase, claim, branch, last-checked time, blockers, and next
-action. It is never an authority for IDD state transitions — keep making
-claim, review, advisory, CI, merge, and roadmap decisions from trusted
+The optional live status digest is a human-facing issue or PR comment
+whose first line is `<!-- idd-live-status: current -->`. It summarizes
+phase, claim, branch, last-checked time, blockers, and next action. It
+is never an authority for IDD state transitions — decide from trusted
 operational markers and GitHub state. If multiple marked digests exist,
-preserve them, report the duplicate URLs, and choose none as
-authoritative during an unattended run. See
-`docs/idd-comment-minimization.md` for the full contract (marker
-uniqueness, field table, and the optional
-`node scripts/live-status-digest.mjs` helper, whose output remains
-convenience context, not workflow authority).
+preserve them, report the URLs, and choose none as authoritative in an
+unattended run. See
+`docs/idd-comment-minimization.md` for the contract and the optional
+`node scripts/live-status-digest.mjs` helper (convenience only).
 
 Treat every digest create or edit as a GitHub side effect: re-validate
-the active claim first, write fields from the state just collected by
-the current phase, and set `Authoritative by` to the specific evidence
-used. If the claim was lost, do not repair or update the digest.
+the active claim first, write fields from the state just collected, and
+set `Authoritative by` to the evidence used. If the claim was lost, do
+not repair or update the digest.
 
 On pull requests, a digest edit is still PR activity: do not edit a PR
-digest between a valid E1 review watermark and an intended F3 merge pass
+digest between a valid E1 review watermark and an intended F3 merge
 (it would perturb review-currency). Edit it only when leaving merge
 intent (returning to E1, routing F3 to F1/D4 as blocked, or a hold/stop)
 or after F3 has merged; the F3 awaiting-reviewer restart-F2 path skips
@@ -54,18 +51,26 @@ unclaimed state are inheritable by the next agent (see
 
 ## Hold / suspend
 
-Keep the claim. Post the hold reason and resume condition to the PR or
-issue comment. After re-validating ownership, re-post the claim comment
-with the same `{claim-id}` every 12 h as heartbeat.
-After posting the hold reason, upsert the digest with the hold phase, the
-blocking condition in `Open blockers`, and the resume condition in
-`Next action`. Long holds still need claim heartbeats; the digest does
-not reset the claim stale clock.
+Keep the claim. Post the hold reason and resume condition. After
+re-validating ownership, re-post the claim comment with the same
+`{claim-id}` every 12 h as heartbeat. Then upsert the digest with the
+hold phase, the blocking condition in `Open blockers`, and the resume
+condition in `Next action`. The digest does not reset the stale clock.
 
 For an externally owned blocker (sibling PR/issue, maintainer-owned
 check, base-branch health), phrase the resume condition as the checkable
 invariant (e.g. a named check passing on main), not the sibling alone —
-the proxy may resolve differently, or never.
+the proxy may resolve differently, or never. A pollable invariant keeps
+the claim and the 12 h heartbeat.
+
+**Needs-decision claim release.** When no further session-side action
+is expected before a human responds, the holding session may apply the
+configured needs-decision label (`labels.needsDecisionLabelName`,
+default `status:needs-decision`) and release the claim. Any phase may
+do this, not only E6. After release, stop heartbeating. Once a
+qualifying human decision resolves the hold, a later session removes
+the label and re-claims. A response that leaves the decision open
+does not re-enter.
 
 ## Roadmap markers
 
@@ -91,10 +96,11 @@ Merge Wrapper; never permanently rewrite signing config. `--no-gpg-sign`
 on `git commit`/`git merge` is the last resort.
 
 Record material progress, decisions, and hold reasons as issue or PR
-comments as they happen. This ensures that any agent resuming
-without session context can understand the current state and continue
-correctly. Do not rely on session memory alone for information that
-another agent may need.
+comments as they happen. That includes a non-default signing outcome
+(including a `--no-gpg-sign` fallback). This ensures that any agent
+resuming without session context can understand the current state and
+continue correctly. Do not rely on session memory alone for
+information that another agent may need.
 
 Operational restore markers (`review-watermark` and `review-baseline`)
 must include the current `{claim-id}` and must never be restored across
@@ -120,7 +126,8 @@ The Project commands table (`fix-validate`, `pre-push-validate`,
 A **critique pass** is an independent review of a plan or diff that
 produces a list of issues with severity, correctness, and coverage
 assessment. For the per-agent invocation table (Copilot / Claude Code /
-Codex CLI / Antigravity CLI (formerly Gemini CLI)), see
+Codex CLI / Antigravity CLI (formerly Gemini CLI)) and the optional
+repository-configurable `critiqueLoop.delegate` surface, see
 [`docs/idd-workflow.md` → Critique pass invocation](../../docs/idd-workflow.md#critique-pass-invocation).
 
 ### Mutation / write-side helper lens
@@ -133,18 +140,11 @@ suppression, schema strictness parity) in
 
 ## Template sync
 
-When this repository is itself the source of a reusable IDD
-distribution (it ships its own `idd-template/` copy for adopters to
-import), `idd-template/` is the canonical source, not the live copy
-below. When modifying any `idd-*.instructions.md` file,
-`docs/idd-workflow.md`, or `docs/customization.md`, edit the
-corresponding file in `idd-template/` first, then regenerate the live
-target with `node scripts/sync-docs.mjs --apply` (`structure`/
-`contains` pairs such as `docs/idd-workflow.md` need the equivalent
-change applied to the live file by hand instead). For the live ↔
-template placeholder mapping and the full rationale, see
+When this repository ships `idd-template/` for adopters, that tree is
+canonical. Edit `idd-template/` first for any `idd-*.instructions.md`,
+`docs/idd-workflow.md`, or `docs/customization.md`, then regenerate the
+live target with `node scripts/sync-docs.mjs --apply` (`structure`/
+`contains` pairs such as `docs/idd-workflow.md` need a hand-mirrored
+live edit). See
 [`docs/customization.md` → Template sync mapping](../../docs/customization.md#template-sync-mapping).
-
-Commits that modify the `idd-template/` source without syncing the
-live target (regenerating or hand-mirroring, per its mode above) are
-incomplete; include both changes in the same atomic commit.
+Include the live target in the same commit as the template source.

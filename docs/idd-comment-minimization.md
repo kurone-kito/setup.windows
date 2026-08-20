@@ -144,12 +144,22 @@ It then parses the report and posts the canonical
 PR receives evidence within a few minutes even when the agent did
 not run F4 manually.
 
-The template (`idd-template/`) does **not** ship this workflow
-because `scripts/audit-pr-cleanup.mjs` is part of the optional
-helper bundle and is not present in default instructions-only
-installs. Adopters who install the helper can copy the source
-workflow file as-is; permissions required are
-`contents: read`, `issues: write`, and `pull-requests: write`, plus
+The template (`idd-template/`) ships a generic counterpart at
+`idd-template/.github/workflows/post-merge-cleanup.yml`, part of the
+core file set `idd-onboard.mjs --import` copies automatically.
+Earlier template versions omitted this file because
+`scripts/audit-pr-cleanup.mjs` is part of the optional `vendored-node`
+helper bundle and is not present in default `instructions-only`
+installs, so a literal copy would only ever work for one profile. The
+template copy instead resolves the cleanup-audit invocation through
+the repository's configured `helperRuntime.profile` (see
+[Helper Runtime Profiles](idd-helper-scripts.md#helper-runtime-profiles)):
+it runs the equivalent invocation under `vendored-node`,
+`package-manager`, and `ephemeral-npx`, and skips the audit and
+evidence-comment steps entirely under `instructions-only` (or when no
+profile is configured), where no runnable helper command exists for
+any profile. Permissions required are `contents: read`,
+`issues: write`, and `pull-requests: write`, plus
 `pull_request_target` (not `pull_request`) so that fork PRs can
 post comments under a writeable `GITHUB_TOKEN`.
 
@@ -158,11 +168,19 @@ canonical, mandatory contract. The server-side workflow is a
 backstop, not a replacement: same helper, same candidate rules,
 same evidence comment shape, non-blocking on errors. Double-posting is
 prevented by the cleanup-evidence record itself, not by Actions
-concurrency: the workflow skips when any `<!-- idd-cleanup-evidence:`
-comment already exists, and the agent F4 step skips its own post when a
-prior success record is already present — including the one the workflow
-posted. The workflow's PR-keyed `concurrency` group only serializes
-workflow runs against each other; it does not gate the agent's local F4.
+concurrency: the workflow skips when the latest trusted-author
+`<!-- idd-cleanup-evidence:` comment already records a successful
+outcome (`applied` or `clean`; posted by `github-actions[bot]` or a
+configured `trustedMarkerActors` login — an untrusted commenter's
+marker-prefixed comment never counts), and the agent F4 step skips its
+own post under the same success-record rule — including a success
+record the workflow itself posted. A trusted comment recording any
+other status (`failed`, `incomplete`, `permission-blocked`,
+`rescan-failed`) does not suppress either side, so a
+`workflow_dispatch` rerun after a `rescan-failed` post still posts
+fresh evidence (preventive; no observed incident yet — #2043). The
+workflow's PR-keyed `concurrency` group only serializes workflow runs
+against each other; it does not gate the agent's local F4.
 
 ## GitHub mechanism
 
@@ -355,48 +373,65 @@ corresponding path:
 | `permission-blocked` | Post a cleanup-permission-blocked comment, then proceed to F4 |
 |                      | step 3.                                                       |
 
-After apply, if `status` is `failed` or `incomplete`, post a
-cleanup-failure comment. A cleanup failure after a successful F3 merge
-does not re-block the merge; it is an explicit record only.
+After apply, if `status` is `failed`, `incomplete`, or `rescan-failed`,
+post a cleanup-failure comment. A cleanup failure after a successful F3
+merge does not re-block the merge; it is an explicit record only.
 
 ### Cleanup evidence comment
 
 Post this comment to the PR after a successful or partial apply. The
 HTML comment token on the first line acts as a stable machine-readable
 marker so a resuming agent — or a concurrent `post-merge-cleanup`
-workflow run — can detect that evidence was already posted. The
-**agent-side** rule keys on the prior **success** record: **skip the
-post when a `<!-- idd-cleanup-evidence:` comment recording a successful
-outcome (`applied` / `clean`) already exists on the PR**, so the agent
-never stacks a duplicate success record — even when this run's own apply
-returned `applied` for residual markers a concurrent `post-merge-cleanup`
-workflow run minimized first; still post when no prior success record
-exists, or to correct an existing `failed` / `incomplete` /
-`permission-blocked` record. The `post-merge-cleanup` workflow instead
-uses a simpler presence-only guard (it skips on any existing marker),
-which suffices for its single-shot post-merge run:
+workflow run — can detect that evidence was already posted. Both the
+**agent-side** F4 step and the `post-merge-cleanup` workflow key on the
+prior **success** record: **skip the post when the latest trusted
+`<!-- idd-cleanup-evidence:` comment records a successful outcome
+(`applied` / `clean`)**, so neither side stacks a duplicate success
+record — even when this run's own apply returned `applied` for residual
+markers the other side already minimized first; still post when no
+prior success record exists, or to correct an existing `failed` /
+`incomplete` / `permission-blocked` / `rescan-failed` record — a
+`rescan-failed` record in particular invites a retry, so a later
+`workflow_dispatch` rerun (or agent F4 re-run) must post fresh evidence
+for its own outcome rather than leave stale non-success evidence as the
+PR's only record (preventive; no observed incident yet — #2043):
 
 ```markdown
-<!-- idd-cleanup-evidence: {status} applied:{N} failed:{N} skipped:{N} viewer-cannot-minimize:{N} -->
+<!-- idd-cleanup-evidence: {status} applied:{N} failed:{N} skipped:{N} viewer-cannot-minimize:{N} retry-attempts:{N} retry-bound-exhausted:{true|false} -->
 
 **F4 Cleanup Evidence**
 
-| Field              | Value                                  |
-| ------------------ | -------------------------------------- |
-| Status             | applied / failed / incomplete          |
-| Applied            | N                                      |
-| Failed             | N                                      |
-| Skipped            | N                                      |
-| Permission-blocked | N                                      |
-| Notes              | reason for any failed or skipped items |
+| Field                            | Value                                                 |
+| -------------------------------- | ----------------------------------------------------- |
+| Status                           | applied / clean / failed / incomplete / rescan-failed |
+| Applied                          | N                                                     |
+| Failed                           | N                                                     |
+| Skipped                          | N                                                     |
+| Permission-blocked               | N                                                     |
+| Retry attempts (bound-exhausted) | N (true / false)                                      |
+| Notes                            | reason for any failed or skipped items                |
 ```
+
+`retry-attempts` / `retry-bound-exhausted` mirror
+`audit-pr-cleanup.mjs --apply`'s own `retryAttempts` /
+`retryBoundExhausted` JSON fields (its internal whole-pass retry, see
+issue 2011): a `true` bound-exhausted value with an otherwise
+`applied`/`clean` status is informational, not a cleanup failure — a
+fresh rescan still found candidates after the bound, not that
+anything went wrong. A `rescan-failed` status (below) always takes the
+cleanup-failure path regardless of `retry-bound-exhausted`, since the
+confirming rescan itself never completed.
 
 ### Cleanup-failure comment
 
-Post this comment when apply `status` is `failed` or `incomplete`. If
-`viewer-cannot-minimize > 0` is also non-zero, include the blocked count
-in the same comment rather than posting a separate permission-blocked
-comment:
+Post this comment when apply `status` is `failed`, `incomplete`, or
+`rescan-failed`. `rescan-failed` means the confirming rescan after a
+mutation errored (a transient GraphQL/`gh` failure) — already-applied
+work is preserved in the report, but convergence was never confirmed;
+note that distinction and suggest a re-run rather than describing it as
+a per-candidate failure. If `viewer-cannot-minimize > 0` is also
+non-zero, include the blocked count in the same comment rather than
+posting a separate permission-blocked comment:
 
 ```markdown
 <!-- idd-cleanup-evidence: {status} applied:{N} failed:{N} skipped:{N} viewer-cannot-minimize:{N} -->
@@ -405,7 +440,7 @@ comment:
 
 Cleanup candidates were detected but not all could be applied.
 
-- Status: failed / incomplete
+- Status: failed / incomplete / rescan-failed
 - Failed: N candidates (reason: ...)
 - Unapplied: N candidates
 - Permission-blocked: N candidates (if any)

@@ -132,7 +132,9 @@ other GitHub side effect, confirm all of the following:
    hostile (GPG pinentry or hardware-touch) but that provides a
    fallback signing wrapper for arbitrary git subcommands (pass
    `-c gpg.format=ssh -c user.signingkey=<abs-path> -c
-   commit.gpgsign=true` to `git` before the subcommand — `git -c …
+   commit.gpgsign=true` to `git` before the subcommand, plus
+   `-m "chore: merge origin/main into the claimed branch"` on the
+   first `merge` so a commitlint hook accepts the subject — `git -c …
    merge`, not `git merge -c …`; a commit-only alias like
    `git commit-ssh` will not run `merge`), run this merge through that
    wrapper, not the plain command.

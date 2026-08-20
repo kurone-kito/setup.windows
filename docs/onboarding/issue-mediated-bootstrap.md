@@ -103,7 +103,7 @@ you read were pinned.
 **If the confirmed helper runtime profile is `vendored-node`**, its
 profile-conditional helper bundle needs more than a pin. The
 single-file direct download in upstream's
-[Profile-conditional helper files](https://github.com/kurone-kito/idd-skill/blob/cac92e3eb21d978e1e039a8d88cb7d50fd9d640e/idd-template/docs/onboarding/template-distribution.md#profile-conditional-helper-files-vendored-node)
+[Profile-conditional helper files](https://github.com/kurone-kito/idd-skill/blob/f51a8bb73a47452eff5799e8a27251b660ba4ae0/idd-template/docs/onboarding/template-distribution.md#profile-conditional-helper-files-vendored-node)
 section (not carried into this repository's own copy of
 `template-distribution.md`, which does not use `vendored-node`) supplies
 only `minimize-superseded-markers.mjs`, not the complete `vendored-node`
@@ -366,10 +366,12 @@ must not run through that loop at all (see below).
 
 **Welcome/next-steps issue, in detail.** Once the core bootstrap issue
 merges, draft it automatically — do not wait for a separate request, the
-way its four sibling bullets do. The whole premise of choosing the
-guided path over theirs-flow is that the operator is less likely to
-already know IDD, so gating this one add-on on a separate ask would
-defeat the point.
+way its four sibling bullets do. Unlike those four, which only matter to
+an operator who specifically wants them, a welcome/next-steps issue is a
+low-cost default worth surfacing regardless of _why_ the operator chose
+issue-mediated bootstrap over theirs-flow — gating it on a separate ask
+would delay something worth having either way (preventive; no observed
+incident yet).
 
 This is also the one add-on that must stay off the Discover -> Claim ->
 Work loop entirely, unlike its four sibling bullets above: its whole
@@ -387,20 +389,28 @@ examples ("start issue authoring to implement {inferred gap}", "run the
 IDD loop"). Derive `{inferred gap}` and the other prompt content using
 the same repository-evidence-read method the optional Dry-run readiness
 report already performs
-([Dry-run — Readiness assessment](https://github.com/kurone-kito/idd-skill/blob/cac92e3eb21d978e1e039a8d88cb7d50fd9d640e/idd-template/ONBOARDING.md#dry-run--readiness-assessment))
+([Dry-run — Readiness assessment](https://github.com/kurone-kito/idd-skill/blob/f51a8bb73a47452eff5799e8a27251b660ba4ae0/idd-template/ONBOARDING.md#dry-run--readiness-assessment))
 — detected package manager, missing prerequisites, and so on — rather
 than inventing a new inference mechanism. Run that read **fresh, after
 this merge**, not reused from the pre-import dry-run's stored output:
 the repository's package manager, test commands, and missing
 prerequisites can differ once the bootstrap import lands, and a stale
 pre-import finding can prompt the operator to fix a gap the import
-already closed. Condition the prompt set on
-the recorded Step 1B companion decision: only include an issue-authoring
-prompt (e.g. "start issue authoring to implement {inferred gap}") when
-that decision was `installed`; for `not installed`, substitute a prompt
-that does not depend on the companion skill (e.g. "run the IDD loop" or
-a repository-evidence-derived task prompt), so every welcome issue's
-prompts are ones the operator can actually run.
+already closed. Condition the prompt set on whether the companion is
+**actually installed** at welcome-issue drafting time, not the recorded
+Step 1B **target** state alone — the two can diverge: the core
+bootstrap issue always records the companion status as `not installed`
+(see above), and even once the operator's real target state is
+`installed`, the companion files land only when the separate companion
+follow-up issue completes its own claim -> work -> PR -> merge cycle,
+on its own schedule, not guaranteed to finish before or alongside the
+welcome issue's drafting. Only include an issue-authoring prompt (e.g.
+"start issue authoring to implement {inferred gap}") once the companion
+is actually installed; until then — even with an `installed` target
+state — substitute a prompt that does not depend on the companion skill
+(e.g. "run the IDD loop" or a repository-evidence-derived task prompt),
+so every welcome issue's prompts are ones the operator can actually
+run.
 
 ## Execution: issue -> branch -> PR -> merge, not the full loop
 
@@ -431,5 +441,8 @@ exception already noted above: the welcome/next-steps issue is not
 executed as code at all. Unlike this bootstrap issue's own
 issue -> branch -> PR -> merge execution, the welcome issue has nothing
 to implement, so a human (or the same narrowly-scoped, pre-authorized
-agent) reads it and closes it directly once acknowledged — no branch,
-PR, or merge.
+agent) may read it, but neither actor may close it until the operator
+has left a recorded acknowledgment — a comment or reaction on the
+issue. The agent's own judgment that the content has been
+"acknowledged" is not enough. Close it directly after that operator
+signal — no branch, PR, or merge.

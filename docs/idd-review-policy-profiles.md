@@ -189,6 +189,9 @@ the authoritative review gate.
   `.github/instructions/idd-review-triage.instructions.md`: keep human
   comments in the review universe and remove assumptions that Copilot
   advisory PATH B items must appear.
+- `.github/idd/config.json`: set `reviewPolicy` to `human-required`.
+  Do not register `idd-advisory-convergence` as a required check
+  unless this policy actually wants an advisory-bot gate.
 - Repository settings: configure CODEOWNERS, required reviews, or branch
   protection outside IDD.
 - Verification evidence: capture a dry-run or PR-state example showing
@@ -207,6 +210,9 @@ branch protection, and any human review rules configured outside IDD.
 - `.github/instructions/idd-advisory-wait.instructions.md`: mark the
   advisory wait helper unused by this profile, or remove local
   references to it from the customized phase flow.
+- `.github/idd/config.json`: set `reviewPolicy` to `no-advisory`.
+  Do not register `idd-advisory-convergence` as a required check
+  unless this policy actually wants an advisory-bot gate.
 - `docs/idd-advisory-wait-shell-fallback.md`: mark the doc unused by
   this profile, or remove local references to it, matching the
   `idd-advisory-wait.instructions.md` disposition above.
@@ -247,6 +253,66 @@ signal.
 - Verification evidence: capture a PR-state example showing the bot
   reviewed the current head and that stale, missing, or unavailable bot
   state blocks or holds according to the recorded policy.
+
+## Hybrid review-reply identity (shipped)
+
+These rules are the landed contract after the hybrid review-reply
+roadmap siblings (`#2135`, `#2136`, `#2137`, `#2139`). They are
+present-tense operator and phase behavior, not a current-state hazard
+warning.
+
+- **IDD-originated reply identity.** An IDD disposition or E13 reply
+  starts with the visible `**Accepted**` / `**Rejected**` (or
+  `**Awaiting maintainer decision**`) prefix. After the visible
+  disposition body it carries the prefix-aware HTML-comment stamp
+  `<!-- {markerPrefix}-review-reply -->` (default `idd-skill`).
+  Helpers such as `resolve-review-thread --apply` and
+  `disposition-non-review-notices --apply` inject the stamp. A
+  manual `gh api` JSON body must append it. The stamp is utterance
+  identity. It is **not** the E1 `review-watermark` snapshot marker
+  (`<!-- review-watermark: … -->`), which records activity-universe
+  counts and never substitutes for a disposition.
+- **Unmarked human replies.** On a **human-authored** review thread,
+  an unmarked human reply (no stamp, no `**Accepted**` prefix) is
+  presence-only: a reply exists, so the thread is not
+  `unresolved-without-fresh-disposition` solely for lacking
+  `**Accepted**`. That rule does not license the owning session to
+  post bare prose on its own items.
+- **Advisory-bot threads still need an IDD disposition.** A Copilot
+  or configured-advisory-bot thread still requires a stamped or
+  legacy trusted IDD disposition, or resolution for
+  `advisory-convergence` Clause 2. An unmarked human `ok` does not
+  clear those threads.
+- **Required-check trigger.** In a repository hosting the companion
+  `idd-advisory-convergence-comment.yml` workflow, the required
+  `idd-advisory-convergence` job itself is **not** re-triggered by an
+  unmarked human `pull_request_review_comment` — only IDD-originated
+  comments (disposition prefix, reply-identity stamp, or an
+  operational marker the check already honors) refresh the existing
+  HEAD run, through that companion workflow. This repository does not
+  host that companion workflow yet (tracked in
+  [#124](https://github.com/kurone-kito/setup.windows/issues/124)): it
+  retains the pre-split combined trigger, so **any**
+  `pull_request_review_comment` — IDD-originated or not — re-triggers
+  the required job here. That trigger only creates a fresh run;
+  whether the run's own `advisory-convergence` verdict logic reports
+  it passing is unaffected by who commented. Until the companion
+  workflow is adopted, the manual `gh run rerun` recovery path in
+  [CI Gate (External Checks)](idd-policy.md#ci-gate-external-checks)
+  is still how an IDD-originated reply's refresh gets confirmed here.
+- **`reviewPolicy`.** `human-required` and `no-advisory` make
+  `advisory-convergence` `not_applicable` (ready without Copilot
+  clauses). `copilot-advisory`, `external-bot`, absent, or an
+  invalid value keep today's primary-bot applicability. Do not
+  register the check as required unless the chosen policy actually
+  wants an advisory-bot gate.
+
+Phase files that tell an agent to post a disposition name the stamp
+on both the helper path and the manual `gh api` path:
+`idd-review-triage.instructions.md` (E6) and
+`idd-review-fix.instructions.md` (E13). F2 evaluation of unmarked
+human vs Copilot threads lives in
+`idd-pre-merge.instructions.md`.
 
 ## Review Thread Resolution Profiles
 

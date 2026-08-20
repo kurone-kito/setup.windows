@@ -151,14 +151,35 @@ runtime does not enforce that explicit allowlist yet.
 
 ### Issue-authoring companion
 
-Confirm whether the operator wants the optional issue-authoring skill:
+Confirm whether the operator wants the optional issue-authoring skill and,
+when installed, record the one native destination selected for the target
+runtime:
 
-- `installed`: copy `skills/issue-authoring/` into the target repository
+- `installed`: copy the canonical source bundle at
+  `skills/issue-authoring/` into one selected native skill directory, such as
+  `.agents/skills/issue-authoring/` for Codex CLI or OpenCode,
+  `.claude/skills/issue-authoring/` for Claude Code, or
+  `.opencode/skills/issue-authoring/` for OpenCode. Record
+  the selected destination alongside the `installed` status.
 - `not installed`: continue without the companion
 
-The companion helps draft IDD-ready issues and roadmaps. It does not
-authorize publishing issues or starting the main execution loop on its
-own.
+The canonical source path and the installed destination are separate values:
+the destination is not a second source-of-truth copy. Do not add the same
+skill ID to multiple runtime roots by default (preventive; no observed incident
+yet); a mixed-runtime target should
+use one native copy plus an explicit manual route unless the operator
+deliberately accepts identical duplicates. The companion helps draft
+IDD-ready issues and roadmaps. By default, it publishes each drafted
+`ready` body directly under the configured authoring label once it
+passes the mechanical pre-publish gate and the critique pass — no
+separate publish approval step — unless the current request explicitly
+asked for a preview instead. Releasing that authoring hold is the
+single boundary within the companion's own workflow that still needs an
+explicit request: publishing under the hold alone does not start the
+main execution loop, because Discover treats an issue carrying the
+authoring label as not startable while the hold remains. The
+issue-author approval gate described above still applies independently
+once the hold is released.
 
 ### Helper runtime profile
 
@@ -196,6 +217,110 @@ emit a reviewed tag, commit, tarball, or internal mirror URL. Treat
 `refs/heads/main` as a manual opt-in when the repository explicitly
 wants a mutable helper source instead of a reviewed pinned spec.
 
+**pnpm `allowBuilds` requirement for a git-hosted pinned spec.** When a
+`package-manager` repository using pnpm pins the `devDependencies` entry
+to a git-hosted spec (for example
+`"@kurone-kito/idd-skill": "github:kurone-kito/idd-skill#v0.4.0"`), a
+clean `pnpm install` fails:
+
+```text
+[ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED] Failed to prepare git-hosted
+package fetched from "https://codeload.github.com/kurone-kito/idd-skill/
+tar.gz/<sha>": The git-hosted package "@kurone-kito/idd-skill@0.4.0"
+needs to execute build scripts but is not in the "allowBuilds"
+allowlist.
+```
+
+pnpm treats a git-hosted dependency's build scripts as untrusted by
+default and refuses to run them until the repository explicitly allows
+it. Add an `allowBuilds` entry for the helper package to
+`pnpm-workspace.yaml` to unblock the install:
+
+```yaml
+allowBuilds:
+  "@kurone-kito/idd-skill@https://codeload.github.com/kurone-kito/idd-skill/tar.gz/<sha>": true
+```
+
+The allowlist key form differs for a git-hosted dependency. A
+**registry** dependency only needs the bare package name (for example
+`"@biomejs/biome": true`), but a **git-hosted** dependency needs the
+full `<name>@<resolved-tarball-url>` key — the bare package name alone
+silently does not match and reproduces the same
+`ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED` error. Copy the exact
+`fetched from "..."` URL from pnpm's own error output above rather than
+guessing the resolved-tarball-URL shape; it is not the same as the
+`github:owner/repo#ref` shorthand written in `devDependencies`, and it
+changes per resolved commit.
+
+### IDD label names
+
+Confirm whether the repository keeps the three distributed IDD label
+names or maps them onto an existing local label taxonomy:
+
+- `labels.roadmapLabelName` (distributed default `roadmap`)
+- `labels.blockedByHumanLabelName` (distributed default
+  `status:blocked-by-human`)
+- `labels.needsDecisionLabelName` (distributed default
+  `status:needs-decision`)
+
+**Auto-labeler risk.** If the repository runs a semantic issue
+auto-labeler — a bot such as CodeRabbit's issue enrichment that infers
+labels from issue content instead of applying only labels a human or
+workflow explicitly requests — that labeler can apply any of these
+three configured label names to an ordinary issue on its own judgment,
+regardless of which label names the repository chose. The failure is
+silent: nothing errors, and the issue simply stops being an execution
+candidate (a spurious `labels.roadmapLabelName` match) or gets parked
+behind a hold (a spurious `labels.blockedByHumanLabelName` or
+`labels.needsDecisionLabelName` match — both are Discover's
+roadmap-level blocker gates) with no visible cause. This has been
+observed in the field: in one fresh template import, `coderabbitai[bot]`
+applied the roadmap label to all eight children of one authored roadmap
+batch — an 8/8 hit rate, not an occasional misfire — and separately
+applied the blocked-by-human label to an issue that had been authored
+with the needs-decision label, so the risk is not limited to one label
+name.
+
+**Omitting a label from the labeler's instructions is not a
+restriction.** A semantic labeler's own configuration (for example, a
+`labeling_instructions` list scoped to content labels) supplies
+per-label guidance for the labels the product is told about — it does
+not narrow which labels the product's own auto-labeling heuristic may
+apply on its own. Leaving the three IDD label names out of that
+configuration does not stop the labeler from applying them; do not
+recommend or rely on that omission as a mitigation.
+
+**Ask this question during onboarding**: does anything in this
+repository, or an installed GitHub App, auto-apply labels to issues
+based on content? If yes, and the repository keeps the distributed IDD
+label names (or any other label such an auto-labeler could plausibly
+infer), adopt the guard recipe in
+[Customizing IDD — Reserved-label guard recipe](../customization.md#reserved-label-guard-recipe)
+before relying on unattended discovery or hold semantics.
+
+### Bootstrap execution mode
+
+Confirm whether the initial IDD import itself runs through the
+distributed direct-import default or through the optional
+issue-mediated alternate:
+
+- `direct-import` (distributed default, "theirs-flow"): Steps 2, 4, 5,
+  and 6 import the template with a direct, unreviewed commit, then hand
+  off to the normal claim -> work -> PR -> CI -> merge loop for every
+  subsequent change.
+- `issue-mediated`: routes that same import through a reviewable
+  issue -> branch -> PR -> merge cycle instead, using the placeholder
+  values and Step 1B policy decisions already confirmed earlier in the
+  hearing. Choose this when the operator wants every repository
+  mutation — including the very first one — to have a reviewable
+  record, or simply prefers not to grant an agent a direct-commit path.
+
+If the operator does not state a preference, propose `direct-import`
+and only switch modes on explicit confirmation. See
+[Onboarding Reference — Issue-Mediated
+Bootstrap](issue-mediated-bootstrap.md) for the full procedure and
+prerequisites.
+
 ## Related default policies to confirm
 
 The onboarding entry point should also confirm whether the repository
@@ -216,6 +341,57 @@ wait defaults:
 
 Record whether the repository keeps these defaults before unattended
 workers begin running.
+
+It should also confirm whether the repository's GitHub ruleset leaves
+"Require branches to be up to date before merging"
+(`required_status_checks.strict_required_status_checks_policy`)
+disabled:
+
+- Recommended: disabled. Measured evidence shows enabling it can force
+  a `main`-sync merge on every merely-`BEHIND` PR and multiplies Copilot
+  advisory-review rounds without adding review value — a before/after
+  commit sample measured the sync-merge share fall from ~27% to ~3.7%
+  once this repository disabled it
+  ([kurone-kito/idd-skill#1817](https://github.com/kurone-kito/idd-skill/issues/1817)).
+  This benefit only holds when the automation token can read the
+  ruleset — an unreadable ruleset read still fails closed to forcing
+  the sync path regardless of the live setting.
+- Trade-off: disabling it means the final pre-merge CI run may not
+  reflect the very latest `main`, which IDD's own conflict-triggered
+  `main`-sync merge (E11) and F1/F2 freshness checks still catch when
+  it matters for correctness.
+
+Record whether the repository keeps this setting disabled before
+unattended workers begin running.
+
+It should also confirm that any required status check registered
+through GitHub's classic branch-protection API uses the explicit
+`checks` array rather than a plain string-array `contexts` field:
+
+- Recommended: register required checks with an explicit `checks`
+  array. Use `app_id: -1` (any producer) for `idd-advisory-convergence`
+  specifically — only the adopter's own hosted workflow ever produces a
+  check with that exact name — but not as a blanket choice for every
+  required check: keep a specific `app_id` pin on any check where
+  verifying the producer matters. GitHub's classic API silently
+  rewrites a `contexts` `PUT` into `app_id`-pinned `checks` entries,
+  and a pinned entry is exactly what the fail-closed "Source-pinned
+  required-check trust" default
+  (`ciGate.trustSourcePinnedRequiredChecks` — see the row in
+  [Customizing IDD](../customization.md)) downgrades to unresolved even
+  when green, so an operator who configures branch protection the
+  straightforward way walks into that gate on the very first PR
+  (observed 2026-08-11 onboarding a companion repository;
+  [kurone-kito/idd-skill#1925](https://github.com/kurone-kito/idd-skill/issues/1925)).
+  See [ONBOARDING.md's required-status-check registration
+  step](https://github.com/kurone-kito/idd-skill/blob/main/idd-template/ONBOARDING.md#optional--host-idd-advisory-convergence-as-a-required-check-ci-workflow)
+  for the working `PATCH` snippet, including the merge caveat (`PATCH`
+  replaces the whole `checks` list) and the producer-pinning trade-off
+  of `app_id: -1`.
+
+Record whether the repository's required-check registration avoids the
+string-array `contexts` pinning trap before unattended workers begin
+running.
 
 ## Recording the selected policies
 
@@ -257,6 +433,19 @@ This repository uses the following IDD policies:
 - **generation timeout**: `PT10M` / 10 min (or repository override)
 - **rerun policy**: `{rerun-once | hold}`
 
+### Up-to-Date-Head Ruleset
+
+**Policy**: `{disabled (recommended) | enabled}`
+
+### Required-Check Registration
+
+- **Classic-API `contexts` pinning trap avoided**:
+  `{yes | no / not applicable}`
+- **Producer-identity choice**: `{app_id: -1 (any producer) |
+  intentionally pinned}`
+- **If intentionally pinned, `ciGate.trustSourcePinnedRequiredChecks`
+  opt-in recorded**: `{yes | no / not applicable}`
+
 ### Credential Scope
 
 **Worker credentials**: `{least-privilege worker scope}`
@@ -287,8 +476,14 @@ This repository uses the following IDD policies:
 
 **Status**: `{installed | not installed}`
 
+**Native destination**: `{.agents/skills/issue-authoring/ | .claude/skills/issue-authoring/ | .opencode/skills/issue-authoring/ | not applicable}`
+
 - **`issueAuthoring.maxClarificationRounds`**:
   `{3 | custom finite bound}`
+
+### Bootstrap Execution Mode
+
+**Mode**: `{direct-import | issue-mediated}`
 ```
 
 When the repository uses a non-default merge, review, or thread policy,
@@ -332,6 +527,9 @@ Keep these rules in mind:
 - keep command strings JSON-escaped instead of pasting fragile raw shell
 - keep `helperRuntime.profile` aligned with the human-readable helper
   runtime section when helper support is enabled
+- set `helperRuntime.packageSpec` only when the repository has pinned a
+  reviewed tarball, mirror URL, or commit archive for its `ephemeral-npx`
+  helper install; omit it to keep the mutable default archive URL
 
 The file validates against the canonical schema at:
 

@@ -32,14 +32,14 @@ and take the caller's `SATISFIED` action (E14 → E15, F2 → CI check, F3
 one). Enter the full protocol below **only** when
 `LAST_COPILOT_COMMIT != PR_HEAD_SHA`.
 
-Keep the wait itself cheap per the
-[wake-up discipline](idd-ci.instructions.md#wake-up-discipline): a
-single wake at the **expected** completion, or background only if the
-topology-safety condition holds; otherwise wait synchronously — no
-single `gh` command blocks on Copilot review state; run the protocol
-below (helper-first, AW1-AW5 fallback) as a foreground wait, never
-`run_in_background`, absent the confirmed condition. Batch all
-post-wait actions into one turn.
+Keep the wait cheap per the
+[wake-up discipline](idd-ci.instructions.md#wake-up-discipline): one
+wake at the expected completion, or background only if the
+topology-safety condition holds;
+otherwise wait synchronously. No `gh` command blocks on Copilot
+review state — run the protocol (helper-first, AW1-AW5 fallback) in
+the foreground, never `run_in_background` without that condition.
+Batch post-wait actions into one turn.
 
 ## 1. Canonical path (helper-first)
 
@@ -143,6 +143,9 @@ AW3 inputs:
 - `LAST_COPILOT_COMMIT` — `commit_id` of the latest Copilot review
   (empty if none); equals `PR_HEAD_SHA` short-circuits to **SATISFIED**.
 - `COPILOT_PENDING` — `true` if Copilot is in `requested_reviewers`.
+  Observed once: `false` can lag a re-request or empty on submit —
+  not idle proof. `LAST_COPILOT_COMMIT == PR_HEAD_SHA` is
+  **SATISFIED**. A same-head `false` uses the shorter settled window.
 - `COPILOT_PENDING_COVERS_HEAD` — `true` if the latest Copilot
   `review_requested` event follows current HEAD's `committed` event.
 
@@ -334,7 +337,12 @@ hold.
 
 **`suppressedCount` unvalidated**: `#1511` is `itemCount`-only; reroll
 never zeroed it in `kurone-kito/lints-config` PRs `#243`/`#245`
-(2026-08-10/11).
+(2026-08-10/11). PR #2054 fixes it.
+
+**Already-handled escape hatch**: when the blocking suppressed
+finding(s) have already been read and handled, a reroll is
+unnecessary — post a trusted `review-ack:` marker instead; see
+`idd-review-triage.instructions.md`'s `review-ack:` paragraph (E6).
 
 ## Terminal Copilot stall-recovery contract (state, policy, markers, clock)
 

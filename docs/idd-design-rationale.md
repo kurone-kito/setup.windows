@@ -124,9 +124,25 @@ then re-collided on the next lowest number.
 The opt-in `discover.selectionDesync: session-offset` knob adds a
 **proactive** desync: within a single highest-score tie band it picks the
 entry at `selectDesyncedIndex(session-token, band-size)` (a pure
-`hash(session-token) mod band-size`, the token being the selection-time
-`{agent-id}`) instead of always index 0, spreading concurrent sessions
-across _different_ eligible issues up front.
+`hash(session-token) mod band-size`) instead of always index 0, spreading
+concurrent sessions across _different_ eligible issues up front.
+
+`session-token` must be a per-session-unique value, never the bare,
+session-shared `{agent-id}` alone: `idd-overview-core.instructions.md`
+defines `{agent-id}` as shared across concurrent sessions of the same
+agent type, with a unique session suffix only recommended, not required.
+Sessions that follow that core definition literally and omit the suffix
+all hash to the identical index and converge on the same issue — the
+same converge-and-collide shape as the 3-way race above. This specific
+bare-agent-id collapse is preventive; no observed incident yet —
+kurone-kito/idd-skill#1694 identified it by inspection of the two
+files' definitions, not from a collision that already happened.
+`idd-discover.instructions.md` closes the gap by requiring the
+session-suffixed `{agent-id}` or, when the agent-id carries no unique
+component, a session-local fallback token generated once at Discover
+entry and reused for the session — with enough entropy
+(random or UUID-derived) to stay distinct across sessions launched at
+the same moment, since a bare timestamp alone would not.
 
 It is off by default and reorders **only within** a same-score tie band so
 the documented score-then-lowest-number ranking is the unchanged single-
@@ -214,9 +230,10 @@ exercises. Beyond the AC's letter, `evaluateResumeClaimRouting`
 unit-tested, anticipating Resume Step 1 wiring — but the documented Resume
 Step 1 invocation (`idd-resume.instructions.md`) never threads either flag
 through, and a resumed process has no local memory of which nonce was its
-own to compare against in the first place. That cold-recovery design
-(kurone-kito/idd-skill#1529) is a natural fast-follow (the same shared
-parse/render primitives already support it) — not a silent design gap.
+own to compare against in the first place. Cold recovery
+(kurone-kito/idd-skill#1529) now fail-closes: a resume that holds no
+local nonce treats 2+ trusted activation-nonce markers for the active
+claim-id as `disputed`/`stop` rather than guessing an owner.
 The merge write-gate half landed separately: `summarizeClaimValidation`
 (`protocol-helpers.mts`) now shares the same `findActivationNonceWinner`
 primitive via `pre-merge-readiness.mjs`'s `--nonce` flag

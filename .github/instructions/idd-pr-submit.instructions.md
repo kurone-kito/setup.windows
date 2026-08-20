@@ -133,6 +133,13 @@ when one exists:
   Include only context grounded in the issue discussion, commits, diff,
   or explicit operator instructions; omit rather than speculate.
 
+**Do not create follow-up issues directly.** An executing IDD session
+must never call `gh issue create` (or the REST issues API) itself.
+Recommended follow-ups stay in the PR body's own prose above. If a
+follow-up is important enough to file in-repo now, invoke the
+`issue-authoring` skill (its Stage 1 hold) instead of improvising a
+body. Do not add a parallel "worker-lite authoring" contract.
+
 ### PR body language
 
 The PR body's prose sections above (summary, background/rationale,

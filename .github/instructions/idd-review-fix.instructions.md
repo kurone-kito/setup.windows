@@ -75,13 +75,12 @@ git merge origin/main`), resolve them, and complete the merge. On a
 signed-commit repo with non-interactive-hostile primary signing (GPG
 pinentry / hardware-touch), use the
 [signed-commit merge wrapper](../../docs/idd-helper-scripts.md#signed-commit-merge-wrapper-shared-git-procedure)
-for the whole operation instead of the plain command.
+for the whole operation instead of the plain command — see
+`idd-review-triage.instructions.md`'s Sync path step 2 for the
+wrapper's `-m` subject requirement.
 
 **Active review gate**: same check as
-`idd-review-triage.instructions.md`'s sync path step 1 — unresolved
-review threads, unreplied comments, or a reviewer's
-`CHANGES_REQUESTED` state require explicit operator confirmation before
-this merge, since the merge commit will appear in PR history.
+`idd-review-triage.instructions.md`'s Sync path step 1.
 
 ## E12 — Lint, test, push
 
@@ -140,17 +139,21 @@ Start every reply with one of these prefixes so that disposition is
 unambiguous:
 
 - `**Accepted** — fixed in {commit-sha or comma-separated list}: {brief explanation}`
+  After that visible prefix, include the reply-identity stamp exactly as
+  `idd-review-triage.instructions.md`'s E6 defines it
+  (`<!-- {markerPrefix}-review-reply -->`) — same stamp mechanics and
+  constraints, applied here to the `**Accepted**`-only prefix this
+  phase posts.
 
 - **Review threads**: after posting your reply, **immediately resolve
-  the thread**. When helper runtime is enabled, the profile-selected
-  resolve-review-thread command (`--pr <number> --comment-id <id>
-  --apply`, with `--body`/`--claim-issue`/`--claim-id`; see
-  `docs/idd-helper-scripts.md`) posts the reply and resolves in one
-  call, replying before resolving so a failed reply never leaves a
-  silently-resolved thread; the manual REST + GraphQL
-  `resolveReviewThread` sequence is the fallback. Resolution means
-  "agent acted", not "reviewer agreed" — a disagreeing reviewer can
-  reopen the thread, re-surfacing it in the next E1 pass.
+  the thread**, using the same resolve-review-thread mechanism as
+  `idd-review-triage.instructions.md`'s E6 (profile-selected helper
+  command, reply-before-resolve, manual REST + GraphQL
+  `resolveReviewThread` fallback — see
+  `idd-review-triage.instructions.md`'s E6 for the exact command and
+  flags). Resolution means "agent acted", not "reviewer agreed" — a
+  disagreeing reviewer can reopen the thread, re-surfacing it in the
+  next E1 pass.
 - **Regular comments**: reply only; do not resolve.
 - **Persistent non-review notices**: a non-review notice already
   dispositioned `**Rejected** — {bot} did not review HEAD …` in a prior
@@ -159,6 +162,7 @@ unambiguous:
   same summary (see the E6 non-review-notice rule). Only a notice the
   bot replaces with an actual completed review needs a fresh
   disposition.
+- **Advisory courtesy acks**: do not re-disposition a courtesy bot ack.
 
 After E13 replies and resolutions are complete, upsert the PR live
 status digest before E14 if the next route is still review-fix or CI

@@ -5,6 +5,17 @@ the authoritative review gate for every PR. Apply the complete surface
 below as one workflow change; documentation alone does not make this
 profile active.
 
+**Do not register `idd-advisory-convergence` as required under this
+profile unless this policy actually wants an advisory-bot gate.**
+Hosting that workflow is optional. Set `reviewPolicy` to
+`human-required` in `.github/idd/config.json` so a later session does
+not re-host the check against a human-only policy. Registering the
+job as a required status check still adds an extra required CI
+gate and extra runs, even though the helper no longer demands
+Copilot under `human-required`. Leave the check unregistered unless
+you later switch to a Copilot-advisory or `external-bot` review
+policy, or you explicitly want that extra required check.
+
 ## Adopter-Owned Values
 
 Record these values before editing phase behavior:
@@ -18,16 +29,17 @@ Record these values before editing phase behavior:
 
 ## Patch Surface
 
-| File                                                       | Required local edit                                                                                                                                      |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.github/instructions/idd-review-fix.instructions.md`      | Remove the E14 Copilot re-review request and advisory wait. Replace it with a human-review handoff only if the repository wants that handoff documented. |
-| `.github/instructions/idd-advisory-wait.instructions.md`   | Mark the Copilot advisory wait helper unused by this profile, or remove local references to it from the customized phase flow.                           |
-| `.github/instructions/idd-pre-merge.instructions.md`       | Make required human approval, branch protection, unresolved conversations, CI, freshness, and claim evidence the F2 gate.                                |
-| `.github/instructions/idd-merge.instructions.md`           | Remove final Copilot advisory rechecks while keeping CI, claim, freshness, required review, and unresolved-thread checks.                                |
-| `.github/instructions/idd-review-snapshot.instructions.md` | Keep human comments in the review universe and remove assumptions that Copilot advisory PATH B items must appear.                                        |
-| `.github/instructions/idd-review-triage.instructions.md`   | Keep human review comments as decision-relevant feedback and remove Copilot-specific advisory requirements.                                              |
-| `docs/idd-review-policy-profiles.md`                       | Record the selected `human-required` profile and link to the local verification evidence.                                                                |
-| `docs/customization.md` or another local policy document   | Record the reviewer authority, branch protection rule, and review-thread resolution profile.                                                             |
+| File                                                       | Required local edit                                                                                                                                            |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/idd/config.json`                                  | Set `reviewPolicy` to `human-required`. Do not register `idd-advisory-convergence` as a required check unless this policy actually wants an advisory-bot gate. |
+| `.github/instructions/idd-review-fix.instructions.md`      | Remove the E14 Copilot re-review request and advisory wait. Replace it with a human-review handoff only if the repository wants that handoff documented.       |
+| `.github/instructions/idd-advisory-wait.instructions.md`   | Mark the Copilot advisory wait helper unused by this profile, or remove local references to it from the customized phase flow.                                 |
+| `.github/instructions/idd-pre-merge.instructions.md`       | Make required human approval, branch protection, unresolved conversations, CI, freshness, and claim evidence the F2 gate.                                      |
+| `.github/instructions/idd-merge.instructions.md`           | Remove final Copilot advisory rechecks while keeping CI, claim, freshness, required review, and unresolved-thread checks.                                      |
+| `.github/instructions/idd-review-snapshot.instructions.md` | Keep human comments in the review universe and remove assumptions that Copilot advisory PATH B items must appear.                                              |
+| `.github/instructions/idd-review-triage.instructions.md`   | Keep human review comments as decision-relevant feedback and remove Copilot-specific advisory requirements.                                                    |
+| `docs/idd-review-policy-profiles.md`                       | Record the selected `human-required` profile and link to the local verification evidence.                                                                      |
+| `docs/customization.md` or another local policy document   | Record the reviewer authority, branch protection rule, and review-thread resolution profile.                                                                   |
 
 ## Verification Evidence
 
