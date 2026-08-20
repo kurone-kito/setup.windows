@@ -79,6 +79,7 @@ words:
   - desynced
   - esac
   - esync
+  - ghes
   - isort
   - onnx
   - pylint

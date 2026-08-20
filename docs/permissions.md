@@ -108,8 +108,82 @@ merges:
   human review is the intended gate. Treat this as a repository policy
   change, not a per-run workaround.
 
+The `--admin` retry's settled-state helper
+(`isSafeSoloCodeownerAdminMergeState`) still refuses
+`mergeStateStatus: "BLOCKED"`. That is the distributed contract, not a
+kurone-kito/idd-skill-only quirk: field evidence showed `"BLOCKED"` from
+cancelled or stale required-check instances, a missing
+review-watermark, or incomplete F2, and widening the retry would merge
+past a still-red required check.
+
+On kurone-kito/idd-skill's current `main` ruleset
+(`require_code_owner_review: false`,
+`required_approving_review_count: 0`, one `pull_request` bypass
+actor):
+
+- `codeownerSelfApproval.status` reads `not_applicable`, so the retry
+  trigger (`status: "clear"`) never matches.
+- Observed `"BLOCKED"` on kurone-kito/idd-skill#1660 (2026-07-23),
+  kurone-kito/idd-skill#1741 (2026-08-01),
+  kurone-kito/idd-skill#1914 (2026-08-06), and
+  kurone-kito/idd-skill#2123 (2026-08-17) was cancelled/stale required
+  checks, a missing review-watermark, or incomplete F2 — not a
+  confirmed CODEOWNER deadlock.
+- kurone-kito/idd-skill#1867 (2026-08-05) is topology evidence, not
+  another stale-check incident: F2 was `ready: true`, the retry
+  correctly stayed off because of `not_applicable`, and a human
+  `--admin` completed the merge.
+- When a plain `gh pr merge` still fails with "the base branch policy
+  prohibits the merge" after F2 is clean **on this topology**, escalate
+  with a human `--admin` (or `hold-and-report`). Distributed
+  `auto-admin-retry` is unchanged for repositories where
+  `status: "clear"` with a bypass-available `reason`,
+  `prAuthorIsSoleEligibleCodeowner: true`, and
+  `codeownerEligibilityUnreadable: false` hold.
+- `"BLOCKED"` plus discarded required-check siblings is a separate
+  CI-recovery gate (kurone-kito/idd-skill#2127), not a reason to widen
+  the `--admin` retry.
+
+See `idd-merge.instructions.md` F3 and kurone-kito/idd-skill#1663.
+
 Do not use issue-author approval, trusted operational markers, or
 CODEOWNERS mismatch as substitutes for a satisfiable GitHub merge gate.
+
+## Reading the `code_quality` ruleset rule
+
+This source repository's `main` ruleset includes a `code_quality` rule
+(`severity: errors`). As of 2026-08-18, a per-SHA pass/fail **after a
+push to a matching ref** is readable via ruleset rule-suites. A live
+PR-head verdict for F3 is not: the `main` ruleset matches
+`~DEFAULT_BRANCH`, and observed suites were `refs/heads/main` only.
+Automated F3 inspection therefore stays out of scope. A `"BLOCKED"`
+merge state is not evidence of a `code_quality` finding.
+
+Surfaces tried on kurone-kito/idd-skill (2026-08-18):
+
+- REST rule-suites — a post-push evaluation. List
+  `GET /repos/{owner}/{repo}/rulesets/rule-suites` with `ref` set to
+  the matching ref (here `refs/heads/main`), a `time_period` that
+  covers the SHA (`day` is the default 24 h window; use `week` or
+  `month` for older pushes), and pagination (`per_page` up to 100,
+  default 30; follow `page` / Link headers), then
+  `GET /repos/{owner}/{repo}/rulesets/rule-suites/{id}`. List
+  entries include `after_sha`; the detail's `rule_evaluations[]`
+  includes `{ "rule_type": "code_quality", "result": "pass" }` (or
+  `fail`). Filter the list for `after_sha` equal to the head when a
+  suite exists. A 404 can mean the token cannot list rule suites.
+  This is not a pre-merge PR-head gate on this topology.
+- REST `GET /repos/{owner}/{repo}/code-quality/findings` — HTTP 404
+  here (product API documented; not enabled on this repository). The
+  documented sample payload has no commit SHA.
+- REST check-runs and commit statuses — no check-run name, app, or
+  context for the ruleset rule (CodeQL is a different product).
+- REST `GET /repos/{owner}/{repo}/rules/branches/{branch}` and
+  `GET /repos/{owner}/{repo}/rulesets/{id}` — rule definition only
+  (`type: code_quality`), not a commit verdict.
+- GraphQL `RepositoryRuleType` — no `CODE_QUALITY` enum value.
+- GraphQL pull-request `mergeable` / `mergeStateStatus` — overall
+  mergeability, not a `code_quality`-specific verdict.
 
 ## External-Check Waiver Authority
 
@@ -338,10 +412,11 @@ Keep approval labels and operational marker trust as separate controls:
 
 This section is **Claude Code-specific**: it documents the committed
 `.claude/settings.json` allow/deny baseline and its opt-in template
-counterpart. Every other harness this workflow supports (Copilot, Codex
-CLI, OpenCode, Antigravity CLI) has no equivalent file and simply
-ignores it -- this section is purely additive for those agents, not a
-cross-agent permission contract.
+counterpart. Copilot, Codex CLI, OpenCode, and Antigravity CLI have no
+equivalent file and ignore it. Grok Build is the exception: it merges
+that committed allow/deny baseline into its permission rules. This
+section is not a cross-agent permission contract for the harnesses that
+ignore the file.
 
 A fresh Claude Code session otherwise starts from an empty per-user
 `.claude/settings.local.json`, so every environment re-accumulates the

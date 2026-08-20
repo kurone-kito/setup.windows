@@ -214,9 +214,10 @@ exercises. Beyond the AC's letter, `evaluateResumeClaimRouting`
 unit-tested, anticipating Resume Step 1 wiring — but the documented Resume
 Step 1 invocation (`idd-resume.instructions.md`) never threads either flag
 through, and a resumed process has no local memory of which nonce was its
-own to compare against in the first place. That cold-recovery design
-(kurone-kito/idd-skill#1529) is a natural fast-follow (the same shared
-parse/render primitives already support it) — not a silent design gap.
+own to compare against in the first place. Cold recovery
+(kurone-kito/idd-skill#1529) now fail-closes: a resume that holds no
+local nonce treats 2+ trusted activation-nonce markers for the active
+claim-id as `disputed`/`stop` rather than guessing an owner.
 The merge write-gate half landed separately: `summarizeClaimValidation`
 (`protocol-helpers.mts`) now shares the same `findActivationNonceWinner`
 primitive via `pre-merge-readiness.mjs`'s `--nonce` flag

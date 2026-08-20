@@ -233,6 +233,10 @@ loop instead of returning to this D1 rebase path.
 7. If CODEOWNERS or expected reviewers are not auto-assigned, request
    them explicitly: `gh pr edit {pr-number} --add-reviewer
    {reviewer-login}`.
+8. **Do not create follow-up issues directly** — never call `gh issue
+   create` (or the REST issues API) yourself. Recommended follow-ups
+   stay in the PR body prose above; if one is important enough to file
+   now, invoke the `issue-authoring` skill instead.
 
 ### D3.5 — Verify closing keyword detection
 

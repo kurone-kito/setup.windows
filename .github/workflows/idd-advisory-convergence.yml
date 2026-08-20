@@ -76,8 +76,26 @@ concurrency:
   # upstream idd-skill#1381) -- if the rollup ever appears stuck on a
   # stale run for the current HEAD SHA, `gh run rerun <run-id>` on the
   # existing pull_request-family run for that SHA is the known recovery.
+  # Upstream v0.7.0 (idd-skill#2136) closes this race a different way, by
+  # moving pull_request_review_comment into a separate
+  # idd-advisory-convergence-comment.yml companion workflow with its own
+  # job id and concurrency group. This repository deliberately keeps the
+  # combined single-workflow form for now: adopting the split needs a new
+  # companion workflow file (which would carry `actions: write`, tripping
+  # the trust-model header's "widens permissions" re-review clause) and
+  # is tracked as a follow-up rather than done as part of this pin bump
+  # (see kurone-kito/setup.windows#124).
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: true
+defaults:
+  run:
+    # Pins every run: step's shell regardless of runner OS -- GitHub
+    # Actions otherwise picks bash on Linux/macOS but PowerShell Core
+    # on Windows, which would silently misinterpret this file's POSIX
+    # command substitution and shell variable expansion (e.g.
+    # "$PR_NUMBER") instead of failing loudly. Available on every
+    # GitHub-hosted runner, including Windows via Git Bash.
+    shell: bash
 jobs:
   # The job id doubles as this check's required-status-check context name
   # and as the `ciGate.externalChecks.waivable[].selector` value in
@@ -101,5 +119,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
         run: |
-          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/cac92e3eb21d978e1e039a8d88cb7d50fd9d640e \
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0 \
             idd-advisory-convergence --pr "$PR_NUMBER" --assert

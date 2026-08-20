@@ -402,6 +402,18 @@ collaborator permission API.
 A bare organization `MEMBER` association, by itself, is not approval;
 neither is issue body text, a generated plan, nor operator attention.
 
+**Self-authorization fallback when the permission read is unavailable
+(#2148).** The bare-`MEMBER` rule above governs an approval-comment
+actor or the `idd:ready` label actor, both of which require a
+successful permission read. For the issue-author self-authorization
+signal specifically, when the collaborator permission API is
+unavailable (503, empty, or otherwise unreadable), the issue's own
+live `author_association` substitutes instead of failing closed:
+`OWNER` always self-authorizes; `MEMBER` self-authorizes under both
+`owners-and-maintainers-only` and `all-write-permission-actors`. This
+matches `claim-approval-gate.mjs`'s shipped behavior and does not
+widen either other signal.
+
 **Approval signals** (any one satisfies, when the gate is enabled):
 
 - the issue author is self-authorized under the current
@@ -541,8 +553,11 @@ for how the remaining tie-breakers below apply after this rule.
 `discover.selectionDesync` is `session-offset` (default `off`) and the
 highest-score tie band has more than one eligible candidate, pick the
 band entry at index `selectDesyncedIndex(session-token, band-size)`
-instead of index 0 — a pure `hash(session-token) mod band-size` over
-the band ordered by ascending issue number.
+instead of index 0 — FNV-1a 32-bit over the token's UTF-16 code units
+(offset basis `0x811c9dc5`, prime `0x01000193`, wrap to 32 bits after
+every multiply, then unsigned right-shift and modulo `band-size`) over
+the band ordered by ascending issue number. Worked example: token
+`copilot-8122ca35`, band-size `3` → index `1`.
 
 `session-token` **must be per-session-unique**: the bare, session-shared
 `{agent-id}` from `idd-overview-core.instructions.md` alone is **not** a

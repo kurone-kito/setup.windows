@@ -214,11 +214,9 @@ reviewer feedback:
       `PT24H`) with no response: escalate to a maintainer via issue or
       PR comment.
     - After `reviewEscalation.changesRequestedSecondEscalation` (default
-      `PT48H`) with no escalation response: consider adding the
-      configured needs-decision label
-      (`labels.needsDecisionLabelName`, default `status:needs-decision`)
-      and releasing the claim; remove the label and re-claim once
-      resolved.
+      `PT48H`) with no escalation response: apply the
+      **Needs-decision claim release** rule in
+      `idd-overview-appendix.instructions.md` (Hold / suspend).
   - Clearing F2's `CHANGES_REQUESTED` gate always requires the review
     **state** itself to change — a reviewer state change (re-submit as
     `COMMENTED`/`APPROVED`) or an admin dismissal via
@@ -230,7 +228,10 @@ reviewer feedback:
   - If the reviewer responds and disagrees: move the item to Accepted
     and proceed through the fix flow.
   - If the reviewer responds (either way): restart from E1.
-- If you decide "Reject now but should do eventually": open a new issue.
+- If you decide "Reject now but should do eventually": open a new issue
+  following `idd-pr-submit.instructions.md` D3's follow-up-issue rule —
+  never call `gh issue create` (or the REST issues API) directly; use
+  the `issue-authoring` skill.
   The new issue's body must include a `Refs #NNN` line on its own
   line (not narrative prose) back to the originating issue — use
   `Refs` specifically and reference the issue, never the PR: a
@@ -260,6 +261,21 @@ separate PATH A signal, not part of this pairing):
   marker fails this on its own — the fence delimiters, not the marker,
   are the first bytes), or the gate counts zero dispositions for that
   comment.
+- After the visible prefix, include the prefix-aware reply-identity
+  stamp
+  `<!-- {markerPrefix}-review-reply -->`
+  (use the repository `markerPrefix`, default `idd-skill`; helpers
+  inject it; a manual `gh api` JSON body must append it). The stamp is
+  utterance identity, not an E1 `review-watermark`, and it must not
+  replace the required `**Accepted**` / `**Rejected**` first bytes.
+  F2 treats an unmarked human reply on a **human-authored** thread as
+  presence-only; it does **not** treat that as a completed IDD
+  disposition. Copilot / configured-advisory-bot threads still require
+  a stamped or legacy trusted IDD disposition (or resolution). E7
+  still fails a recorded PATH A agent reply that lacks this marker
+  contract — presence-only is an evaluation rule for other people's
+  replies, not a license to post bare prose on the session's own
+  items.
 - Post **one disposition reply per advisory item** — never combine
   several markers into one comment; the 1:1 pairing clears only one item
   per comment, leaving the rest flagged `missing-disposition-evidence`.
@@ -276,6 +292,39 @@ PATH B — Advisory items (completed review of the current HEAD):
 - **Regular comments**: reply only.
 - Do not send PATH B items to review-fix. Their work is complete once
   the marker is posted and any thread resolution is done.
+
+**`review-ack:` marker — Clause 1 vs Clause 2.** Posting `**Accepted**`
+/ `**Rejected**` above satisfies advisory-convergence's Clause 2
+(thread / comment disposition) only. When the latest Copilot review on
+current HEAD also reports `suppressedCount > 0` (a finding folded into
+a `<details><summary>Suppressed comments (N)</summary>` block instead
+of a comment, so it has no thread or comment ID of its own to reply
+to — see `docs/idd-helper-scripts.md`), Clause 1's `suppressedCount`
+term needs its own coverage
+(`suppressedCount === 0 || hasValidReviewAck`) regardless of any
+Clause 2 disposition elsewhere in the same review. After reading the
+review body and confirming the suppressed finding(s) are handled
+(fixed, or judged as needing no action), post `review-ack:` for the
+current HEAD SHA. `post-idd-marker.mjs` itself performs no author
+gating — anyone with `gh` credentials can post the comment — but
+`idd-advisory-convergence` only honors a marker whose GitHub author is
+a `trustedMarkerActors` login; an untrusted poster's marker is ignored,
+not rejected at post time (helper-first: `post-idd-marker --type
+review-ack --from-pr <pr-number> --agent-id <id> --timestamp
+<ISO8601> --apply`):
+
+```text
+review-ack: {agent-id} {PR_HEAD_SHA} {ISO8601-acknowledged-at}
+```
+
+_Worked example_: a review posts a regular-comment finding plus a
+suppressed one. Disposition the regular-comment finding normally
+(`**Rejected** — verified placeholders-only`), then also post
+`review-ack: claude-code-1a2b3c4d 4b825dc642cb6eb9a060e54bf8d69288fbee4904 2026-08-19T00:10:00Z`
+(plain text, no HTML comment) to cover the suppressed one — the
+regular-comment rejection alone never sets `converged`, and this is
+not a license to skip **AW6** or the fix flow when the suppressed
+finding needs a code change.
 
 PATH B — Advisory non-review notice (rate-limit / quota / queued / bare
 ack / error, as defined in E4):
@@ -305,6 +354,14 @@ ack / error, as defined in E4):
   has, disposition that review instead and take a fresh E1 snapshot, so
   the rejection's later timestamp doesn't filter the completed review
   out of the next pass.
+- **Paraphrase, never reproduce, a bot's trigger or command string in
+  `{reason}`.** Advisory bots scan comment bodies for their own
+  command-trigger strings even inside Markdown code spans, so quoting
+  a bot's literal review-request mention verbatim — fenced or not —
+  can fire it as though a fresh review had been manually requested.
+  Describe the situation in your own words instead. Canonical
+  paraphrase for the low-star / manual-trigger skip-review case:
+  "requires a manually triggered review for low-star repositories".
 - **Carry the rejection forward across pushes.** Once a notice carries a
   `**Rejected** — {bot} did not review HEAD …` reply, that disposition
   persists across later HEAD changes and pushes while the same notice
@@ -443,7 +500,10 @@ Route based on `branchState` from the helper (or `mergeable` /
 2. Merge `main` into the feature branch:
    `git fetch origin main && git merge origin/main`. Use the
    [signed-commit merge wrapper](../../docs/idd-helper-scripts.md#signed-commit-merge-wrapper-shared-git-procedure)
-   when primary signing is non-interactive-hostile.
+   when primary signing is non-interactive-hostile. That wrapper's
+   merge invocation includes a conventional `-m` subject (for example
+   `chore: merge origin/main into the claimed branch`) so a commitlint
+   `commit-msg` hook does not reject the merge commit.
 3. If conflicts arise, resolve them and complete the merge with that
    same procedure — mirrors the D1 rebase note.
 4. Run **post-fix-validate**.
@@ -510,10 +570,9 @@ the loop — bind the merge to current HEAD and proceed. An **ack-only**
 comment opens no new thread, carries no `CHANGES_REQUESTED`, and raises
 no new finding; anything else re-opens the loop normally.
 
-_Example_: after you disposition a CodeRabbit thread `**Rejected**`,
-CodeRabbit replies "Thanks for confirming" on it — no new thread or
-finding, so the `updatedAt` advance is ignored; continue to F-phase on
-the current HEAD.
+_Example_: CodeRabbit replies "Thanks for confirming" after your
+`**Rejected**` disposition — no new thread or finding, so continue to
+F-phase on the current HEAD despite the `updatedAt` advance.
 
 **Helper evidence**: when the advisory-bot identity is configured, the
 activity-snapshot / `pre-merge-readiness` evidence emits the structural

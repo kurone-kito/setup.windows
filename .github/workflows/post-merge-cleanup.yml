@@ -53,6 +53,15 @@ permissions:
 concurrency:
   group: post-merge-cleanup-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: false
+defaults:
+  run:
+    # Pins every run: step's shell regardless of runner OS -- GitHub
+    # Actions otherwise picks bash on Linux/macOS but PowerShell Core
+    # on Windows, which would silently misinterpret this file's POSIX
+    # command substitution and shell variable expansion instead of
+    # failing loudly. Available on every GitHub-hosted runner,
+    # including Windows via Git Bash.
+    shell: bash
 jobs:
   cleanup:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
@@ -88,7 +97,7 @@ jobs:
             echo "::error::PR_NUMBER is empty"
             exit 1
           fi
-          JSON=$(npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/cac92e3eb21d978e1e039a8d88cb7d50fd9d640e \
+          JSON=$(npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0 \
             idd-audit-pr-cleanup \
             --pr "$PR_NUMBER" \
             --apply \
@@ -142,18 +151,42 @@ jobs:
           SKIPPED: ${{ steps.cleanup.outputs.skipped }}
           BLOCKED: ${{ steps.cleanup.outputs.blocked }}
         run: |
-          # Avoid duplicate evidence comments. Workflow-level concurrency
-          # only serialises this workflow's own runs; an agent F4 (or a
-          # maintainer rerunning workflow_dispatch on the same PR) can
-          # still have posted an evidence comment outside this run. Skip
-          # if any <!-- idd-cleanup-evidence: ... --> comment is already
-          # on the PR.
-          EXISTING=$(gh api --paginate \
+          # Avoid duplicate evidence comments, but only on a genuinely
+          # converged outcome. Workflow-level concurrency only serialises
+          # this workflow's own runs; an agent F4 (or a maintainer
+          # rerunning workflow_dispatch on the same PR) can still have
+          # posted an evidence comment outside this run. Skip only when
+          # the latest <!-- idd-cleanup-evidence: {status} ... --> comment
+          # already records `applied` or `clean` -- a comment recording
+          # any other status (`failed`, `incomplete`, `rescan-failed`,
+          # `permission-blocked`) invites a retry, so a rerun must post
+          # fresh evidence for its own outcome instead of leaving stale
+          # non-success evidence as the PR's only record.
+          #
+          # Capture into a variable (not process substitution): a failure
+          # inside `< <(gh api ...)` does not reliably propagate to this
+          # shell's default `-e`/`pipefail`, which could leave EXISTING
+          # empty and post a duplicate evidence comment on a transient
+          # `gh api` failure (rate limit/network). A plain command
+          # substitution assignment does trip `-e` on failure.
+          #
+          # The API returns issue comments in creation-ascending order, so
+          # iterating every match without an early `break` and keeping the
+          # last assignment leaves EXISTING/EXISTING_STATUS holding the
+          # *latest* matching comment, not merely the first one found.
+          COMMENTS_TSV=$(gh api --paginate \
             "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-            --jq '.[] | select(.body | startswith("<!-- idd-cleanup-evidence:")) | .id' \
-            | head -n1)
-          if [ -n "$EXISTING" ]; then
-            echo "::notice::PR #${PR_NUMBER} already has an idd-cleanup-evidence comment (id: ${EXISTING}); skipping workflow post."
+            --jq '.[] | select(.body | startswith("<!-- idd-cleanup-evidence:")) | [.id, (.body | split("\n")[0])] | @tsv')
+          EXISTING=""
+          EXISTING_STATUS=""
+          while IFS=$'\t' read -r candidate_id candidate_marker_line; do
+            [ -z "$candidate_id" ] && continue
+            EXISTING="$candidate_id"
+            EXISTING_STATUS=$(printf '%s' "$candidate_marker_line" \
+              | sed -n 's/^<!-- idd-cleanup-evidence: \([^ ]*\) .*/\1/p')
+          done <<< "$COMMENTS_TSV"
+          if [ -n "$EXISTING" ] && { [ "$EXISTING_STATUS" = "applied" ] || [ "$EXISTING_STATUS" = "clean" ]; }; then
+            echo "::notice::PR #${PR_NUMBER} already has an idd-cleanup-evidence comment recording '${EXISTING_STATUS}' (id: ${EXISTING}); skipping workflow post."
             exit 0
           fi
           BODY=$(printf '%s\n\n%s\n\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n' \

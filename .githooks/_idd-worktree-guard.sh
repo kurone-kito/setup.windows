@@ -14,7 +14,44 @@ idd_worktree_guard_check() {
   # $1: human-readable action word ("commit" or "push").
   action="$1"
 
-  repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || return 0
+  # Single combined `git rev-parse` replaces three separate forked
+  # pipelines (--show-toplevel; `git worktree list --porcelain | sed |
+  # head` to find the primary worktree; --abbrev-ref HEAD), leaving
+  # exactly two external-process forks -- this call and the `tr` below
+  # -- on the common "enabled, not on a guarded branch" path with the
+  # default worktreeGuard.branchPatterns; a configured override adds
+  # two more `tr` forks in the patterns= block further down. A later
+  # change must not silently regress either count.
+  #
+  # This must not gate on exit status: an unborn HEAD makes the
+  # trailing --abbrev-ref HEAD resolution fail (git exits 128), but git
+  # still prints the three preceding values, plus the literal token
+  # "HEAD" it could not resolve, to stdout -- confirmed locally. That
+  # "HEAD" line is indistinguishable from an actual detached HEAD's
+  # --abbrev-ref output, so both already fall through the existing
+  # branch != HEAD check below without special-casing. Whenever the
+  # first value (toplevel) fails outright -- outside a work tree, or
+  # inside a bare .git directory -- git prints nothing at all, so the
+  # loop below leaves repo_root empty and the guard returns 0. The
+  # trailing `|| true` keeps that non-zero exit from tripping a caller
+  # that sources this file under `set -e`, matching the old code's own
+  # `|| return 0` short-circuit.
+  info=$(git rev-parse --show-toplevel --git-dir --git-common-dir --abbrev-ref HEAD 2>/dev/null) || true
+  repo_root='' git_dir='' git_common_dir='' branch=''
+  i=0
+  while IFS= read -r line; do
+    i=$((i + 1))
+    case $i in
+      1) repo_root=$line ;;
+      2) git_dir=$line ;;
+      3) git_common_dir=$line ;;
+      4) branch=$line ;;
+    esac
+  done <<_IDD_WTG_EOF_
+$info
+_IDD_WTG_EOF_
+  [ -n "$repo_root" ] || return 0
+
   config="$repo_root/.github/idd/config.json"
   [ -f "$config" ] || return 0
 
@@ -33,18 +70,19 @@ idd_worktree_guard_check() {
     *) return 0 ;;
   esac
 
-  # Only the primary worktree is guarded. The primary worktree is the
-  # first entry reported by `git worktree list`; sibling worktrees are
-  # exactly where implementation branches are supposed to live.
-  primary=$(git worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p' | head -n 1)
-  [ -n "$primary" ] || return 0
-  [ "$primary" = "$repo_root" ] || return 0
+  # Only the primary worktree is guarded. In the primary worktree
+  # --git-dir and --git-common-dir refer to the same directory (both
+  # print ".git", or the same absolute path); in a linked worktree
+  # --git-dir points at ".../worktrees/<name>" while --git-common-dir
+  # still points at the shared repository -- confirmed locally. Sibling
+  # worktrees are exactly where implementation branches are supposed to
+  # live, so this is equivalent to the old primary-vs-repo_root check.
+  [ "$git_dir" = "$git_common_dir" ] || return 0
 
   # Only implementation branches are guarded. The globs come from
   # worktreeGuard.branchPatterns, defaulting to issue/* and
-  # roadmap-audit/* when the key is absent. (A detached HEAD reports
-  # "HEAD" and never matches.)
-  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  # roadmap-audit/* when the key is absent. (A detached HEAD, or an
+  # unborn HEAD, reports "HEAD" here and never matches.)
   [ -n "$branch" ] && [ "$branch" != "HEAD" ] || return 0
 
   patterns='issue/* roadmap-audit/*'

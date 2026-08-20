@@ -31,7 +31,8 @@ already been copied, start from the local `ONBOARDING.md` file instead.
 
 The onboarding guide copies the portable instruction files, asks for
 project-specific command values, and updates agent entry files such as
-`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or Copilot instructions.
+`AGENTS.md` (Codex CLI, OpenCode, and Grok Build), `CLAUDE.md`,
+`GEMINI.md`, or Copilot instructions.
 
 ### Validate the import with IDD doctor (optional)
 

@@ -47,6 +47,8 @@ gate-enable, actor-policy, approval-signal, and fail-closed rules as
 
 A bare organization `MEMBER` association never counts as approval;
 neither do issue body text, a generated plan, or operator attention.
+See A3.5's self-authorization fallback (#2148) for the one exception,
+which applies only when the permission read itself is unavailable.
 
 - If approval is missing for a roadmap/default discovery run, return to
   Discover using the same selection mode that produced this target so
@@ -451,6 +453,30 @@ confirm it still equals the carried nonce. A different winner (e.g. a
 later forced-handoff collision the orchestrator never saw) means the
 worker is no longer the winning activation — treat that the same as any
 other lost claim.
+
+**State the worker role explicitly when the delegate inherits full
+context.** Some delegation mechanisms give the worker the
+orchestrator's own complete conversation context instead of a clean
+slate limited to the brief. There, the worker can carry over the
+orchestrator's own framing — mistaking itself for the session that
+launched several workers and is waiting on their replies — instead of
+recognizing the brief reassigns it to a single-issue worker role. The
+delegation brief must state explicitly that the delegate is the sole
+worker for the named issue, that no peer workers exist for it to
+coordinate with or wait on, and that it must perform the implementation
+work itself rather than re-delegate or wait for a reply (#2179).
+
+**Restate the CI/advisory-wait topology-safety condition.** The
+delegation brief must also carry — verbatim or by direct reference —
+the CI/advisory-wait topology-safety condition from [idd-ci.instructions.md's
+Wake-up discipline](idd-ci.instructions.md#wake-up-discipline), the same
+requirement already stated for this delegation pattern in
+[docs/idd-workflow.md's Orchestrator fan-out
+variant](../../docs/idd-workflow.md#orchestrator-fan-out-variant). Without
+it, a worker can end its turn on a Monitor-style or backgrounded wait
+assuming an unconfirmed notification resumes it — under a
+supervisor/worker topology, only the supervisor is notified, so the
+worker's own turn stalls indefinitely (#2210).
 
 ### Hide displaced claim chain on takeover
 

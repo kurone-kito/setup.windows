@@ -289,21 +289,32 @@ nonce was recorded for the active claim.
 - **Advisory convergence** (exit-code obligation for Copilot-authored
   review threads, not a judgment call): run `node
   scripts/advisory-convergence.mjs --pr {pr-number} --assert` (or the
-  profile-selected `idd-advisory-convergence` command). Non-zero exit is
-  a hard merge block — route to E1/E4 (check **AW6** first when
-  `sameHeadReroll.eligible`) using `reasons`; zero exit (`ready: true`)
-  satisfies this condition.
+  profile-selected `idd-advisory-convergence` command). Non-zero exit
+  routes to E1/E4 (check **AW6** first when
+  `sameHeadReroll.eligible`; an `ack-suppressed` next-action means
+  Clause 1's `suppressedCount` term still needs coverage — see
+  `idd-review-triage.instructions.md`'s `review-ack:` paragraph (E6)
+  instead of rerolling); `ready: true` satisfies. On
+  `instructions-only`, both halves use the [F2 `gh`/`jq` fallback](../../docs/idd-advisory-wait-shell-fallback.md#f2).
   Separately, require `dispositionEvidence.route` to be `proceed`
   (`dispositionEvidence.blockingCount == 0` — both
   `missingRegularComments` (any outstanding non-thread regular PR
   comment from a non-agent author, including the PR author, lacking a
-  fresh disposition marker) and `missingThreads` (any review thread,
-  resolved or unresolved, still lacking one) are empty). The
-  `advisory-convergence.mjs --assert` check above only enforces the
-  _unresolved_ Copilot-authored subset of `missingThreads` (resolution
-  alone satisfies its own Clause 2 without a fresh disposition); it
-  never covers a non-Copilot thread or any `missingRegularComments`
-  entry, so this check stays necessary even when that one passes. Treat
+  later IDD-agent reply — a fresh disposition marker for advisory-bot
+  comments, or any later IDD-agent body for a human comment) and
+  `missingThreads` (any review thread still lacking a clearing reply)
+  are empty). Evaluation splits by origin: a **human-authored** thread
+  whose latest item is unmarked human prose is presence-only and is
+  not `unresolved-without-fresh-disposition` solely for lacking
+  `**Accepted**`; a **Copilot / configured-advisory-bot** thread still
+  needs a stamped or legacy trusted IDD disposition (or resolution for
+  Clause 2). An unmarked human `ok` must not clear those advisory
+  threads. The `advisory-convergence.mjs --assert` check above only
+  enforces the _unresolved_ Copilot-authored subset of `missingThreads`
+  (resolution alone satisfies its own Clause 2 without a fresh
+  disposition); it never covers a non-Copilot thread or any
+  `missingRegularComments` entry, so this check stays necessary even
+  when that one passes. Treat
   a missing or malformed `dispositionEvidence` object, or a non-list
   `missingRegularComments`/`missingThreads`, as unmet, never vacuously
   satisfied. A `route: return-to-e1` result routes to E1/E4 with that
