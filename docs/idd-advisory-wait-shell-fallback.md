@@ -149,7 +149,7 @@ ephemeral-npx: resolve from `docs/idd-helper-scripts.md`)
 
 ```sh
 GH_TOKEN="${GH_TOKEN:-$(gh auth token)}"
-curl -X POST "https://api.github.com/repos/{owner}/{repo}/issues/{pr-number}/comments" \
+curl --fail --silent --show-error --max-time 30 -X POST "https://api.github.com/repos/{owner}/{repo}/issues/{pr-number}/comments" \
   -H "Authorization: Bearer ${GH_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "{\"body\":\"advisory-wait-recovery: {agent-id} {PR_HEAD_SHA} {ISO8601-recovery-time}\"}"
@@ -188,7 +188,7 @@ node scripts/post-idd-marker.mjs --type advisory-recovery --target pr <pr-number
 # instructions-only profile, or any profile if the helper is unavailable —
 # manually, matching the grammar renderAdvisoryWaitRecoveryMarker emits:
 GH_TOKEN="${GH_TOKEN:-$(gh auth token)}"
-curl -X POST "https://api.github.com/repos/{owner}/{repo}/issues/{pr-number}/comments" \
+curl --fail --silent --show-error --max-time 30 -X POST "https://api.github.com/repos/{owner}/{repo}/issues/{pr-number}/comments" \
   -H "Authorization: Bearer ${GH_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "{\"body\":\"advisory-wait-recovery: {agent-id} {PR_HEAD_SHA} {ISO8601-recovery-time} claim:{claim-id} attempt:{n}\"}"
