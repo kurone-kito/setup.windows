@@ -1333,7 +1333,7 @@ sources.
 
 - `audit-docs.mjs` enforces synchronization rules defined in
   `sync-manifest.json`
-- Template copies use placeholders like `setup.windows` to support
+- Template copies use placeholders like `{{REPO_NAME}}` to support
   repository-specific values during import
 - The `sync-manifest.json` defines source→target mappings and sync modes
   (exact copy vs placeholder substitution)
