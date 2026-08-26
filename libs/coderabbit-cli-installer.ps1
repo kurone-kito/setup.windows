@@ -54,6 +54,8 @@ function Add-CoderabbitCliToProcessPath {
 }
 
 function Invoke-CoderabbitCliInstaller {
+  [CmdletBinding()]
+  [OutputType([int])]
   param (
     [string]$InstallScriptUrl = $Script:CoderabbitCliInstallScriptUrl
   )
@@ -128,6 +130,9 @@ function Invoke-CoderabbitCliInstaller {
 }
 
 function Sync-CoderabbitCli {
+  [CmdletBinding()]
+  param ()
+
   if ($null -eq (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Warning '[coderabbit-cli] git not found -- skipping CodeRabbit CLI.'
     return
