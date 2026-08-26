@@ -56,6 +56,20 @@ else {
 }
 
 ###########################################################################
+### CodeRabbit CLI — no winget package; official installer requires Git
+### (issue #126). See libs/coderabbit-cli-installer.ps1 for the
+### install.ps1 download/execution details and docs/dsc-migration-notes.md
+### for the recorded remote-script-execution risk.
+###########################################################################
+if (Test-CommandExists git) {
+  . (Join-Path -Path $PSScriptRoot -ChildPath 'coderabbit-cli-installer.ps1')
+  Sync-CoderabbitCli
+}
+else {
+  Write-Warning '[post-install] git not found — skipping CodeRabbit CLI.'
+}
+
+###########################################################################
 ### Vagrant plugins
 ###########################################################################
 if (Test-CommandExists vagrant) {
