@@ -78,6 +78,16 @@ Describe 'Invoke-CoderabbitCliInstaller' {
     Invoke-CoderabbitCliInstaller | Should -Be 0
   }
 
+  It 'removes the temp script after a successful install too' {
+    Mock Invoke-WebRequest { }
+    Mock Start-Process { [pscustomobject]@{ ExitCode = 0 } }
+    Mock Remove-Item { }
+
+    Invoke-CoderabbitCliInstaller | Out-Null
+
+    Should -Invoke Remove-Item -Times 1
+  }
+
   It 'sets $env:CI to 1 only while Start-Process is running, when CI was previously unset' {
     Remove-Item -Path Env:\CI -ErrorAction SilentlyContinue
 
@@ -121,6 +131,28 @@ Describe 'Invoke-CoderabbitCliInstaller' {
 }
 
 Describe 'Sync-CoderabbitCli' {
+  BeforeEach {
+    Mock Get-Command -ParameterFilter { $Name -eq 'git' } { [pscustomobject]@{ Name = 'git' } }
+  }
+
+  It 'skips installation and does not touch PATH when git is not found' {
+    Mock Get-Command -ParameterFilter { $Name -eq 'git' } { $null }
+    Mock Add-CoderabbitCliToProcessPath { }
+    Mock Invoke-CoderabbitCliInstaller { 0 }
+
+    Sync-CoderabbitCli -WarningAction SilentlyContinue
+
+    Should -Invoke Invoke-CoderabbitCliInstaller -Times 0
+    Should -Invoke Add-CoderabbitCliToProcessPath -Times 0
+  }
+
+  It 'writes a warning, not a terminating error, when git is not found' {
+    Mock Get-Command -ParameterFilter { $Name -eq 'git' } { $null }
+    Mock Invoke-CoderabbitCliInstaller { 0 }
+
+    { Sync-CoderabbitCli -WarningAction SilentlyContinue } | Should -Not -Throw
+  }
+
   It 'always invokes the installer, even on a second consecutive call' {
     Mock Add-CoderabbitCliToProcessPath { }
     Mock Invoke-CoderabbitCliInstaller { 0 }

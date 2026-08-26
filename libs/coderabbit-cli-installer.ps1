@@ -36,11 +36,16 @@ function Add-CoderabbitCliToProcessPath {
   $env:Path.
 
   .DESCRIPTION
-  The official install.ps1 persists the user-scope PATH but never
-  touches the calling process's own $env:Path. This function exists so
-  a `coderabbit` / `cr` call later in the same boxstarter.ps1 run works
-  without opening a new shell -- not to support a version-match check,
-  since this installer does not pin or compare versions.
+  The official install.ps1 is documented to persist the user-scope PATH
+  (per docs.coderabbit.ai/cli/windows), but -- unlike Unity's
+  install.ps1, whose PATH-update mechanics were confirmed by reading
+  its source end to end -- whether it also touches the calling
+  process's own $env:Path was not independently verified from
+  CodeRabbit's script source (see docs/dsc-migration-notes.md). This
+  function is added defensively so a `coderabbit` / `cr` call later in
+  the same boxstarter.ps1 run works even if it does not -- not to
+  support a version-match check, since this installer does not pin or
+  compare versions.
 
   A null/empty InstallDir (e.g. the default on a machine without
   $env:LOCALAPPDATA, such as this file's own Linux Pester run) is a
@@ -123,6 +128,11 @@ function Invoke-CoderabbitCliInstaller {
 }
 
 function Sync-CoderabbitCli {
+  if ($null -eq (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Warning '[coderabbit-cli] git not found -- skipping CodeRabbit CLI.'
+    return
+  }
+
   Add-CoderabbitCliToProcessPath
 
   Write-Host '[coderabbit-cli] Installing/updating CodeRabbit CLI...' -ForegroundColor Cyan
@@ -140,6 +150,13 @@ function Sync-CoderabbitCli {
   latest version on every call.
 
   .DESCRIPTION
+  Checks for `git` itself (the official installer's own prerequisite)
+  rather than relying on a caller-side guard the way the dotnet/mkcert
+  sections of libs/post-install.ps1 do -- this keeps the check
+  independently testable via
+  tests/powershell/coderabbit-cli-installer.Tests.ps1 without dot-
+  sourcing post-install.ps1's Test-CommandExists helper.
+
   Unlike libs/unity-cli-installer.ps1's Sync-UnityCli, this function
   does not pin a target version or skip when a matching version is
   already installed -- CodeRabbit CLI intentionally always tracks
