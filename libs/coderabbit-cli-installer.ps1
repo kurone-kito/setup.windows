@@ -24,11 +24,24 @@ function Add-CoderabbitCliToProcessPath {
   }
   $current = @($env:Path -split ';' | Where-Object { $_ -ne '' })
   $target = $InstallDir.TrimEnd('\', '/')
-  $alreadyPresent = $current | Where-Object {
-    [string]::Equals($_.TrimEnd('\', '/'), $target, [System.StringComparison]::OrdinalIgnoreCase)
+  $seenTarget = $false
+  $deduped = @(
+    foreach ($entry in $current) {
+      $isTarget = [string]::Equals($entry.TrimEnd('\', '/'), $target, [System.StringComparison]::OrdinalIgnoreCase)
+      if ($isTarget) {
+        if ($seenTarget) {
+          continue
+        }
+        $seenTarget = $true
+      }
+      $entry
+    }
+  )
+  if ($seenTarget) {
+    $env:Path = $deduped -join ';'
   }
-  if (-not $alreadyPresent) {
-    $env:Path = (@($current) + $InstallDir) -join ';'
+  else {
+    $env:Path = (@($deduped) + $InstallDir) -join ';'
   }
   <#
   .SYNOPSIS
@@ -50,6 +63,12 @@ function Add-CoderabbitCliToProcessPath {
   A null/empty InstallDir (e.g. the default on a machine without
   $env:LOCALAPPDATA, such as this file's own Linux Pester run) is a
   no-op rather than an error -- there is nothing to add.
+
+  Also normalizes away any pre-existing duplicate entries for
+  InstallDir (case/trailing-separator insensitive), keeping the first
+  occurrence's position and dropping the rest, so repeated calls
+  converge on exactly one entry even if duplicates existed before this
+  function's first call in the current process.
   #>
 }
 
@@ -77,8 +96,13 @@ function Invoke-CoderabbitCliInstaller {
       # here, so auth stays a manual post-install step for the user.
       $env:CI = '1'
       $shell = (Get-Process -Id $PID).Path
+      # Start-Process -ArgumentList joins array elements with a bare
+      # space and does not quote them itself (this is documented
+      # Start-Process behavior, not a bug) -- an unquoted $tempScript
+      # would truncate at the first space in a TEMP path containing
+      # one, so it's quoted explicitly here.
       $process = Start-Process -FilePath $shell -ArgumentList @(
-        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $tempScript
+        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$tempScript`""
       ) -NoNewWindow -Wait -PassThru
       return $process.ExitCode
     }

@@ -34,6 +34,14 @@ Describe 'Add-CoderabbitCliToProcessPath' {
     { Add-CoderabbitCliToProcessPath -InstallDir '' } | Should -Not -Throw
     $env:Path | Should -Be '/existing/one'
   }
+
+  It 'removes pre-existing duplicate entries, keeping the first occurrence in place' {
+    $env:Path = '/existing/one;/coderabbit/bin;/existing/two;/CODERABBIT/BIN/;/existing/three'
+
+    Add-CoderabbitCliToProcessPath -InstallDir '/coderabbit/bin'
+
+    $env:Path | Should -Be '/existing/one;/coderabbit/bin;/existing/two;/existing/three'
+  }
 }
 
 Describe 'Invoke-CoderabbitCliInstaller' {
@@ -127,6 +135,21 @@ Describe 'Invoke-CoderabbitCliInstaller' {
     { Invoke-CoderabbitCliInstaller } | Should -Throw
 
     $env:CI | Should -Be 'previous-value'
+  }
+
+  It 'quotes the -File argument so a TEMP path containing spaces is not truncated by Start-Process argument joining' {
+    $script:capturedArgumentList = $null
+    Mock Invoke-WebRequest { }
+    Mock Start-Process {
+      $script:capturedArgumentList = $ArgumentList
+      [pscustomobject]@{ ExitCode = 0 }
+    }
+
+    Invoke-CoderabbitCliInstaller | Out-Null
+
+    $fileIndex = [array]::IndexOf($script:capturedArgumentList, '-File')
+    $fileIndex | Should -BeGreaterThan -1
+    $script:capturedArgumentList[$fileIndex + 1] | Should -Match '^".*"$'
   }
 }
 
