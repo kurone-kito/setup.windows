@@ -22,6 +22,7 @@ setup.cmd                        ← single entry point
             ├─ Phase 4: Architecture-conditional packages
             ├─ Phase 5: Post-install             (libs/post-install.ps1)
             │    ├─ dotnet tool → VPM CLI
+            │    ├─ install.ps1 → CodeRabbit CLI
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → local CA
             │    └─ Docker Desktop → image pulls
@@ -115,6 +116,8 @@ the full list. Key categories:
 ### Via Post-Install Scripts
 
 - **VPM CLI** (via dotnet tool): VRChat package manager
+- **CodeRabbit CLI** (via official `install.ps1`): AI code review CLI,
+  always updated to latest (no version pin); requires Git for Windows
 - **Unity 2022.3.22f1**: Required by VRChat SDK/VCC
 - **mkcert**: Local CA for HTTPS development
 - **Docker images**: Base images (alpine, debian, ubuntu, node variants)
@@ -153,10 +156,13 @@ repository still installs many other CLI tools directly via winget
 above, e.g. 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert).
 
 This repository's own scripts do not manage or write the Windows User
-PATH — the one exception is the third-party Unity CLI installer
-(`libs/unity-cli-installer.ps1` invokes Unity's own `install.ps1`),
-which persists an entry there as its own documented side effect, not
-something this repository's code does directly. User PATH ownership
+PATH — the two exceptions are the third-party Unity CLI installer
+(`libs/unity-cli-installer.ps1` invokes Unity's own `install.ps1`) and
+the third-party CodeRabbit CLI installer
+(`libs/coderabbit-cli-installer.ps1` invokes CodeRabbit's own
+`install.ps1`), which each persist an entry there as their own
+documented side effect, not something this repository's code does
+directly. User PATH ownership
 otherwise belongs to dotfiles' managed-path reconciler: dotfiles'
 `docs/winget-user-path.md` documents the mechanism, and
 `home/dot_config/powershell/lib/managed-paths.ps1` is its single

@@ -975,3 +975,53 @@ affected devices; the Explorer/Taskbar/Search/sageset resources above
 are convenience UI/cleanup preferences with no functional necessity.
 Keeping the min profile limited to packages plus that one
 hardware-enablement exception preserves its "minimal" intent.
+
+## Installing the CodeRabbit CLI (issue #126)
+
+CodeRabbit CLI is officially supported on native Windows (x64, no WSL,
+no admin rights required — confirmed via
+<https://docs.coderabbit.ai/cli> and <https://docs.coderabbit.ai/cli/windows>),
+but has no winget package and no GitHub Releases, `aqua-registry`, or
+npm entry, so it cannot be delegated to dotfiles' `mise` the way the
+first-wave CLI tools were (roadmap #111). `libs/coderabbit-cli-installer.ps1`
+follows the same installer pattern as `libs/unity-cli-installer.ps1`
+(issue #76): downloads the vendor's own `install.ps1` to a temp file
+and runs it via `Start-Process` in a separate process, for the same
+reason recorded above -- an in-process invocation would let the
+downloaded script's own `exit` terminate the calling process instead of
+just itself.
+
+### `install.ps1` itself is not pinned
+
+Same trust model as the Unity CLI installer above: the binary CodeRabbit's
+`install.ps1` downloads is Authenticode-signed and verified by the
+script itself, but the script fetched from `https://cli.coderabbit.ai/install.ps1`
+is not pinned by hash or version. A compromise of that CDN could serve
+a different script. Recorded here as a known, accepted risk, consistent
+with how the Unity CLI installer's own unpinned `install.ps1` is
+recorded.
+
+### No version pin; always installs latest
+
+Unlike the Unity CLI (pinned via `configurations/runtime-versions.psd1`),
+`Sync-CoderabbitCli` does not pin a target version -- every call
+re-runs the official installer and relies on its own idempotent
+staging/rollback behavior, the same "always update" policy already used
+for the VPM CLI section of `libs/post-install.ps1`.
+
+### Environment-variable and PATH behavior is an unverified AI summary
+
+The installer's environment-variable handling (`CODERABBIT_VERSION` for
+pinning, `CI` for suppressing the interactive login prompt,
+`CODERABBIT_API_KEY` for skipping browser login), its lack of an
+explicit `exit` call, its User-scope PATH update mechanism, and its
+ARM64 x64-emulation behavior were established from an AI-generated
+summary of the vendor's documentation and script content, not from
+reading the script's source end to end the way issue #76 read Unity's
+`install.ps1`. `CODERABBIT_API_KEY` is deliberately never set by this
+repository's code -- authentication (`coderabbit auth login`) stays a
+manual step for the user. This Windows-only script could not be
+verified against a real `coderabbit` binary from this Linux development
+environment, for the same reason recorded above for the Unity CLI: this
+repository never executes `libs/post-install.ps1` or `boxstarter.ps1`
+directly in this environment, even for smoke-testing.

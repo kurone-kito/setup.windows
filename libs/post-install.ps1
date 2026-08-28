@@ -56,6 +56,19 @@ else {
 }
 
 ###########################################################################
+### CodeRabbit CLI — no winget package; official installer requires Git
+### (issue #126). Sync-CoderabbitCli owns its own Git presence check
+### (unlike the dotnet/mkcert sections above) so it stays independently
+### testable in isolation via
+### tests/powershell/coderabbit-cli-installer.Tests.ps1. See
+### libs/coderabbit-cli-installer.ps1 for the install.ps1
+### download/execution details and docs/dsc-migration-notes.md for the
+### recorded remote-script-execution risk.
+###########################################################################
+. (Join-Path -Path $PSScriptRoot -ChildPath 'coderabbit-cli-installer.ps1')
+Sync-CoderabbitCli
+
+###########################################################################
 ### Vagrant plugins
 ###########################################################################
 if (Test-CommandExists vagrant) {
