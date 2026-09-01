@@ -174,7 +174,7 @@ else {
 }
 
 ###########################################################################
-### Phase 5 — Post-install setup (VPM CLI, CodeRabbit CLI, Unity, mkcert, Docker)
+### Phase 5 — Post-install setup (VPM CLI, CodeRabbit CLI, Cursor CLI, Unity, mkcert, Docker)
 ###########################################################################
 # Unity CLI must be in place before post-install.ps1's own Unity Editor
 # install step (issue #76) -- installed here, ahead of that step, rather

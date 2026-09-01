@@ -78,6 +78,18 @@ else {
 Sync-CoderabbitCli
 
 ###########################################################################
+### Cursor CLI — no winget package; official installer has no
+### external-command prerequisite, unlike CodeRabbit CLI's Git
+### requirement above (issue #139). Sync-CursorCli therefore does not
+### need its own prerequisite check the way Sync-CoderabbitCli does. See
+### libs/cursor-cli-installer.ps1 for the install script
+### download/execution details and docs/dsc-migration-notes.md for the
+### recorded remote-script-execution risk.
+###########################################################################
+. (Join-Path -Path $PSScriptRoot -ChildPath 'cursor-cli-installer.ps1')
+Sync-CursorCli
+
+###########################################################################
 ### Vagrant plugins
 ###########################################################################
 if (Test-CommandExists vagrant) {
