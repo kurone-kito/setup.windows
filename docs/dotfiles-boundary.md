@@ -360,22 +360,24 @@ this document searched only for the literal winget id string
 `Microsoft.PowerShell` and missed the Store-sourced entry — a search
 methodology gap, not a real provisioning gap.
 
-`Starship.Starship`, `Zellij.Zellij`, `JesseDuffield.lazygit`, and
-`marlocarlo.psmux` are genuinely absent from full and present only in
-min — but this is **not** a coherent "CLI shell tools" category split.
-In `packages.min.dsc.yaml`, these four packages sit under three
-different section comments (`lazygit`: "CLI SCM utilities"; `psmux`/
-`Zellij`: "CLI session management tools"; only `Starship` shares "CLI
-shell tools" with `Microsoft.PowerShell`), and full isn't missing
-prompt-theming tooling generally — it installs `pkg.ohMyPosh` (Oh My
-Posh, another prompt theme engine, msstore id `XP8K0HKJFRXGCK`) as a
-direct counterpart to Starship. The accurate framing is
-package-specific: full and min simply carry different, non-overlapping
-selections of terminal/session tools, not a category full skips
-wholesale. `README.md`'s min: "development tools only, no gaming/media"
-framing still holds at the profile-purpose level; it just doesn't map
-onto a single missing category the way the earlier version of this
-section implied.
+`Zellij.Zellij`, `JesseDuffield.lazygit`, and `marlocarlo.psmux` are
+genuinely absent from full and present only in min — but this is
+**not** a coherent "CLI shell tools" category split. In
+`packages.min.dsc.yaml`, these three packages sit under two different
+section comments (`lazygit`: "CLI SCM utilities"; `psmux`/`Zellij`:
+"CLI session management tools"), neither of which is "CLI shell
+tools". Full and min now both install `Starship.Starship` directly as
+their prompt-theme engine (full's `pkg.starship`, min's own `starship`
+resource) — full previously carried `pkg.ohMyPosh` (Oh My Posh,
+another prompt theme engine, msstore id `XP8K0HKJFRXGCK`) as a
+separate, competing prompt themer, but that asymmetry has been
+consolidated onto Starship. The accurate framing is package-specific:
+full and min simply carry different, non-overlapping selections of
+terminal/session tools, not a category full skips wholesale.
+`README.md`'s min: "development tools only, no gaming/media" framing
+still holds at the profile-purpose level; it just doesn't map onto a
+single missing category the way the earlier version of this section
+implied.
 
 **Conclusion.** There is no full-profile PowerShell 7 gap, present-day
 or otherwise: both profiles install it, through different package
