@@ -9,7 +9,7 @@
     "staleAge": "PT12H",
     "heartbeatInterval": "PT6H"
   },
-  "trustedMarkerActors": ["kurone-kito"],
+  "trustedMarkerActors": ["kurone-kito", "github-actions[bot]"],
   "advisoryBotLogins": [
     "copilot-pull-request-reviewer[bot]",
     "coderabbitai[bot]"
