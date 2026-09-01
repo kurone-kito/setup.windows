@@ -2621,18 +2621,21 @@ environment and must not be assumed:
 git config --get alias.commit-ssh
 ```
 
-If that prints a wrapper function, the current environment has a
-commit-only signing alias configured — this repository's IDD loop has
-run with exactly one such alias, `git commit-ssh` (wrapping `git -c
-gpg.format=ssh -c user.signingkey=<path-to-ssh-public-key> -c
-commit.gpgsign=true commit`), across every commit in issues #136-#139
-after the primary GPG signer blocked non-interactively in each case.
-When an alias is present, invoke it by name instead of reconstructing
-the raw `-c` flags:
+If that prints a value (a shell function or a plain command string),
+the current environment has a commit-only signing alias configured. In
+issues #136-#139, this repository's IDD loop used exactly one such
+alias, `git commit-ssh` (wrapping `git -c gpg.format=ssh -c
+user.signingkey=<path-to-ssh-public-key> -c commit.gpgsign=true
+commit`), after the primary GPG signer blocked non-interactively in
+each case. When an alias is present, invoke it by name instead of
+reconstructing the raw `-c` flags — pass `--no-edit` on `--amend` so a
+missing `-m` reuses the existing message instead of launching
+`$EDITOR`, which can hang in the same non-interactive session this
+fallback targets:
 
 ```sh
 git commit-ssh -m "type(scope): subject"
-git commit-ssh --amend
+git commit-ssh --amend --no-edit
 ```
 
 If `git config --get alias.commit-ssh` (or an equivalent
@@ -2643,13 +2646,14 @@ instead of `merge`:
 
 ```sh
 git -c gpg.format=ssh -c user.signingkey=<abs-path> -c commit.gpgsign=true commit -m "type(scope): subject"
-git -c gpg.format=ssh -c user.signingkey=<abs-path> -c commit.gpgsign=true commit --amend
+git -c gpg.format=ssh -c user.signingkey=<abs-path> -c commit.gpgsign=true commit --amend --no-edit
 ```
 
-Report which signing path was used (configured primary signer, this
-wrapper — alias or raw form — or the `--no-gpg-sign` last resort) for
-every commit, per `idd-overview-appendix.instructions.md`'s "Commit
-signing" section.
+Record a non-default signing outcome — this wrapper (alias or raw
+form) or the `--no-gpg-sign` last resort — per
+`idd-overview-appendix.instructions.md`'s "Commit signing" section,
+which already limits that reporting duty to non-default outcomes; the
+default configured primary signer needs no separate report.
 
 ## Friction Inventory
 
