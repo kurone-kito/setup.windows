@@ -65,7 +65,7 @@ setup.cmd                        ← 唯一のエントリーポイント
 
 1. **Chocolatey** と **Boxstarter** が未インストールならインストール
 2. `Install-BoxstarterPackage` 経由で `boxstarter.ps1` を起動（再起動耐性あり）
-3. **WinGet Configuration (DSC)** で 104 個のパッケージを宣言的にインストール
+3. **WinGet Configuration (DSC)** で 102 個のパッケージを宣言的にインストール
    （利用できない場合は **`winget import`**（縮退モード）にフォール
    バックし、適用できなかったリソースを報告）
 4. Chocolatey で残りのパッケージ（フォント、オーディオドライバ）をインストール
@@ -93,7 +93,7 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 - **ランタイム:** .NET SDK 8/10, Rust, Visual C++ 再頒布可能パッケージ
 - **開発:** Git, Android Studio
 - **VRChat:** Unity Hub, VRChat Creator Companion, VRCX
-- **エディタ:** VS Code, Cursor, Sublime Text 4, Vim, Neovim
+- **エディタ:** VS Code, Sublime Text 4, Vim, Neovim
 - **CLI ツール:** 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
 - **ブラウザ:** Chrome, Firefox ESR, Tor Browser
 - **ゲーミング:** Steam, Epic Games, EA Desktop, Minecraft, StepMania

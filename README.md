@@ -64,7 +64,7 @@ The script will:
 
 1. Install **Chocolatey** and **Boxstarter** if not already present
 2. Launch `boxstarter.ps1` via `Install-BoxstarterPackage` (reboot-resilient)
-3. Apply the **WinGet Configuration (DSC)** to install 104 packages
+3. Apply the **WinGet Configuration (DSC)** to install 102 packages
    declaratively when available, otherwise fall back to
    **`winget import`** (degraded mode) and report any resources it
    could not apply
@@ -93,7 +93,7 @@ the full list. Key categories:
 - **Runtimes:** .NET SDK 8/10, Rust, Visual C++ Redistributable
 - **Development:** Git, Android Studio
 - **VRChat:** Unity Hub, VRChat Creator Companion, VRCX
-- **Editors:** VS Code, Cursor, Sublime Text 4, Vim, Neovim
+- **Editors:** VS Code, Sublime Text 4, Vim, Neovim
 - **CLI Tools:** 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
 - **Browsers:** Chrome, Firefox ESR, Tor Browser
 - **Gaming:** Steam, Epic Games, EA Desktop, Minecraft, StepMania

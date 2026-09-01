@@ -107,7 +107,6 @@
         { "PackageIdentifier": "Mojang.MinecraftLauncher" },
         { "PackageIdentifier": "Valve.Steam" },
         { "PackageIdentifier": "StepMania.StepMania" },
-        { "PackageIdentifier": "Anysphere.Cursor" },
         { "PackageIdentifier": "SublimeHQ.SublimeText.4" },
         { "PackageIdentifier": "TeamViewer.TeamViewer" },
         { "PackageIdentifier": "oldj.switchhosts" },
