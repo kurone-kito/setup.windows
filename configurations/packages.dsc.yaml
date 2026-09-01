@@ -879,12 +879,12 @@ properties:
         source: msstore
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.ohMyPosh
+      id: pkg.starship
       directives:
-        description: Oh My Posh
+        description: Starship
       settings:
-        id: "XP8K0HKJFRXGCK"
-        source: msstore
+        id: Starship.Starship
+        source: winget
 
     # ================================================================
     # CLI — Virtualization
