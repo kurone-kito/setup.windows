@@ -2591,6 +2591,70 @@ complement to the recovery-path re-signing in
 `idd-pr-submit.instructions.md` (Post-rebase verification) and
 `idd-overview-core.instructions.md` (cwd-vs-claim cherry-pick recovery).
 
+### Everyday `git commit` (and `git commit --amend`) fallback
+
+The merge wrapper above covers the occasional `main`-sync merge; B3
+authors far more plain `git commit` calls than merges, and the same
+non-interactive-hostile primary signer blocks those exactly the same
+way. The paragraph above notes that a commit-only alias such as `git
+commit-ssh` cannot run `merge` — that is not a limitation to route
+around here, it is the positive complement: for plain `git commit` /
+`git commit --amend`, a commit-only signing alias is exactly the right
+tool.
+
+**When to switch**: only after the configured primary signer has
+already failed non-interactively on this commit (pinentry / TTY EOF /
+hardware-touch timeout). This is a documented recovery step, not an
+unconditional first attempt, and it does not change the signing ladder
+in `idd-overview-appendix.instructions.md`'s "Commit signing" section:
+try the configured primary signer first, fall back to this wrapper on a
+non-interactive block, and keep `--no-gpg-sign` as the final,
+last-resort fallback — used only after this wrapper has also failed or
+is unavailable, never as the first move.
+
+**Check for a configured alias first** — a commit-signing alias is
+scoped to whatever git config level defines it (often the operator's
+global config, not this repository), so its presence varies by
+environment and must not be assumed:
+
+```sh
+git config --get alias.commit-ssh
+```
+
+If that prints a value (a shell function or a plain command string),
+the current environment has a commit-only signing alias configured. In
+issues #136-#139, this repository's IDD loop used exactly one such
+alias, `git commit-ssh` (wrapping `git -c gpg.format=ssh -c
+user.signingkey=<path-to-ssh-public-key> -c commit.gpgsign=true
+commit`), after the primary GPG signer blocked non-interactively in
+each case. When an alias is present, invoke it by name instead of
+reconstructing the raw `-c` flags — pass `--no-edit` on `--amend` so a
+missing `-m` reuses the existing message instead of launching
+`$EDITOR`, which can hang in the same non-interactive session this
+fallback targets:
+
+```sh
+git commit-ssh -m "type(scope): subject"
+git commit-ssh --amend --no-edit
+```
+
+If `git config --get alias.commit-ssh` (or an equivalent
+locally-configured alias) prints nothing — a different operator's
+machine, a fresh clone, or a CI runner without this global alias — use
+the same raw `-c` form as the merge wrapper above, applied to `commit`
+instead of `merge`:
+
+```sh
+git -c gpg.format=ssh -c user.signingkey=<abs-path> -c commit.gpgsign=true commit -m "type(scope): subject"
+git -c gpg.format=ssh -c user.signingkey=<abs-path> -c commit.gpgsign=true commit --amend --no-edit
+```
+
+Record a non-default signing outcome — this wrapper (alias or raw
+form) or the `--no-gpg-sign` last resort — per
+`idd-overview-appendix.instructions.md`'s "Commit signing" section,
+which already limits that reporting duty to non-default outcomes; the
+default configured primary signer needs no separate report.
+
 ## Friction Inventory
 
 The workflow areas most likely to benefit from optional helpers are:

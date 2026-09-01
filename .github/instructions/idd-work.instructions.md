@@ -279,6 +279,14 @@ reordering, and run the C1 critique pass against the completed diff.
 Implement the plan, running **fix-validate** before each atomic commit
 (one logical change per commit).
 
+**Commit signing block**: if the configured primary commit signer blocks
+non-interactively (pinentry / TTY EOF / hardware-touch timeout), see
+`docs/idd-helper-scripts.md`'s
+[Signed-Commit Merge Wrapper](../../docs/idd-helper-scripts.md#signed-commit-merge-wrapper-shared-git-procedure)
+section, which also covers the everyday `git commit` case, before
+falling back to `--no-gpg-sign` per
+`idd-overview-appendix.instructions.md`'s "Commit signing" section.
+
 **De-duplication refactors**: when consolidating a wrapper function used
 at multiple call sites, check whether any call site's old delegate path
 added behavior (timeouts, stdio handling, error translation, etc.) that
