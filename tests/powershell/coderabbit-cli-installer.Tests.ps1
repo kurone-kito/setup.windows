@@ -165,12 +165,21 @@ Describe 'Sync-CoderabbitCli' {
   }
 
   It 'refreshes the process PATH before checking for git, so a tool installed earlier in the same process is detected (issue #129)' {
+    # Records actual call order (not just call counts) so this test
+    # fails if Sync-ProcessPath is ever moved after the git check --
+    # which would silently reintroduce issue #129's stale-PATH bug.
+    $script:callOrder = [System.Collections.Generic.List[string]]::new()
+    Mock Sync-ProcessPath { $script:callOrder.Add('Sync-ProcessPath') }
+    Mock Get-Command -ParameterFilter { $Name -eq 'git' } {
+      $script:callOrder.Add('Get-Command-git')
+      [pscustomobject]@{ Name = 'git' }
+    }
     Mock Add-CoderabbitCliToProcessPath { }
     Mock Invoke-CoderabbitCliInstaller { 0 }
 
     Sync-CoderabbitCli
 
-    Should -Invoke Sync-ProcessPath -Times 1
+    $script:callOrder | Should -Be @('Sync-ProcessPath', 'Get-Command-git')
   }
 
   It 'refreshes the process PATH even when git turns out not to be found' {
