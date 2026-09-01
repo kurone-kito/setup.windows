@@ -182,7 +182,7 @@ Describe 'Sync-CoderabbitCli' {
     Should -Invoke Sync-ProcessPath -Times 1
   }
 
-  It 'skips installation and does not touch PATH when git is not found' {
+  It 'skips installation and does not add the CodeRabbit CLI install dir to PATH when git is not found' {
     Mock Get-Command -ParameterFilter { $Name -eq 'git' } { $null }
     Mock Add-CoderabbitCliToProcessPath { }
     Mock Invoke-CoderabbitCliInstaller { 0 }
