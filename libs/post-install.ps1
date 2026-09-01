@@ -29,16 +29,25 @@ $runtimeVersionsFile = $PSScriptRoot `
 ###########################################################################
 ### Helper — correct command existence check (fixes the Out-Null bug)
 ###########################################################################
+. (Join-Path -Path $PSScriptRoot -ChildPath 'process-path-sync.ps1')
+
 function Test-CommandExists {
   param (
     [Parameter(Mandatory)][string]$Name
   )
+  Sync-ProcessPath
   $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
   <#
   .SYNOPSIS
   Returns $true if a command exists on PATH, $false otherwise.
   This avoids the historic `Get-Command ... | Out-Null` bug where the
   pipeline always evaluates to $null ($false).
+
+  .DESCRIPTION
+  Calls Sync-ProcessPath first so a tool installed earlier in this same
+  process (e.g. by WinGet Configuration in Phase 2) but not yet
+  reflected in this process's own $env:Path is still detected here
+  (issue #129) -- see libs/process-path-sync.ps1.
   #>
 }
 

@@ -156,6 +156,30 @@ Describe 'Invoke-CoderabbitCliInstaller' {
 Describe 'Sync-CoderabbitCli' {
   BeforeEach {
     Mock Get-Command -ParameterFilter { $Name -eq 'git' } { [pscustomobject]@{ Name = 'git' } }
+    # Sync-ProcessPath (libs/process-path-sync.ps1) is mocked away here
+    # for the same reason Add-CoderabbitCliToProcessPath already is
+    # below -- it mutates real $env:Path, and these tests only care
+    # that Sync-CoderabbitCli calls it, not what it actually does (that
+    # behavior is covered by tests/powershell/process-path-sync.Tests.ps1).
+    Mock Sync-ProcessPath { }
+  }
+
+  It 'refreshes the process PATH before checking for git, so a tool installed earlier in the same process is detected (issue #129)' {
+    Mock Add-CoderabbitCliToProcessPath { }
+    Mock Invoke-CoderabbitCliInstaller { 0 }
+
+    Sync-CoderabbitCli
+
+    Should -Invoke Sync-ProcessPath -Times 1
+  }
+
+  It 'refreshes the process PATH even when git turns out not to be found' {
+    Mock Get-Command -ParameterFilter { $Name -eq 'git' } { $null }
+    Mock Invoke-CoderabbitCliInstaller { 0 }
+
+    Sync-CoderabbitCli -WarningAction SilentlyContinue
+
+    Should -Invoke Sync-ProcessPath -Times 1
   }
 
   It 'skips installation and does not touch PATH when git is not found' {
