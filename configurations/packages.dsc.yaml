@@ -1201,14 +1201,6 @@ properties:
     # GUI — IDE / Editors
     # ================================================================
     - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.cursor
-      directives:
-        description: Cursor AI
-      settings:
-        id: Anysphere.Cursor
-        source: winget
-
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: pkg.sublimeText
       directives:
         description: Sublime Text 4
