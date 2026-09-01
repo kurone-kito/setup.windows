@@ -64,7 +64,7 @@ The script will:
 
 1. Install **Chocolatey** and **Boxstarter** if not already present
 2. Launch `boxstarter.ps1` via `Install-BoxstarterPackage` (reboot-resilient)
-3. Apply the **WinGet Configuration (DSC)** to install 102 packages
+3. Apply the **WinGet Configuration (DSC)** to install 100 packages
    declaratively when available, otherwise fall back to
    **`winget import`** (degraded mode) and report any resources it
    could not apply
