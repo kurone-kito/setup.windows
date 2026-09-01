@@ -80,8 +80,15 @@ function Invoke-UnityCliInstaller {
       return 1
     }
     $shell = (Get-Process -Id $PID).Path
+    # Start-Process -ArgumentList joins array elements with a bare
+    # space and does not quote them itself (this is documented
+    # Start-Process behavior, not a bug) -- an unquoted $tempScript
+    # would truncate at the first space in a TEMP path containing
+    # one, so it's quoted explicitly here. -Target/-Channel stay
+    # unquoted: they're version/channel strings, not filesystem
+    # paths, so they carry no embedded-space risk.
     $process = Start-Process -FilePath $shell -ArgumentList @(
-      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $tempScript,
+      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$tempScript`"",
       '-Target', $Target, '-Channel', $Channel
     ) -NoNewWindow -Wait -PassThru
     return $process.ExitCode
