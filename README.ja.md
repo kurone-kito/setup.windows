@@ -24,6 +24,7 @@ setup.cmd                        ← 唯一のエントリーポイント
             ├─ Phase 5: インストール後セットアップ (libs/post-install.ps1)
             │    ├─ dotnet tool → VPM CLI
             │    ├─ install.ps1 → CodeRabbit CLI
+            │    ├─ install script → Cursor CLI
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → ローカル CA
             │    └─ Docker Desktop → イメージ pull
@@ -118,6 +119,9 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 - **VPM CLI**（dotnet tool 経由）: VRChat パッケージマネージャー
 - **CodeRabbit CLI**（公式 `install.ps1` 経由）: AI コードレビュー CLI。
   バージョン固定はせず常に最新版へ更新する。Git for Windows が必須
+- **Cursor CLI**（公式インストールスクリプト経由）: 単体バイナリの AI
+  コーディングエージェント CLI（`cursor-agent`）。バージョン固定はせず
+  常に最新版へ更新する。前提コマンドは不要
 - **Unity 2022.3.22f1**: VRChat SDK/VCC 必須バージョン
 - **mkcert**: HTTPS 開発用ローカル CA
 - **Docker イメージ**: ベースイメージ (alpine, debian, ubuntu, node 各種)
@@ -157,12 +161,14 @@ dotfiles は別プロジェクト
 tealdeer, mkcert）。
 
 本リポジトリ自身のスクリプトは Windows の User PATH を管理・書き込み
-しません。例外は 2 つ、サードパーティ製の Unity CLI インストーラと
-CodeRabbit CLI インストーラです（`libs/unity-cli-installer.ps1` が
-Unity 公式の `install.ps1` を、`libs/coderabbit-cli-installer.ps1` が
-CodeRabbit 公式の `install.ps1` をそれぞれ呼び出し、各インストーラ自身の
-既知の副作用として User PATH へエントリを追加します — 本リポジトリの
-コードが直接書き込むものではありません）。それ以外の
+しません。例外は 3 つ、サードパーティ製の Unity CLI インストーラ、
+CodeRabbit CLI インストーラ、Cursor CLI インストーラです
+（`libs/unity-cli-installer.ps1` が Unity 公式の `install.ps1` を、
+`libs/coderabbit-cli-installer.ps1` が CodeRabbit 公式の `install.ps1`
+を、`libs/cursor-cli-installer.ps1` が Cursor 公式のインストール
+スクリプトをそれぞれ呼び出し、各インストーラ自身の副作用として User PATH へ
+エントリを追加します — 本リポジトリのコードが直接書き込むものでは
+ありません）。それ以外の
 User PATH の所有権は dotfiles の管理対象パス reconciler にあります。
 dotfiles の
 `docs/winget-user-path.md` がその仕組みを、

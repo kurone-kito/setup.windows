@@ -1025,3 +1025,104 @@ verified against a real `coderabbit` binary from this Linux development
 environment, for the same reason recorded above for the Unity CLI: this
 repository never executes `libs/post-install.ps1` or `boxstarter.ps1`
 directly in this environment, even for smoke-testing.
+
+## Installing the Cursor CLI (issue #139)
+
+Cursor CLI (official command name `cursor-agent`, alias `agent`) ships
+the AI coding agent from the Cursor editor as a standalone binary. It
+has no winget package -- `Anysphere.Cursor` in `winget-pkgs` is the GUI
+editor (removed from this repository by issue #137), not the CLI. Its
+own documentation (<https://cursor.com/docs/cli/installation>) states
+outright that "CLI is not published on npm" -- the `cursor-agent` and
+`cursor-cli` packages that do exist on the public npm registry are
+unrelated third-party packages (a Cursor-AI-agent task-sequence tool and
+a deprecated terminal-cursor-display toggle library, respectively), not
+Anysphere's CLI; this repository's code deliberately never runs `npm
+install` against either name. The `cursor` repository in Cursor's
+`getcursor` GitHub organization (`getcursor/cursor`) has zero Releases,
+and no `anysphere`-owned repository named `cursor-agent` exists, so no
+`github:`/`ubi:` backend applies
+either, and a code search of `aquaproj/aqua-registry` found no
+`anysphere` package definition, ruling out an `aqua:` backend too. The
+only distribution path is Cursor's own installer script
+(`https://cursor.com/install?win32=true` on Windows), the same
+"no winget/npm/Releases/aqua-registry entry" exception shape already
+recorded above for the CodeRabbit CLI (issue #126), so
+`libs/cursor-cli-installer.ps1` follows that same installer pattern:
+downloads the vendor's own install script to a temp file and runs it
+via `Start-Process` in a separate process, for the same reason recorded
+above -- an in-process invocation would let the downloaded script's own
+`exit` terminate the calling process instead of just itself.
+
+### Differences from the CodeRabbit CLI installer
+
+Two concrete differences from `libs/coderabbit-cli-installer.ps1`,
+both from this issue's AI-summary research into the vendor installer:
+
+- **No external-command prerequisite.** CodeRabbit CLI's installer
+  requires Git; Cursor CLI's installer has no such dependency, so
+  `Sync-CursorCli` does not gate on a prerequisite check the way
+  `Sync-CoderabbitCli` gates on `git`, and consequently has no need to
+  call `libs/process-path-sync.ps1`'s `Sync-ProcessPath` either (that
+  call exists in `Sync-CoderabbitCli` solely to make its `git` check see
+  a tool installed earlier in the same process, issue #129).
+- **ARM64 gets a native binary, not x64 emulation.** The installer is
+  summarized to detect architecture via WMI
+  (`Win32_ComputerSystem.SystemType`) and fetch a native ARM64 build,
+  unlike CodeRabbit CLI's ARM64 x64-emulation behavior recorded above.
+
+### The vendor installer script itself is not pinned
+
+Same trust model as the Unity CLI and CodeRabbit CLI installers above:
+the script fetched from `https://cursor.com/install?win32=true` -- note
+this endpoint's URL, unlike Unity's and CodeRabbit's, does not actually
+end in `install.ps1` -- is not pinned by hash or version. A compromise
+of that endpoint could serve a different script. Recorded here as a
+known, accepted risk, consistent with how the other two vendor
+installers' own unpinned scripts are recorded.
+
+### No version pin; always installs latest
+
+Unlike the Unity CLI (pinned via `configurations/runtime-versions.psd1`),
+`Sync-CursorCli` does not pin a target version -- every call re-runs the
+official installer and relies on its own idempotent staging/rollback
+behavior, the same "always update" policy already used for the VPM CLI
+and CodeRabbit CLI sections of `libs/post-install.ps1`.
+
+### Environment-variable, PATH, and prompt behavior is an unverified AI summary
+
+The installer's install directory
+(`%LocalAppData%\cursor-agent\versions\<version>\`), the commands it
+adds (both `agent.exe`/`agent.cmd`/`agent.ps1` and
+`cursor-agent.exe`/`cursor-agent.cmd`/`cursor-agent.ps1` -- which of the
+two names is primary and which is the alias could not be pinned down
+with confidence; this section's opening paragraph's "official command
+name `cursor-agent`, alias `agent`" framing matches how Cursor's own
+docs refer to the tool, while the installer research behind this list
+suggested the reverse, so treat the primary/alias distinction itself as
+unresolved, not just the mechanics below), its User-scope PATH update
+mechanism, and its ARM64-native behavior were established from an
+AI-generated summary of
+the vendor's documentation and script content, not from reading the
+script's source end to end the way issue #76 read Unity's `install.ps1`.
+Whether the installer shows an interactive login prompt, calls `exit`
+explicitly, or exposes any CI-equivalent suppression environment
+variable could not be confirmed from that summary at all -- unlike
+CodeRabbit CLI's summary, which specifically named `CI` as its
+suppression variable.
+`libs/cursor-cli-installer.ps1`'s `Invoke-CursorCliInstaller` therefore
+deliberately does **not** set any environment variable before launching
+the installer: inventing an unverified suppression variable (e.g. a
+generic `CI=1`) against a script this repository has not read risks
+changing other unverified behavior, such as whether the User PATH write
+happens at all. If real invocation later shows the installer needs
+explicit suppression, that can be added then. No authentication
+credential (API key, token) is set, saved, or output by this
+repository's code -- `cursor-agent login` (or its equivalent) stays a
+manual step for the user, the same boundary already drawn for
+CodeRabbit CLI's `coderabbit auth login`. This Windows-only script
+could not be verified against a real `cursor-agent` binary from this
+Linux development environment, for the same reason recorded above for
+the Unity CLI and CodeRabbit CLI: this repository never executes
+`libs/post-install.ps1` or `boxstarter.ps1` directly in this
+environment, even for smoke-testing.
