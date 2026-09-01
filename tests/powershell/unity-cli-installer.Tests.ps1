@@ -82,6 +82,21 @@ Describe 'Invoke-UnityCliInstaller' {
 
     Should -Invoke Remove-Item -Times 1
   }
+
+  It 'quotes the -File argument so a TEMP path containing spaces is not truncated by Start-Process argument joining' {
+    $script:capturedArgumentList = $null
+    Mock Invoke-WebRequest { }
+    Mock Start-Process {
+      $script:capturedArgumentList = $ArgumentList
+      [pscustomobject]@{ ExitCode = 0 }
+    }
+
+    Invoke-UnityCliInstaller -Target '1.0.0-beta.3' -Channel 'beta' | Out-Null
+
+    $fileIndex = [array]::IndexOf($script:capturedArgumentList, '-File')
+    $fileIndex | Should -BeGreaterThan -1
+    $script:capturedArgumentList[$fileIndex + 1] | Should -Match '^".*"$'
+  }
 }
 
 Describe 'Sync-UnityCli' {
