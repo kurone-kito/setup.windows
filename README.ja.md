@@ -65,7 +65,7 @@ setup.cmd                        ← 唯一のエントリーポイント
 
 1. **Chocolatey** と **Boxstarter** が未インストールならインストール
 2. `Install-BoxstarterPackage` 経由で `boxstarter.ps1` を起動（再起動耐性あり）
-3. **WinGet Configuration (DSC)** で 102 個のパッケージを宣言的にインストール
+3. **WinGet Configuration (DSC)** で 100 個のパッケージを宣言的にインストール
    （利用できない場合は **`winget import`**（縮退モード）にフォール
    バックし、適用できなかったリソースを報告）
 4. Chocolatey で残りのパッケージ（フォント、オーディオドライバ）をインストール

@@ -23,12 +23,11 @@
         { "PackageIdentifier": "XPDC2RH70K22MN" },
         { "PackageIdentifier": "XP99J3KP4XZ4VV" },
         { "PackageIdentifier": "XPFFZHVGQWWLHB" },
-        { "PackageIdentifier": "9WZDNCRFJ3PS" },
+        { "PackageIdentifier": "9N1F85V9T8BN" },
         { "PackageIdentifier": "XP99DVCPGKTXNJ" },
         { "PackageIdentifier": "9WZDNCRFJ2WL" },
         { "PackageIdentifier": "9NBLGGH5L9XT" },
         { "PackageIdentifier": "9MXBP1FB84CQ" },
-        { "PackageIdentifier": "9WZDNCRFJ140" },
         { "PackageIdentifier": "9N0DX20HK701" },
         { "PackageIdentifier": "9P1J8S7CCWWT" }
       ],
@@ -41,7 +40,6 @@
     },
     {
       "Packages": [
-        { "PackageIdentifier": "MartiCliment.UniGetUI" },
         { "PackageIdentifier": "jdx.mise" },
         { "PackageIdentifier": "Microsoft.DirectX" },
         { "PackageIdentifier": "Microsoft.XNARedist" },

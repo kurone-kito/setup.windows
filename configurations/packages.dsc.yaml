@@ -465,14 +465,6 @@ properties:
         source: msstore
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.unigetui
-      directives:
-        description: UniGetUI (formerly WingetUI)
-      settings:
-        id: MartiCliment.UniGetUI
-        source: winget
-
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: pkg.mise
       directives:
         description: mise-en-place (mise)
@@ -1266,11 +1258,11 @@ properties:
         source: winget
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.rdp
+      id: pkg.windowsApp
       directives:
-        description: Microsoft Remote Desktop
+        description: Windows App
       settings:
-        id: "9WZDNCRFJ3PS"
+        id: "9N1F85V9T8BN"
         source: msstore
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
@@ -1314,14 +1306,6 @@ properties:
         description: Threads by Instagram
       settings:
         id: "9MXBP1FB84CQ"
-        source: msstore
-
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.x
-      directives:
-        description: X (formerly Twitter)
-      settings:
-        id: "9WZDNCRFJ140"
         source: msstore
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
