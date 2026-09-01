@@ -8,6 +8,8 @@ libs/post-install.ps1 -- do not add Export-ModuleMember here.
 #>
 Set-StrictMode -Version Latest
 
+. (Join-Path -Path $PSScriptRoot -ChildPath 'process-path-sync.ps1')
+
 $Script:CoderabbitCliInstallScriptUrl = 'https://cli.coderabbit.ai/install.ps1'
 # $env:LOCALAPPDATA is Windows-only and absent on the Linux CI runner
 # that runs this file's Pester tests -- guarded so dot-sourcing this
@@ -157,6 +159,7 @@ function Sync-CoderabbitCli {
   [CmdletBinding()]
   param ()
 
+  Sync-ProcessPath
   if ($null -eq (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Warning '[coderabbit-cli] git not found -- skipping CodeRabbit CLI.'
     return
@@ -184,7 +187,12 @@ function Sync-CoderabbitCli {
   sections of libs/post-install.ps1 do -- this keeps the check
   independently testable via
   tests/powershell/coderabbit-cli-installer.Tests.ps1 without dot-
-  sourcing post-install.ps1's Test-CommandExists helper.
+  sourcing post-install.ps1's Test-CommandExists helper. It does,
+  however, share libs/process-path-sync.ps1's Sync-ProcessPath with
+  Test-CommandExists (called above, before the git check) so a `git`
+  installed earlier in this same process -- e.g. by WinGet
+  Configuration in Phase 2 -- is reliably detected here too, instead of
+  only after a reboot (issue #129).
 
   Unlike libs/unity-cli-installer.ps1's Sync-UnityCli, this function
   does not pin a target version or skip when a matching version is
