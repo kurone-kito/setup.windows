@@ -154,10 +154,11 @@ function Invoke-CursorCliInstaller {
   addressed then, per the issue's own documented fallback ("if
   unnecessary, leave a note in a code comment").
 
-  install.ps1 itself is not pinned by hash or version, the same trust
-  model as any curl-pipe-to-shell bootstrap (Chocolatey, Scoop,
-  CodeRabbit CLI, Unity CLI); see docs/dsc-migration-notes.md for the
-  recorded risk.
+  The installer script itself (fetched from a URL that, unlike
+  CodeRabbit's or Unity's, does not actually end in `install.ps1`) is
+  not pinned by hash or version, the same trust model as any
+  curl-pipe-to-shell bootstrap (Chocolatey, Scoop, CodeRabbit CLI, Unity
+  CLI); see docs/dsc-migration-notes.md for the recorded risk.
 
   The download itself is wrapped in its own try/catch (mirrors issue
   #98's Unity CLI fix and Invoke-CoderabbitCliInstaller): a network

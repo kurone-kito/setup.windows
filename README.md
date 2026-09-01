@@ -119,9 +119,9 @@ the full list. Key categories:
 - **VPM CLI** (via dotnet tool): VRChat package manager
 - **CodeRabbit CLI** (via official `install.ps1`): AI code review CLI,
   always updated to latest (no version pin); requires Git for Windows
-- **Cursor CLI** (via official `install.ps1`): standalone `cursor-agent`
-  AI coding agent CLI, always updated to latest (no version pin); no
-  prerequisite command required
+- **Cursor CLI** (via official install script): standalone
+  `cursor-agent` AI coding agent CLI, always updated to latest (no
+  version pin); no prerequisite command required
 - **Unity 2022.3.22f1**: Required by VRChat SDK/VCC
 - **mkcert**: Local CA for HTTPS development
 - **Docker images**: Base images (alpine, debian, ubuntu, node variants)
@@ -165,8 +165,9 @@ PATH — the three exceptions are the third-party Unity CLI installer
 third-party CodeRabbit CLI installer
 (`libs/coderabbit-cli-installer.ps1` invokes CodeRabbit's own
 `install.ps1`), and the third-party Cursor CLI installer
-(`libs/cursor-cli-installer.ps1` invokes Cursor's own `install.ps1`),
-which each persist an entry there as their own documented side effect,
+(`libs/cursor-cli-installer.ps1` invokes Cursor's own official install
+script), which each persist an entry there as their own documented side
+effect,
 not something this repository's code does directly. User PATH ownership
 otherwise belongs to dotfiles' managed-path reconciler: dotfiles'
 `docs/winget-user-path.md` documents the mechanism, and

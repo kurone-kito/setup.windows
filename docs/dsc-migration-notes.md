@@ -1070,14 +1070,15 @@ both from this issue's AI-summary research into the vendor installer:
   (`Win32_ComputerSystem.SystemType`) and fetch a native ARM64 build,
   unlike CodeRabbit CLI's ARM64 x64-emulation behavior recorded above.
 
-### `install.ps1` itself is not pinned
+### The vendor installer script itself is not pinned
 
 Same trust model as the Unity CLI and CodeRabbit CLI installers above:
-the script fetched from `https://cursor.com/install?win32=true` is not
-pinned by hash or version. A compromise of that endpoint could serve a
-different script. Recorded here as a known, accepted risk, consistent
-with how the other two vendor installers' own unpinned scripts are
-recorded.
+the script fetched from `https://cursor.com/install?win32=true` -- note
+this endpoint's URL, unlike Unity's and CodeRabbit's, does not actually
+end in `install.ps1` -- is not pinned by hash or version. A compromise
+of that endpoint could serve a different script. Recorded here as a
+known, accepted risk, consistent with how the other two vendor
+installers' own unpinned scripts are recorded.
 
 ### No version pin; always installs latest
 
