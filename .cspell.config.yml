@@ -29,6 +29,7 @@ version: "0.2"
 words:
   - ajeetdsouza
   - antlr
+  - aquaproj
   - bbwe
   - chafa
   - chezmoi
@@ -57,6 +58,7 @@ words:
   - oldj
   - ollama
   - pixiv
+  - pkgs
   - posh
   - psmux
   - psscriptanalyzer
