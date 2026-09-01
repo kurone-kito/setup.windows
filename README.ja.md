@@ -24,7 +24,7 @@ setup.cmd                        ← 唯一のエントリーポイント
             ├─ Phase 5: インストール後セットアップ (libs/post-install.ps1)
             │    ├─ dotnet tool → VPM CLI
             │    ├─ install.ps1 → CodeRabbit CLI
-            │    ├─ install.ps1 → Cursor CLI
+            │    ├─ install script → Cursor CLI
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → ローカル CA
             │    └─ Docker Desktop → イメージ pull
@@ -166,7 +166,7 @@ CodeRabbit CLI インストーラ、Cursor CLI インストーラです
 （`libs/unity-cli-installer.ps1` が Unity 公式の `install.ps1` を、
 `libs/coderabbit-cli-installer.ps1` が CodeRabbit 公式の `install.ps1`
 を、`libs/cursor-cli-installer.ps1` が Cursor 公式のインストール
-スクリプトをそれぞれ呼び出し、各インストーラ自身の既知の副作用として User PATH へ
+スクリプトをそれぞれ呼び出し、各インストーラ自身の副作用として User PATH へ
 エントリを追加します — 本リポジトリのコードが直接書き込むものでは
 ありません）。それ以外の
 User PATH の所有権は dotfiles の管理対象パス reconciler にあります。

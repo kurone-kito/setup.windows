@@ -1038,9 +1038,10 @@ outright that "CLI is not published on npm" -- the `cursor-agent` and
 unrelated third-party packages (a Cursor-AI-agent task-sequence tool and
 a deprecated terminal-cursor-display toggle library, respectively), not
 Anysphere's CLI; this repository's code deliberately never runs `npm
-install` against either name. `getcursor/cursor` (Cursor's GitHub
-organization) has zero Releases, and no `anysphere`-owned repository
-named `cursor-agent` exists, so no `github:`/`ubi:` backend applies
+install` against either name. The `cursor` repository in Cursor's
+`getcursor` GitHub organization (`getcursor/cursor`) has zero Releases,
+and no `anysphere`-owned repository named `cursor-agent` exists, so no
+`github:`/`ubi:` backend applies
 either, and a code search of `aquaproj/aqua-registry` found no
 `anysphere` package definition, ruling out an `aqua:` backend too. The
 only distribution path is Cursor's own installer script
@@ -1092,10 +1093,16 @@ and CodeRabbit CLI sections of `libs/post-install.ps1`.
 
 The installer's install directory
 (`%LocalAppData%\cursor-agent\versions\<version>\`), the commands it
-adds (`agent.exe`/`agent.cmd`/`agent.ps1` as the primary name,
-`cursor-agent.exe`/`cursor-agent.cmd`/`cursor-agent.ps1` as aliases of
-the original name), its User-scope PATH update mechanism, and its
-ARM64-native behavior were established from an AI-generated summary of
+adds (both `agent.exe`/`agent.cmd`/`agent.ps1` and
+`cursor-agent.exe`/`cursor-agent.cmd`/`cursor-agent.ps1` -- which of the
+two names is primary and which is the alias could not be pinned down
+with confidence; this section's opening paragraph's "official command
+name `cursor-agent`, alias `agent`" framing matches how Cursor's own
+docs refer to the tool, while the installer research behind this list
+suggested the reverse, so treat the primary/alias distinction itself as
+unresolved, not just the mechanics below), its User-scope PATH update
+mechanism, and its ARM64-native behavior were established from an
+AI-generated summary of
 the vendor's documentation and script content, not from reading the
 script's source end to end the way issue #76 read Unity's `install.ps1`.
 Whether the installer shows an interactive login prompt, calls `exit`

@@ -23,7 +23,7 @@ setup.cmd                        ← single entry point
             ├─ Phase 5: Post-install             (libs/post-install.ps1)
             │    ├─ dotnet tool → VPM CLI
             │    ├─ install.ps1 → CodeRabbit CLI
-            │    ├─ install.ps1 → Cursor CLI
+            │    ├─ install script → Cursor CLI
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → local CA
             │    └─ Docker Desktop → image pulls
@@ -166,9 +166,9 @@ third-party CodeRabbit CLI installer
 (`libs/coderabbit-cli-installer.ps1` invokes CodeRabbit's own
 `install.ps1`), and the third-party Cursor CLI installer
 (`libs/cursor-cli-installer.ps1` invokes Cursor's own official install
-script), which each persist an entry there as their own documented
-side effect, not something this repository's code does directly. User
-PATH ownership
+script), which each persist an entry there as their own side effect,
+not something this repository's code does directly. User PATH
+ownership
 otherwise belongs to dotfiles' managed-path reconciler: dotfiles'
 `docs/winget-user-path.md` documents the mechanism, and
 `home/dot_config/powershell/lib/managed-paths.ps1` is its single
