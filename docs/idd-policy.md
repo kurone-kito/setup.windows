@@ -188,6 +188,25 @@ configured.
 elevated merge-only credential set exists; any session holding a valid
 claim may carry it through to merge.
 
+### Trusted Marker Actors
+
+**Current value** (`trustedMarkerActors` in
+[`.github/idd/config.json`](../.github/idd/config.json)):
+`["kurone-kito", "github-actions[bot]"]`.
+
+`github-actions[bot]` is included because
+[`.github/workflows/post-merge-cleanup.yml`](../.github/workflows/post-merge-cleanup.yml)
+posts its F4 server-side-fallback `idd-cleanup-evidence` comments using
+the workflow's `GITHUB_TOKEN`, which always authors as
+`github-actions[bot]`. The workflow's own duplicate-prevention logic
+already hardcodes this login as trusted, but the agent-side F4 dedup
+check reads only `trustedMarkerActors` from
+`.github/idd/config.json` — without this entry, an agent running F4
+after the workflow already posted evidence cannot recognize that
+comment as trusted and reposts a duplicate. This duplication was
+observed for issue #129 (PR #131) on 2026-09-01 before this entry was
+added (#132).
+
 ### Helper Runtime Profile
 
 **Profile**: `ephemeral-npx`
