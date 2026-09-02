@@ -144,8 +144,9 @@ function Test-PwshMachineScopeInstalled {
   (see Sync-Pwsh's coexistence-conflict handling). Checking for the
   WiX/MSI installer's actual target path
   (%ProgramFiles%\PowerShell\7\pwsh.exe) turns that kind of silent
-  false-success into a detectable warning instead of an unverified
-  "installation complete" message.
+  false-success into a detectable failure (a non-terminating
+  Write-Error) instead of an unverified "installation complete"
+  message.
 
   A null/empty ExePath (e.g. the default on a machine without
   $env:ProgramFiles, such as this file's own Linux Pester run) is
