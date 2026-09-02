@@ -20,6 +20,12 @@ Describe 'Get-PwshInstallArguments' {
 
     ($arguments -join ' ') | Should -Match '--id Microsoft\.PowerShell'
   }
+
+  It 'pins to the 7.6 line, since 7.7+ may drop the WiX/MSI installer entirely' {
+    $arguments = Get-PwshInstallArguments
+
+    ($arguments -join ' ') | Should -Match '--version 7\.6\.\*'
+  }
 }
 
 Describe 'Test-PwshUserScopeCoexistence' {
@@ -43,9 +49,31 @@ Describe 'Test-PwshUserScopeCoexistence' {
   }
 }
 
+Describe 'Test-PwshMachineScopeInstalled' {
+  It 'returns $false without checking the filesystem when ExePath is null or empty' {
+    Mock Test-Path { throw 'Test-Path should not be called when ExePath is empty' }
+
+    Test-PwshMachineScopeInstalled -ExePath $null | Should -Be $false
+    Test-PwshMachineScopeInstalled -ExePath '' | Should -Be $false
+  }
+
+  It 'returns $true when the machine-scope pwsh.exe exists' {
+    Mock Test-Path { $true }
+
+    Test-PwshMachineScopeInstalled -ExePath '/fake/Program Files/PowerShell/7/pwsh.exe' | Should -Be $true
+  }
+
+  It 'returns $false when the machine-scope pwsh.exe does not exist' {
+    Mock Test-Path { $false }
+
+    Test-PwshMachineScopeInstalled -ExePath '/fake/Program Files/PowerShell/7/pwsh.exe' | Should -Be $false
+  }
+}
+
 Describe 'Sync-Pwsh' {
   BeforeEach {
     Mock Test-PwshUserScopeCoexistence { $false }
+    Mock Test-PwshMachineScopeInstalled { $true }
   }
 
   It 'installs with the machine-scope argument list' {
@@ -82,7 +110,7 @@ Describe 'Sync-Pwsh' {
     Should -Invoke Test-PwshUserScopeCoexistence -Times 1
   }
 
-  It 'warns when a user-scope MSIX execution alias coexists, without throwing' {
+  It 'warns when a user-scope MSIX execution alias coexists after a verified successful install, without throwing' {
     Mock Invoke-PwshInstallCommand { 0 }
     Mock Test-PwshUserScopeCoexistence { $true }
 
@@ -95,5 +123,42 @@ Describe 'Sync-Pwsh' {
     $warnings = Sync-Pwsh 3>&1 | Where-Object { $_ -is [System.Management.Automation.WarningRecord] }
 
     $warnings | Should -BeNullOrEmpty
+  }
+
+  It 'correlates a failed install with a coexisting user-scope MSIX alias in the error message' {
+    Mock Invoke-PwshInstallCommand { 1 }
+    Mock Test-PwshUserScopeCoexistence { $true }
+
+    Sync-Pwsh -ErrorAction SilentlyContinue -ErrorVariable syncErrors 2>&1 | Out-Null
+    $syncErrors.Count | Should -Be 1
+    $syncErrors[0].ToString() | Should -Match 'installer technology'
+  }
+
+  It 'does not mention MSIX coexistence in the error message when no alias is present' {
+    Mock Invoke-PwshInstallCommand { 1 }
+    Mock Test-PwshUserScopeCoexistence { $false }
+
+    Sync-Pwsh -ErrorAction SilentlyContinue -ErrorVariable syncErrors 2>&1 | Out-Null
+    $syncErrors.Count | Should -Be 1
+    $syncErrors[0].ToString() | Should -Not -Match 'installer technology'
+  }
+
+  It 'treats a verified-missing machine-scope binary as a failure even when winget exits 0' {
+    Mock Invoke-PwshInstallCommand { 0 }
+    Mock Test-PwshMachineScopeInstalled { $false }
+
+    { Sync-Pwsh -ErrorAction SilentlyContinue } | Should -Not -Throw
+    Sync-Pwsh -ErrorAction SilentlyContinue -ErrorVariable syncErrors 2>&1 | Out-Null
+    $syncErrors.Count | Should -Be 1
+    $syncErrors[0].ToString() | Should -Match 'not found at the expected machine-scope path'
+  }
+
+  It 'does not print the success message when the machine-scope binary verification fails' {
+    Mock Invoke-PwshInstallCommand { 0 }
+    Mock Test-PwshMachineScopeInstalled { $false }
+
+    $output = Sync-Pwsh -ErrorAction SilentlyContinue 6>&1 | Out-String
+
+    $output | Should -Not -Match 'installation complete'
   }
 }
