@@ -45,9 +45,10 @@ function Get-PwshInstallArguments {
   wildcard/range) -- confirmed via `winget install` command
   documentation and an open, unimplemented winget-pkgs feature request
   for wildcard install versions. A `7.6.*`-style glob was tried during
-  this issue's own review round and empirically would have made every
-  install fail (verified independently, not just asserted), so it was
-  reverted; hardcoding a specific exact version string was rejected too,
+  this issue's own review round and, per that same documented
+  exact-match-only behavior, would have made every install fail, so it
+  was reverted; hardcoding a specific exact version string was rejected
+  too,
   since it cannot be confirmed against a real winget/manifest from this
   Linux development environment and would itself go stale. See
   docs/dsc-migration-notes.md (issue #147) for the full rationale,
