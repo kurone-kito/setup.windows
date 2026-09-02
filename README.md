@@ -24,7 +24,7 @@ setup.cmd                        ← single entry point
             │    ├─ dotnet tool → VPM CLI
             │    ├─ install.ps1 → CodeRabbit CLI
             │    ├─ install script → Cursor CLI
-            │    ├─ winget --scope machine → PowerShell 7 (pwsh)
+            │    ├─ winget --scope machine --installer-type wix → PowerShell 7 (pwsh)
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → local CA
             │    └─ Docker Desktop → image pulls
@@ -123,11 +123,16 @@ the full list. Key categories:
 - **Cursor CLI** (via official install script): standalone
   `cursor-agent` AI coding agent CLI, always updated to latest (no
   version pin); no prerequisite command required
-- **PowerShell 7 (pwsh)** (via `winget install --scope machine`):
+- **PowerShell 7 (pwsh)** (via
+  `winget install --scope machine --installer-type wix --version 7.6.*`):
   installed at machine scope, not through WinGet Configuration (DSC),
   because `Microsoft.WinGet.DSC/WinGetPackage` cannot request
-  `--scope machine`. Machine scope keeps pwsh's path stable enough to
-  later serve as Windows OpenSSH Server's `DefaultShell`
+  `--scope machine`. `--installer-type wix` forces the WiX/MSI
+  installer over the MSIX bundle winget would otherwise pick; the
+  version pin avoids a 7.7+ manifest that may drop WiX/MSI entirely
+  (see `docs/dsc-migration-notes.md`). Machine scope keeps pwsh's path
+  stable enough to later serve as Windows OpenSSH Server's
+  `DefaultShell`
 - **Unity 2022.3.22f1**: Required by VRChat SDK/VCC
 - **mkcert**: Local CA for HTTPS development
 - **Docker images**: Base images (alpine, debian, ubuntu, node variants)

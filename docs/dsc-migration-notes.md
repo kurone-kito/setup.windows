@@ -1185,8 +1185,9 @@ pattern already established by `libs/coderabbit-cli-installer.ps1`
 
 ```text
 install --id Microsoft.PowerShell --source winget --scope machine
-  --installer-type wix --exact --accept-package-agreements
-  --accept-source-agreements --disable-interactivity
+  --installer-type wix --version 7.6.* --exact
+  --accept-package-agreements --accept-source-agreements
+  --disable-interactivity
 ```
 
 - `--scope machine` alone has a reported version-mismatch bug in some
@@ -1197,14 +1198,24 @@ install --id Microsoft.PowerShell --source winget --scope machine
   otherwise select.
 - As of this writing, the `Microsoft.PowerShell` winget-pkgs manifest
   (7.6.x) ships both an MSIX bundle and a WiX/MSI installer with no
-  top-level `InstallerType`. Community reports (surfaced while
-  researching issue #147) suggest 7.7+ manifests may drop the WiX/MSI
-  installer entirely; this could not be confirmed against a live
-  manifest from this Linux development environment (no `winget`
-  available here). If a future winget upgrade makes `--installer-type
-  wix` fail to resolve, re-check `winget show --id Microsoft.PowerShell
-  --source winget` on a real Windows machine and adjust the argument
-  list accordingly.
+  top-level `InstallerType`. During this PR's review, CodeRabbit
+  surfaced web research indicating PowerShell has deprecated the
+  MSI/WiX installer format starting with 7.7-preview.1, moving to
+  MSIX-only distribution -- this could not be independently confirmed
+  against a live manifest from this Linux development environment (no
+  `winget` available here), but the claim is specific enough, and the
+  failure mode severe enough (an unpinned `--installer-type wix` would
+  simply fail to resolve once winget's "latest" moves past 7.6.x), that
+  `--version 7.6.*` was added to pin to the last minor line known (at
+  authoring time) to still ship a WiX/MSI installer. This trades
+  automatic updates for installability: `Sync-Pwsh` will not move past
+  7.6.x until this pin is revisited. Re-check `winget show --id
+  Microsoft.PowerShell --source winget` on a real Windows machine
+  before bumping or removing this pin, and update the argument list
+  accordingly (a later 7.6.x patch release, a confirmed WiX-capable
+  7.7+ release, or a switch to `--installer-type msix` plus a
+  `--scope machine` MSIX provisioning strategy if WiX/MSI is
+  confirmed gone for good).
 
 ### Existing user-scope MSIX installs are not automatically removed
 
@@ -1217,10 +1228,41 @@ package identity on a given machine's `winget list` output, and this
 repository could not verify which one to target for an automatic
 `winget uninstall` with confidence from this development environment.
 Instead, `Test-PwshUserScopeCoexistence` detects the pre-existing
-`%LOCALAPPDATA%\Microsoft\WindowsApps\pwsh.exe` execution alias and
-`Sync-Pwsh` emits a `Write-Warning` noting that it may still take PATH
-precedence over the machine-scope install, depending on PATH ordering.
-Manual cleanup (`winget uninstall`) is left to the operator.
+`%LOCALAPPDATA%\Microsoft\WindowsApps\pwsh.exe` execution alias.
+
+During this PR's review, CodeRabbit raised a related, more severe
+concern: winget is known to reject installing a different installer
+technology (here, WiX/MSI) over a package it already correlates with an
+existing install (here, the MSIX alias) -- rather than only a
+PATH-ordering nuisance, this could mean `Sync-Pwsh`'s `winget install`
+call fails outright on exactly the machines this migration targets
+(already-provisioned ones). This could not be confirmed or ruled out
+from this development environment either. `Sync-Pwsh` was adjusted to
+correlate the two signals instead of treating them independently: when
+`Invoke-PwshInstallCommand` exits non-zero **and** the MSIX alias is
+present, the error message explicitly names the likely installer-technology
+conflict and suggests a manual `winget uninstall` of the existing MSIX
+package before re-running -- still no automatic uninstall (the target
+package identity is still not reliably known), but the operator is no
+longer left with a bare exit-code error to diagnose. When the alias is
+present but the install still succeeds (exit 0) and the machine-scope
+binary is verified present, the original coexistence `Write-Warning`
+about PATH-ordering precedence still fires, since a `Test-Path` hit
+there is not itself evidence of an install failure.
+
+### `winget install` exit 0 is not proof the machine-scope binary landed
+
+A third review finding: `winget install` can report exit code 0 for an
+outcome short of "the requested package is now present at the
+requested scope" -- for example, a no-op it silently declined to apply
+against an already-tracked package (the same installer-technology
+conflict discussed above could plausibly manifest this way instead of
+a hard failure). `Sync-Pwsh` therefore no longer treats exit 0 alone as
+success: `Test-PwshMachineScopeInstalled` checks for the actual
+target binary at `%ProgramFiles%\PowerShell\7\pwsh.exe` (the WiX/MSI
+installer's standard install location) and `Sync-Pwsh` reports a
+non-terminating error -- not the "installation complete" message --
+when it is missing despite a 0 exit code.
 
 ### Verification
 

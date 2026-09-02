@@ -25,7 +25,7 @@ setup.cmd                        ← 唯一のエントリーポイント
             │    ├─ dotnet tool → VPM CLI
             │    ├─ install.ps1 → CodeRabbit CLI
             │    ├─ install script → Cursor CLI
-            │    ├─ winget --scope machine → PowerShell 7 (pwsh)
+            │    ├─ winget --scope machine --installer-type wix → PowerShell 7 (pwsh)
             │    ├─ Unity Hub → Unity 2022.3.22f1
             │    ├─ mkcert → ローカル CA
             │    └─ Docker Desktop → イメージ pull
@@ -123,11 +123,16 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 - **Cursor CLI**（公式インストールスクリプト経由）: 単体バイナリの AI
   コーディングエージェント CLI（`cursor-agent`）。バージョン固定はせず
   常に最新版へ更新する。前提コマンドは不要
-- **PowerShell 7 (pwsh)**（`winget install --scope machine` 経由）:
-  WinGet Configuration（DSC）ではなく machine scope でインストールする。
-  `Microsoft.WinGet.DSC/WinGetPackage` が `--scope machine` を指定できな
-  いため。machine scope にすることで、将来 Windows OpenSSH Server の
-  `DefaultShell` として使えるだけの安定したパスになる
+- **PowerShell 7 (pwsh)**（
+  `winget install --scope machine --installer-type wix --version 7.6.*`
+  経由）: WinGet Configuration（DSC）ではなく machine scope でインストー
+  ルする。`Microsoft.WinGet.DSC/WinGetPackage` が `--scope machine` を
+  指定できないため。`--installer-type wix` は winget が既定で選ぶ MSIX
+  バンドルではなく WiX/MSI インストーラを強制し、バージョン固定は
+  WiX/MSI を廃止した可能性のある 7.7 系マニフェストを避けるためのもの
+  （詳細は `docs/dsc-migration-notes.md`）。machine scope にすることで、
+  将来 Windows OpenSSH Server の `DefaultShell` として使えるだけの安定
+  したパスになる
 - **Unity 2022.3.22f1**: VRChat SDK/VCC 必須バージョン
 - **mkcert**: HTTPS 開発用ローカル CA
 - **Docker イメージ**: ベースイメージ (alpine, debian, ubuntu, node 各種)
