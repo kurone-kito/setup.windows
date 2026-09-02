@@ -326,7 +326,7 @@ point — `.claude/skills/issue-authoring/references/contract.md`,
 | --- | --- | --- | --- |
 | `npx` (Node.js) | `fix-validate`, `pre-push-validate`, `post-fix-validate`, every `idd-*` helper call | **Already delegated (#108, PR #117)** — this repository no longer installs Node.js at all, on either profile. Both profiles have `jdx.mise` via winget unconditionally, but Node.js itself only comes from `mise` reading dotfiles' `node = "latest"` entry, which needs `chezmoi apply` to deploy — see the Node.js subsection in [§1](#1-first-wave-targets-in-repo-dependencies) and the cross-cutting caveat in [§4](#4-operations-gated-on-chezmoi-apply) | N/A — already the target state |
 | `gh` | The IDD loop's own bootstrap (not `fix-validate`/`pre-push-validate` directly) | **Already delegated (#107, PR #118)** — neither profile installs `GitHub.cli` via winget anymore; `gh` now comes from dotfiles' `github:cli/cli` (mise) | N/A — already the target state |
-| `pwsh` (PowerShell 7) | `pre-push-validate`/`post-fix-validate` (`Invoke-ScriptAnalyzer`, `Invoke-Pester`) | Both profiles install PowerShell 7 today, via different package identities: full uses `pkg.pwsh` (Microsoft Store id `9MZ1SNWT0N5D`); min uses `Microsoft.PowerShell` (native winget id). Not a delegation-relevant gap — see [§3](#3-powershell-7-provisioning-in-the-full-profile-conclusion). | Unchanged — no first-wave track touches either `pwsh` package definition. |
+| `pwsh` (PowerShell 7) | `pre-push-validate`/`post-fix-validate` (`Invoke-ScriptAnalyzer`, `Invoke-Pester`) | **Changed by issue #147.** Neither profile declares `pwsh` via `WinGetPackage` (DSC/import) anymore — `libs/pwsh-installer.ps1` (`Sync-Pwsh`) installs it imperatively at machine scope during Phase 5 post-install instead, on both profiles identically. See [§3](#3-powershell-7-provisioning-in-the-full-profile-conclusion)'s update note for why. | Unchanged — no first-wave (winget→dotfiles) delegation track touches `pwsh`; issue #147 is a machine-scope packaging change, not a delegation move. |
 | `PSScriptAnalyzer`, `Pester`, `powershell-yaml` (PowerShell modules) | `pre-push-validate`/`post-fix-validate` (`Invoke-ScriptAnalyzer`/`Invoke-Pester`); `powershell-yaml` is also required by `scripts/Build-Configurations.ps1` / `scripts/Test-PackageIds.ps1` | **No automated winget or dotfiles provisioning on either profile, for any of the three.** `.github/workflows/lint.yml` runs `Install-Module -Name <module> -RequiredVersion <pinned> -Force -Scope CurrentUser -Repository PSGallery` fresh on every CI run for all three. `docs/testing.md` documents the manual command for **local** development for `Pester`; `scripts/Build-Configurations.ps1`'s and `scripts/Test-PackageIds.ps1`'s own help-comment headers document the same manual command for `powershell-yaml`. Only `PSScriptAnalyzer` has no local-install documentation anywhere in this repository — just its CI provisioning in `lint.yml`. Nothing automates any of the three for a fresh local machine (either profile). | Unchanged — out of scope for the winget/dotfiles boundary; these are PowerShell Gallery modules, not OS packages. |
 
 ## 3. PowerShell 7 provisioning in the full profile: conclusion
@@ -388,6 +388,20 @@ local-provisioning gap adjacent to this question is the PowerShell
 `pre-push-validate` also needs — see the last row of [§2](#2-tooling-required-by-install-deps--fix-validate--pre-push-validate)'s
 table, which affects both profiles equally and is unrelated to the
 winget/dotfiles delegation boundary this issue covers.
+
+**Update (issue #147).** The investigation above, and the `pkg.pwsh`
+resource block quoted in it, describe this repository's state *before*
+issue #147. Neither profile declares `pwsh` via `WinGetPackage`
+(DSC/import) anymore: `9MZ1SNWT0N5D` (msstore) and `Microsoft.PowerShell`
+(winget, unscoped) both resolve to a user-scope MSIX install, which is
+unsuitable as a future Windows OpenSSH Server `DefaultShell` target (a
+machine-wide setting). `libs/pwsh-installer.ps1` (`Sync-Pwsh`) now
+installs `pwsh` imperatively at machine scope during Phase 5 post-install
+instead, identically on both profiles — see `docs/dsc-migration-notes.md`
+for the full rationale. This section's own investigation methodology and
+conclusion (no full-profile gap, present-day at the time) remain accurate
+as a historical record; only the "both profiles install it via
+`WinGetPackage`" mechanism changed.
 
 ## 4. Operations gated on `chezmoi apply`
 
