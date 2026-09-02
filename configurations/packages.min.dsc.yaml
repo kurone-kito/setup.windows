@@ -307,13 +307,15 @@ properties:
 
     # =======================================================================
     # Install the CLI shell tools
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: powershell-v7
-      directives:
-        description: PowerShell v7
-      settings:
-        id: Microsoft.PowerShell
-        source: winget
+    # PowerShell 7 (pwsh) is intentionally NOT declared here.
+    # Microsoft.WinGet.DSC/WinGetPackage cannot request `--scope
+    # machine`, and this manifest's default installer-type precedence
+    # (MSIX > MSI/Wix) would otherwise select the user-scope MSIX
+    # build -- unsuitable as a future sshd DefaultShell target. pwsh
+    # is installed at machine scope imperatively instead, from
+    # libs/pwsh-installer.ps1 (Sync-Pwsh) during Phase 5 post-install.
+    # See docs/dsc-migration-notes.md (issue #147) for the full
+    # rationale.
     - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: starship
       directives:

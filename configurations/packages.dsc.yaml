@@ -862,13 +862,15 @@ properties:
     # ================================================================
     # CLI — Shell
     # ================================================================
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.pwsh
-      directives:
-        description: PowerShell 7
-      settings:
-        id: "9MZ1SNWT0N5D"
-        source: msstore
+    # PowerShell 7 (pwsh) is intentionally NOT declared here.
+    # Microsoft.WinGet.DSC/WinGetPackage cannot request `--scope
+    # machine`, so this DSC route can only reach the msstore
+    # `9MZ1SNWT0N5D` package, which installs to user scope (MSIX) --
+    # unsuitable as a future sshd DefaultShell target. pwsh is
+    # installed at machine scope imperatively instead, from
+    # libs/pwsh-installer.ps1 (Sync-Pwsh) during Phase 5 post-install.
+    # See docs/dsc-migration-notes.md (issue #147) for the full
+    # rationale.
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: pkg.starship

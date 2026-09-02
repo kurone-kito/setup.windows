@@ -35,7 +35,6 @@
         { "PackageIdentifier": "JesseDuffield.lazygit" },
         { "PackageIdentifier": "marlocarlo.psmux" },
         { "PackageIdentifier": "Zellij.Zellij" },
-        { "PackageIdentifier": "Microsoft.PowerShell" },
         { "PackageIdentifier": "Starship.Starship" },
         { "PackageIdentifier": "dandavison.delta" },
         { "PackageIdentifier": "charmbracelet.glow" },
