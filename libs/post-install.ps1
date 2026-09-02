@@ -90,6 +90,24 @@ Sync-CoderabbitCli
 Sync-CursorCli
 
 ###########################################################################
+### PowerShell 7 (pwsh) — machine scope. Neither
+### Microsoft.WinGet.DSC/WinGetPackage (the DSC route) nor `winget
+### import` (the degraded-mode fallback route) can request `--scope
+### machine`, so both configurations/packages.dsc.yaml and
+### configurations/packages.min.dsc.yaml intentionally no longer
+### declare pwsh -- see the tombstone comments left at their former
+### "CLI — Shell" entries. Sync-Pwsh installs it here instead, at
+### machine scope, so its path is stable enough to later serve as
+### sshd's DefaultShell -- a user-scope MSIX install resolves through
+### an NTFS reparse point (App Execution Alias) that OpenSSH's
+### public-key-authenticated sessions cannot traverse (issue #147; see
+### docs/dotfiles-boundary.md's reparse-point discussion and
+### docs/dsc-migration-notes.md for the full rationale).
+###########################################################################
+. (Join-Path -Path $PSScriptRoot -ChildPath 'pwsh-installer.ps1')
+Sync-Pwsh
+
+###########################################################################
 ### Vagrant plugins
 ###########################################################################
 if (Test-CommandExists vagrant) {

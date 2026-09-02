@@ -1126,3 +1126,171 @@ Linux development environment, for the same reason recorded above for
 the Unity CLI and CodeRabbit CLI: this repository never executes
 `libs/post-install.ps1` or `boxstarter.ps1` directly in this
 environment, even for smoke-testing.
+
+## Migrating PowerShell 7 (pwsh) from user scope (MSIX) to machine scope (MSI) (issue #147)
+
+### Motivation
+
+The user wants to set Windows OpenSSH Server's `DefaultShell` to `pwsh`.
+`DefaultShell` is a single machine-wide value at
+`HKLM:\SOFTWARE\OpenSSH\DefaultShell` -- there is no per-user default
+shell in Win32-OpenSSH. Before this issue, `pwsh` installed as MSIX
+(user scope) on both profiles: the full profile's `packages.dsc.yaml`
+explicitly pinned the msstore listing `9MZ1SNWT0N5D`; the min profile's
+`packages.min.dsc.yaml` referenced the winget-source `Microsoft.PowerShell`
+package with no `scope`/`installer-type`, which resolves to the same MSIX
+bundle under winget's own installer-type precedence (MSIX > MSI/Wix) when
+neither is specified.
+
+MSIX-installed `pwsh` is reached through
+`%LOCALAPPDATA%\Microsoft\WindowsApps\pwsh.exe`, an App Execution Alias
+implemented as an NTFS reparse point (`IO_REPARSE_TAG_APPEXECLINK`).
+`docs/dotfiles-boundary.md`'s
+["winget `portable` packages cannot run over an SSH session"](dotfiles-boundary.md#winget-portable-packages-cannot-run-over-an-ssh-session)
+section already documents that OpenSSH's public-key-authenticated
+sessions use a network logon token that cannot traverse an NTFS reparse
+point (`ERROR_UNTRUSTED_MOUNT_POINT`, a real winget-`portable` failure
+cited there). Pointing `DefaultShell` at the MSIX execution-alias path
+risks the same failure class.
+
+### Why this could not be declared in `packages.dsc.yaml` / `packages.min.dsc.yaml`
+
+Neither of this repository's two winget-based configuration routes can
+request machine scope:
+
+- `Microsoft.WinGet.DSC/WinGetPackage` (the DSC resource used by both
+  `.dsc.yaml` files) has no working `scope` property -- setting one
+  fails with "The property 'scope' cannot be found on this object"
+  (microsoft/winget-cli#4993, #5722; an open, unimplemented feature
+  request as of this writing).
+- `winget import` (the degraded-mode fallback route selected by
+  `libs/strategy.ps1`, generating `packages.import.json` /
+  `packages.min.import.json`) has no `--scope` option at all
+  (microsoft/winget-cli#3850).
+
+`boxstarter.ps1`'s Phase 5 (post-install) runs unconditionally after
+Phase 2, regardless of whether Phase 2 took the `dsc` or `import` route,
+so an imperative post-install installer works uniformly for both.
+`libs/pwsh-installer.ps1` (`Sync-Pwsh`) follows the same
+"winget/DSC can't express this -- do it imperatively in post-install"
+pattern already established by `libs/coderabbit-cli-installer.ps1`
+(issue #126), `libs/cursor-cli-installer.ps1` (issue #139), and
+`libs/unity-editor-installer.ps1` (issue #74).
+
+### `winget install` argument choices and their caveats
+
+`Get-PwshInstallArguments` (pure, unit-tested directly -- mirrors
+`libs/winget-pin-sync.ps1`'s `Get-WinGetPinAddArguments` /
+`Invoke-WinGetPinAddCommand` split) builds:
+
+```text
+install --id Microsoft.PowerShell --source winget --scope machine
+  --installer-type wix --exact --accept-package-agreements
+  --accept-source-agreements --disable-interactivity
+```
+
+- `--scope machine` alone has a reported version-mismatch bug in some
+  winget versions (microsoft/winget-pkgs#95172 -- machine scope pulled
+  an older PowerShell version in one report), so it is paired with an
+  explicit `--installer-type wix` to force the WiX/MSI installer over
+  the MSIX bundle winget's own installer-type precedence would
+  otherwise select.
+- As of this writing, the `Microsoft.PowerShell` winget-pkgs manifest
+  (7.6.x) ships both an MSIX bundle and a WiX/MSI installer with no
+  top-level `InstallerType`. During this PR's review, CodeRabbit
+  surfaced web research indicating PowerShell has deprecated the
+  MSI/WiX installer format starting with 7.7-preview.1, moving to
+  MSIX-only distribution -- this could not be independently confirmed
+  against a live manifest from this Linux development environment (no
+  `winget` available here). An unpinned `--installer-type wix` would
+  fail to resolve once winget's "latest" moves past 7.6.x, if that
+  report is accurate.
+- **A version pin was tried and reverted.** `--version 7.6.*` was
+  added during this round of review to neutralize the risk above, then
+  reverted after a follow-up self-review pass caught that
+  `winget install`'s `--version` requires an **exact** version string
+  -- unlike `winget pin add`'s `--version`, it does not accept a
+  wildcard or range (confirmed against `winget install`'s own command
+  documentation and an open, unimplemented winget-pkgs feature request
+  for wildcard install versions). `--version 7.6.*` would have made
+  every `Sync-Pwsh` call fail immediately, on every machine -- a
+  regression worse than the risk it targeted. Hardcoding a specific
+  exact version string (e.g. a literal `7.6.5.0`) was considered and
+  rejected too: it cannot be confirmed against a real winget/manifest
+  from this development environment, and would itself go stale as
+  soon as a newer 7.6.x patch superseded it. The 7.7+ WiX/MSI-
+  availability risk is therefore left unmitigated in the argument
+  list; `Test-PwshMachineScopeInstalled` (below) at least turns a
+  resulting failure into a clear error instead of a false "complete"
+  message. Re-check `winget show --id Microsoft.PowerShell --source
+  winget` on a real Windows machine to confirm the current manifest's
+  installer types before considering a fix here -- a hardcoded exact
+  `--version`, a switch to `--installer-type msix` plus a `--scope
+  machine` MSIX provisioning strategy if WiX/MSI is confirmed gone for
+  good, or some other approach once the real constraint is known.
+
+### Existing user-scope MSIX installs are not automatically removed
+
+A machine that ran this repository's setup before issue #147 may already
+have the user-scope MSIX `pwsh` installed. `Sync-Pwsh` does not attempt
+to uninstall it: the full profile's msstore package id (`9MZ1SNWT0N5D`)
+and the min profile's winget-source `Microsoft.PowerShell` package (which
+also resolves to an MSIX bundle) are not necessarily the same winget
+package identity on a given machine's `winget list` output, and this
+repository could not verify which one to target for an automatic
+`winget uninstall` with confidence from this development environment.
+Instead, `Test-PwshUserScopeCoexistence` detects the pre-existing
+`%LOCALAPPDATA%\Microsoft\WindowsApps\pwsh.exe` execution alias.
+
+During this PR's review, CodeRabbit raised a related, more severe
+concern: winget is known to reject installing a different installer
+technology (here, WiX/MSI) over a package it already correlates with an
+existing install (here, the MSIX alias) -- rather than only a
+PATH-ordering nuisance, this could mean `Sync-Pwsh`'s `winget install`
+call fails outright on exactly the machines this migration targets
+(already-provisioned ones). This could not be confirmed or ruled out
+from this development environment either. `Sync-Pwsh` was adjusted to
+correlate the two signals instead of treating them independently: when
+`Invoke-PwshInstallCommand` exits non-zero **and** the MSIX alias is
+present, the error message explicitly names the likely installer-technology
+conflict and suggests a manual `winget uninstall` of the existing MSIX
+package before re-running -- still no automatic uninstall (the target
+package identity is still not reliably known), but the operator is no
+longer left with a bare exit-code error to diagnose. When the alias is
+present but the install still succeeds (exit 0) and the machine-scope
+binary is verified present, the original coexistence `Write-Warning`
+about PATH-ordering precedence still fires, since a `Test-Path` hit
+there is not itself evidence of an install failure.
+
+### `winget install` exit 0 is not proof the machine-scope binary landed
+
+A third review finding: `winget install` can report exit code 0 for an
+outcome short of "the requested package is now present at the
+requested scope" -- for example, a no-op it silently declined to apply
+against an already-tracked package (the same installer-technology
+conflict discussed above could plausibly manifest this way instead of
+a hard failure). `Sync-Pwsh` therefore no longer treats exit 0 alone as
+success: `Test-PwshMachineScopeInstalled` checks for the actual
+target binary at `%ProgramFiles%\PowerShell\7\pwsh.exe` (the WiX/MSI
+installer's standard install location) and `Sync-Pwsh` reports a
+non-terminating error -- not the "installation complete" message --
+when it is missing despite a 0 exit code.
+
+### Verification
+
+Like the CodeRabbit CLI, Cursor CLI, and Unity CLI installers above,
+`libs/pwsh-installer.ps1` could not be verified against a real `winget`
+binary from this Linux development environment. `Get-PwshInstallArguments`
+(pure argument building) and `Test-PwshUserScopeCoexistence` (filesystem
+check) are unit-tested directly; `Invoke-PwshInstallCommand` (the thin
+`& winget @ArgumentList` wrapper) is deliberately left untested and only
+ever mocked by its callers' tests, mirroring
+`libs/winget-pin-sync.ps1`'s `Invoke-WinGetPinListCommand` /
+`Invoke-WinGetPinAddCommand` and `libs/unity-editor-installer.ps1`'s
+`Invoke-UnityEditorsListCommand` -- `winget` does not resolve via
+`Get-Command` on this Linux Pester-running environment, and Pester's
+`Mock` cannot intercept a command name `Get-Command` can't resolve at
+all. Real-machine behavior (does `--installer-type wix` still resolve on
+the winget version actually installed; does the machine-scope install
+actually land at the expected path) needs manual verification on a real
+Windows machine.
