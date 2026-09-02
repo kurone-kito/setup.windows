@@ -21,10 +21,10 @@ Describe 'Get-PwshInstallArguments' {
     ($arguments -join ' ') | Should -Match '--id Microsoft\.PowerShell'
   }
 
-  It 'pins to the 7.6 line, since 7.7+ may drop the WiX/MSI installer entirely' {
+  It 'does not pass --version (winget install requires an exact version string, not a wildcard/range)' {
     $arguments = Get-PwshInstallArguments
 
-    ($arguments -join ' ') | Should -Match '--version 7\.6\.\*'
+    $arguments | Should -Not -Contain '--version'
   }
 }
 

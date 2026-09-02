@@ -1185,9 +1185,8 @@ pattern already established by `libs/coderabbit-cli-installer.ps1`
 
 ```text
 install --id Microsoft.PowerShell --source winget --scope machine
-  --installer-type wix --version 7.6.* --exact
-  --accept-package-agreements --accept-source-agreements
-  --disable-interactivity
+  --installer-type wix --exact --accept-package-agreements
+  --accept-source-agreements --disable-interactivity
 ```
 
 - `--scope machine` alone has a reported version-mismatch bug in some
@@ -1203,19 +1202,32 @@ install --id Microsoft.PowerShell --source winget --scope machine
   MSI/WiX installer format starting with 7.7-preview.1, moving to
   MSIX-only distribution -- this could not be independently confirmed
   against a live manifest from this Linux development environment (no
-  `winget` available here), but the claim is specific enough, and the
-  failure mode severe enough (an unpinned `--installer-type wix` would
-  simply fail to resolve once winget's "latest" moves past 7.6.x), that
-  `--version 7.6.*` was added to pin to the last minor line known (at
-  authoring time) to still ship a WiX/MSI installer. This trades
-  automatic updates for installability: `Sync-Pwsh` will not move past
-  7.6.x until this pin is revisited. Re-check `winget show --id
-  Microsoft.PowerShell --source winget` on a real Windows machine
-  before bumping or removing this pin, and update the argument list
-  accordingly (a later 7.6.x patch release, a confirmed WiX-capable
-  7.7+ release, or a switch to `--installer-type msix` plus a
-  `--scope machine` MSIX provisioning strategy if WiX/MSI is
-  confirmed gone for good).
+  `winget` available here). An unpinned `--installer-type wix` would
+  fail to resolve once winget's "latest" moves past 7.6.x, if that
+  report is accurate.
+- **A version pin was tried and reverted.** `--version 7.6.*` was
+  added during this round of review to neutralize the risk above, then
+  reverted after a follow-up self-review pass caught that
+  `winget install`'s `--version` requires an **exact** version string
+  -- unlike `winget pin add`'s `--version`, it does not accept a
+  wildcard or range (confirmed against `winget install`'s own command
+  documentation and an open, unimplemented winget-pkgs feature request
+  for wildcard install versions). `--version 7.6.*` would have made
+  every `Sync-Pwsh` call fail immediately, on every machine -- a
+  regression worse than the risk it targeted. Hardcoding a specific
+  exact version string (e.g. a literal `7.6.5.0`) was considered and
+  rejected too: it cannot be confirmed against a real winget/manifest
+  from this development environment, and would itself go stale as
+  soon as a newer 7.6.x patch superseded it. The 7.7+ WiX/MSI-
+  availability risk is therefore left unmitigated in the argument
+  list; `Test-PwshMachineScopeInstalled` (below) at least turns a
+  resulting failure into a clear error instead of a false "complete"
+  message. Re-check `winget show --id Microsoft.PowerShell --source
+  winget` on a real Windows machine to confirm the current manifest's
+  installer types before considering a fix here -- a hardcoded exact
+  `--version`, a switch to `--installer-type msix` plus a `--scope
+  machine` MSIX provisioning strategy if WiX/MSI is confirmed gone for
+  good, or some other approach once the real constraint is known.
 
 ### Existing user-scope MSIX installs are not automatically removed
 

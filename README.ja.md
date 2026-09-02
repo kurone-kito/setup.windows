@@ -124,13 +124,13 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
   コーディングエージェント CLI（`cursor-agent`）。バージョン固定はせず
   常に最新版へ更新する。前提コマンドは不要
 - **PowerShell 7 (pwsh)**（
-  `winget install --scope machine --installer-type wix --version 7.6.*`
-  経由）: WinGet Configuration（DSC）ではなく machine scope でインストー
-  ルする。`Microsoft.WinGet.DSC/WinGetPackage` が `--scope machine` を
-  指定できないため。`--installer-type wix` は winget が既定で選ぶ MSIX
-  バンドルではなく WiX/MSI インストーラを強制し、バージョン固定は
-  WiX/MSI を廃止した可能性のある 7.7 系マニフェストを避けるためのもの
-  （詳細は `docs/dsc-migration-notes.md`）。machine scope にすることで、
+  `winget install --scope machine --installer-type wix` 経由）:
+  WinGet Configuration（DSC）ではなく machine scope でインストールする。
+  `Microsoft.WinGet.DSC/WinGetPackage` が `--scope machine` を指定でき
+  ないため。`--installer-type wix` は winget が既定で選ぶ MSIX バンド
+  ルではなく WiX/MSI インストーラを強制する（WiX/MSI を廃止した可能性
+  のある 7.7 系マニフェストのリスクと、バージョン固定で対処しない理由
+  は `docs/dsc-migration-notes.md` 参照）。machine scope にすることで、
   将来 Windows OpenSSH Server の `DefaultShell` として使えるだけの安定
   したパスになる
 - **Unity 2022.3.22f1**: VRChat SDK/VCC 必須バージョン

@@ -22,8 +22,8 @@ function Get-PwshInstallArguments {
   param ()
   return [string[]]@(
     'install', '--id', 'Microsoft.PowerShell', '--source', 'winget',
-    '--scope', 'machine', '--installer-type', 'wix', '--version', '7.6.*',
-    '--exact', '--accept-package-agreements', '--accept-source-agreements',
+    '--scope', 'machine', '--installer-type', 'wix', '--exact',
+    '--accept-package-agreements', '--accept-source-agreements',
     '--disable-interactivity'
   )
   <#
@@ -38,15 +38,24 @@ function Get-PwshInstallArguments {
   --scope machine forces a machine-wide install; --installer-type wix
   forces the WiX/MSI installer over the MSIX bundle winget would
   otherwise pick by its own installer-type precedence (MSIX >
-  MSI/Wix). --version 7.6.* pins to the last minor line confirmed (at
-  authoring time) to still ship a WiX/MSI installer -- PowerShell
-  7.7+ is reported to drop it in favor of MSIX-only distribution, which
-  would make --installer-type wix fail to resolve against an unpinned
-  "latest" install. See docs/dsc-migration-notes.md (issue #147) for
-  the full rationale, including the winget-pkgs#95172 caveat about
-  --scope machine alone and the plan for revisiting this pin once
-  7.7's installer situation is confirmed against a real winget
-  environment.
+  MSI/Wix).
+
+  No --version pin: `winget install`'s --version requires an exact
+  version string (unlike `winget pin add`'s --version, which accepts a
+  wildcard/range) -- confirmed via `winget install` command
+  documentation and an open, unimplemented winget-pkgs feature request
+  for wildcard install versions. A `7.6.*`-style glob was tried during
+  this issue's own review round and empirically would have made every
+  install fail (verified independently, not just asserted), so it was
+  reverted; hardcoding a specific exact version string was rejected too,
+  since it cannot be confirmed against a real winget/manifest from this
+  Linux development environment and would itself go stale. See
+  docs/dsc-migration-notes.md (issue #147) for the full rationale,
+  including the winget-pkgs#95172 caveat about --scope machine alone
+  and the unresolved 7.7+ WiX/MSI-availability risk this leaves
+  unmitigated in code (Test-PwshMachineScopeInstalled surfaces it as a
+  failure instead of a false "complete" message, but does not prevent
+  it).
 
   .OUTPUTS
   String array of `winget` CLI arguments.
