@@ -23,8 +23,14 @@ function Test-PendingRebootIndicators {
   $componentBasedServicing = Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending'
   $windowsUpdateAutoUpdate = Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
 
+  # PendingFileRenameOperations is a REG_MULTI_SZ of [source, dest] pairs
+  # (an empty dest means "delete on boot"), so pending iff at least one
+  # entry names a real path -- a PowerShell array with 2+ elements is
+  # always truthy regardless of content, so an array of only empty/
+  # whitespace entries would otherwise read as a false positive.
   $pendingFileRenameProps = Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name PendingFileRenameOperations -ErrorAction SilentlyContinue
-  $pendingFileRenameOperations = [bool]($pendingFileRenameProps -and $pendingFileRenameProps.PendingFileRenameOperations)
+  $pendingFileRenameEntries = if ($pendingFileRenameProps) { $pendingFileRenameProps.PendingFileRenameOperations } else { $null }
+  $pendingFileRenameOperations = [bool]($pendingFileRenameEntries | Where-Object { $_ -and $_.Trim() -ne '' })
 
   $activeNameProps = Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\ComputerName\ActiveComputerName' -Name ComputerName -ErrorAction SilentlyContinue
   $pendingNameProps = Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName' -Name ComputerName -ErrorAction SilentlyContinue

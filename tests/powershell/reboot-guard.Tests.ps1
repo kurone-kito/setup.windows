@@ -72,9 +72,6 @@ Describe 'Test-PendingRebootIndicators' {
   }
 
   It 'treats a single-empty-string PendingFileRenameOperations value as not pending' {
-    # Boxstarter's own Get-PendingReboot has the same blind spot: a
-    # REG_MULTI_SZ holding one empty string is falsy via plain `if
-    # ($value)`, matching the check this function uses.
     Mock Get-ItemProperty {
       [pscustomobject]@{ PendingFileRenameOperations = @('') }
     } -ParameterFilter {
@@ -84,6 +81,36 @@ Describe 'Test-PendingRebootIndicators' {
     $result = Test-PendingRebootIndicators
 
     $result.PendingFileRenameOperations | Should -BeFalse
+  }
+
+  It 'treats an all-empty multi-entry PendingFileRenameOperations value as not pending' {
+    # A PowerShell array with 2+ elements is truthy regardless of content,
+    # so a naive [bool] cast on the raw array would misread this as
+    # pending even though no entry names a real path.
+    Mock Get-ItemProperty {
+      [pscustomobject]@{ PendingFileRenameOperations = @('', ' ') }
+    } -ParameterFilter {
+      $Path -eq 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -and $Name -eq 'PendingFileRenameOperations'
+    }
+
+    $result = Test-PendingRebootIndicators
+
+    $result.PendingFileRenameOperations | Should -BeFalse
+  }
+
+  It 'detects a genuine [source, empty-dest] PendingFileRenameOperations pair as pending' {
+    # The canonical real-world shape: an empty dest means "delete this
+    # file on next boot" (the format the original bug report's stale
+    # gamingservicesproxy_13.dll entry actually had).
+    Mock Get-ItemProperty {
+      [pscustomobject]@{ PendingFileRenameOperations = @('\??\C:\stale\gamingservicesproxy_13.dll', '') }
+    } -ParameterFilter {
+      $Path -eq 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -and $Name -eq 'PendingFileRenameOperations'
+    }
+
+    $result = Test-PendingRebootIndicators
+
+    $result.PendingFileRenameOperations | Should -BeTrue
   }
 
   It 'detects ComputerRenamePending via an ActiveComputerName/ComputerName mismatch' {
