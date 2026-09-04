@@ -104,6 +104,12 @@ Describe 'Test-PendingRebootIndicators' {
     $result.WindowsUpdateAutoUpdate | Should -BeFalse
     $result.PendingFileRenameOperations | Should -BeFalse
     $result.ComputerRenamePending | Should -BeTrue
+    Should -Invoke Get-ItemProperty -Times 1 -ParameterFilter {
+      $Path -eq 'HKLM:\SYSTEM\CurrentControlSet\Control\ComputerName\ActiveComputerName' -and $Name -eq 'ComputerName'
+    }
+    Should -Invoke Get-ItemProperty -Times 1 -ParameterFilter {
+      $Path -eq 'HKLM:\SYSTEM\CurrentControlSet\Control\ComputerName\ComputerName' -and $Name -eq 'ComputerName'
+    }
   }
 
   It 'detects ComputerRenamePending via a pending domain join key' {
