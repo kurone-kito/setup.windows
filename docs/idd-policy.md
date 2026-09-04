@@ -61,12 +61,15 @@ recorded in `.github/idd/config.json`)
   stamp, or other operational marker `scripts/review-comment-origin.mjs`
   already recognizes — ordinary human chatter like "LGTM" is not),
   reruns the existing `idd-advisory-convergence` required-check run for
-  the PR's current HEAD SHA. It has a different job id and concurrency
-  group from the required check itself, so it can never create or
-  cancel that check-run directly (#2136, kurone-kito/setup.windows#124).
-  This automates only the reply-triggered case; it is unrelated to the
-  waiver-comment rerun case below, which still requires the manual
-  `gh run rerun` step.
+  the PR's current HEAD SHA, for same-repository PRs only — a
+  fork-originated PR falls back to the manual `gh run rerun` step below,
+  since GitHub forces a read-only `GITHUB_TOKEN` for this trigger on
+  fork PRs regardless of the workflow's own `permissions:`. It has a
+  different job id and concurrency group from the required check
+  itself, so it can never create or cancel that check-run directly
+  (#2136, kurone-kito/setup.windows#124). This automates only the
+  reply-triggered case; it is unrelated to the waiver-comment rerun
+  case below, which still requires the manual `gh run rerun` step.
 - **`ciGate.externalChecks.waivable`**: `[{ "selector":
   "idd-advisory-convergence" }]` — this repository's only waivable
   external check.

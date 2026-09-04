@@ -34,6 +34,15 @@
 #     path -- still sourced only from the pinned tarball, nothing
 #     vendored into this repository. The rerun step below has a
 #     published bin and uses the ordinary form.
+#   - The rerun step is skipped for a fork-origin PR (local addition,
+#     absent from the pinned template): GitHub forces `GITHUB_TOKEN` to
+#     read-only for `pull_request_review_comment` on a fork-originated
+#     PR regardless of `permissions:` above, so the rerun would 403.
+#     The required check itself still runs fine on fork PRs (its own
+#     permissions are all read-only); only this automatic refresh is
+#     unavailable there -- the manual `gh run rerun` fallback in
+#     docs/idd-policy.md's CI Gate (External Checks) section still
+#     applies.
 # If a future change adds a `ref:` override that resolves to the PR
 # head, vendors either script into this repository, or widens
 # `permissions:` below, re-review this trust model before merging that
@@ -91,7 +100,16 @@ jobs:
             https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0
           node "$RUNNER_TEMP/idd-skill/node_modules/@kurone-kito/idd-skill/scripts/review-comment-origin.mjs"
       - name: Rerun required HEAD check
-        if: steps.origin.outputs.idd_originated == 'true'
+        # Fork-origin PRs are skipped here (local addition, absent from
+        # the pinned template): GitHub forces GITHUB_TOKEN to read-only
+        # for pull_request_review_comment on a fork-originated PR
+        # regardless of the permissions: block above, so this step's
+        # `gh run rerun` call would 403. The required check itself still
+        # runs fine on fork PRs (its own permissions are all read-only);
+        # only this automatic refresh is unavailable there -- the manual
+        # `gh run rerun` fallback in docs/idd-policy.md's CI Gate
+        # (External Checks) section still applies.
+        if: steps.origin.outputs.idd_originated == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
