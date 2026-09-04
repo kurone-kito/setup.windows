@@ -1,0 +1,100 @@
+# Trust model: this is a NON-required companion to
+# idd-advisory-convergence.yml (the required-check gate; see that
+# file's own trust-model header). It cannot create, cancel, or resolve
+# the idd-advisory-convergence required check-run itself -- different
+# name, job id, and concurrency group -- it can only ask
+# rerun-advisory-convergence.mjs to re-run the EXISTING pull_request-
+# family run for the current HEAD SHA, and only for a comment
+# classified as IDD-originated (an E6/E13 disposition reply, reply-
+# identity stamp, or other operational marker the required check
+# already honors -- see scripts/review-comment-origin.mjs at the pin
+# below). Ordinary human review-thread chatter (a plain "LGTM",
+# "thanks") never triggers a rerun.
+#   - `ref: master` on the checkout step means a PR cannot substitute
+#     its own edited `.github/idd/config.json` to widen which comments
+#     count as IDD-originated.
+#   - `${{ github.event.comment.body }}` is passed only via `env:` and
+#     read from `$COMMENT_BODY` inside the classifier -- never
+#     interpolated into a shell command -- so PR-authored comment text
+#     is never executed.
+#   - `actions: write` is scoped to re-running an EXISTING check-run
+#     for this PR's own current HEAD SHA; neither the classifier nor
+#     the rerun helper accepts an attacker-chosen target or command.
+#     Worst case for a spoofed IDD-originated stamp is a wasted,
+#     bounded CI re-run, not code execution or privilege escalation
+#     (accepted risk; see kurone-kito/setup.windows#124's Trust/Safety
+#     analysis).
+#   - The classify step below has no published `idd-*` CLI command at
+#     this pin (scripts/review-comment-origin.mjs carries no `bin`
+#     entry), so it cannot use this repository's usual
+#     `npx --yes --package <tarball> idd-<command>` form. It instead
+#     installs the same pinned tarball into a runner-temp prefix
+#     (`npm install --prefix`, the same mechanism `npx --package`
+#     itself uses internally) and calls the script by its resolved
+#     path -- still sourced only from the pinned tarball, nothing
+#     vendored into this repository. The rerun step below has a
+#     published bin and uses the ordinary form.
+# If a future change adds a `ref:` override that resolves to the PR
+# head, vendors either script into this repository, or widens
+# `permissions:` below, re-review this trust model before merging that
+# change.
+name: IDD advisory-convergence comment refresh
+on:
+  pull_request_review_comment:
+    types:
+      - created
+      - edited
+      - deleted
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  actions: write
+concurrency:
+  # Different job id and group from idd-advisory-convergence.yml
+  # (#2136) so a human review-thread reply here can never create or
+  # cancel that required check-run. Does not cancel an in-flight
+  # refresh: a later human reply on the same PR must not abort an
+  # in-progress IDD-originated rerun.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+defaults:
+  run:
+    # Pins every run: step's shell regardless of runner OS -- GitHub
+    # Actions otherwise picks bash on Linux/macOS but PowerShell Core
+    # on Windows, which would silently misinterpret this file's POSIX
+    # shell syntax instead of failing loudly. Available on every
+    # GitHub-hosted runner, including Windows via Git Bash.
+    shell: bash
+jobs:
+  # Job id is deliberately NOT `idd-advisory-convergence`, so this
+  # workflow's own check-run can never be mistaken for -- or overwrite
+  # -- the required check's rollup.
+  refresh-if-idd-originated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Classify review comment
+        id: origin
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/idd-skill" \
+            https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0
+          node "$RUNNER_TEMP/idd-skill/node_modules/@kurone-kito/idd-skill/scripts/review-comment-origin.mjs"
+      - name: Rerun required HEAD check
+        if: steps.origin.outputs.idd_originated == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0 \
+            idd-rerun-advisory-convergence --pr "$PR_NUMBER" --apply
