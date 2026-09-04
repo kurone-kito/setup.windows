@@ -204,6 +204,59 @@ git-vrc のいずれもインストールされません — この 5 つはす�
 [§7](docs/dotfiles-boundary.md#7-why-cli-tools-moved-to-dotfiles-at-all)
 を参照してください。
 
+## トラブルシューティング
+
+### `setup.cmd` が再起動を繰り返し `[Phase 0]` が一度も表示されない
+
+**症状**: `setup.cmd` を実行すると再起動を繰り返し、`boxstarter.ps1` の
+`[Phase 0]`〜`[Phase 7]` のコンソール出力が一度も表示されない。
+
+**原因**: `boxstarter.ps1` が実行される前に、Boxstarter 本体の事前チェック
+がいくつかの再起動保留系レジストリ指標を評価し、いずれかが立っていれば
+本リポジトリのセットアップ処理を一度も呼び出さずに即座に再起動する。
+このうち `PendingFileRenameOperations` は既知の誤検知源であり(一部の
+アンチウイルス製品がこのキーに残骸を残し、通常の再起動では解消しない
+ことがある)。
+
+`setup.cmd` は現在、何かをインストールする前に事前チェック
+(`libs/reboot-guard.ps1` の `Test-PendingRebootIndicators`)を実行する。
+いずれかの指標が立っていれば、どの指標かを表示したうえで中断し、
+上記のような無限ループに陥ることを防ぐ。
+
+**調査手順**: 管理者権限の PowerShell から、同じ指標を直接確認できる:
+
+```powershell
+Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending'
+Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
+Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name PendingFileRenameOperations -ErrorAction SilentlyContinue
+```
+
+**復旧手順**:
+
+1. 一度通常どおり再起動してから `setup.cmd` を再実行する。本物の
+   保留中再起動であれば、これで解消することが多い。
+2. 解消しない場合(多くは古い `PendingFileRenameOperations` エントリ)、
+   参照先のファイル操作がもう不要であることを確認したうえで削除する:
+
+   ```powershell
+   Remove-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name PendingFileRenameOperations
+   ```
+
+3. このガードが導入される前(またはこのガードを回避した後)に無限
+   ループへ陥ったことがある場合、Boxstarter は本来自身の Phase 7
+   teardown で復元するはずの変更を残したままになっている(teardown が
+   一度も走らなかったため)。必要に応じて次を確認・復旧する:
+   - `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System`
+     の `EnableLUA` が `1`(UAC 有効)であること
+   - `HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon`
+     の `AutoAdminLogon` が削除済みまたは `0` であること
+   - `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\` に
+     `boxstarter-post-restart.bat` が残っていれば削除する
+
+この事前チェック自体を回避したい場合(例: 指標が既知の誤検知だと
+確認済みの場合)は、`setup.cmd` の再実行前に
+`SETUP_IGNORE_PENDING_REBOOT=1` を設定する。
+
 ## テスト環境
 
 レガシーの Vagrant ベースのテスト環境は削除しました。

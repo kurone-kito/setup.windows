@@ -203,6 +203,66 @@ for the rationale behind moving these tools to dotfiles in the first
 place (including the operational rule to run `winget upgrade` from a
 local or RDP interactive session, never over SSH).
 
+## Troubleshooting
+
+### `setup.cmd` reboots repeatedly and `[Phase 0]` never appears
+
+**Symptom**: running `setup.cmd` reboots the machine over and over, and
+none of `boxstarter.ps1`'s `[Phase 0]`-`[Phase 7]` console output ever
+shows up.
+
+**Cause**: before `boxstarter.ps1` ever runs, Boxstarter's own
+pre-flight check evaluates several pending-reboot registry indicators
+and reboots immediately if any are set — without invoking this repo's
+setup logic even once. One of those indicators,
+`PendingFileRenameOperations`, is a known false-positive source (some
+antivirus products leave stale entries there that a normal reboot does
+not clear).
+
+`setup.cmd` now runs a pre-check (`libs/reboot-guard.ps1`'s
+`Test-PendingRebootIndicators`) before installing anything. If any
+indicator is set, it prints which one(s) and aborts instead of letting
+Boxstarter get stuck in the loop above.
+
+**Investigation**: from an elevated PowerShell prompt, check the same
+indicators directly:
+
+```powershell
+Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending'
+Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
+Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name PendingFileRenameOperations -ErrorAction SilentlyContinue
+```
+
+**Recovery**:
+
+1. Reboot once normally, then re-run `setup.cmd`. A genuine pending
+   reboot usually clears this way.
+2. If the indicator doesn't clear (most often a stale
+   `PendingFileRenameOperations` entry), remove it after confirming the
+   referenced file operation is no longer relevant:
+
+   ```powershell
+   Remove-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name PendingFileRenameOperations
+   ```
+
+3. If the machine ever got stuck in the reboot loop before this guard
+   existed (or after bypassing it), Boxstarter leaves side effects
+   behind that it would normally undo in its own Phase 7 teardown —
+   which never ran. Check and restore as needed:
+   - `EnableLUA` under
+     `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System`
+     should be `1` (UAC enabled)
+   - `AutoAdminLogon` under
+     `HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon`
+     should be removed or `0`
+   - Remove `boxstarter-post-restart.bat` from
+     `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\` if
+     present
+
+To bypass the pre-check entirely (for example, once you've confirmed an
+indicator is a known false positive), set
+`SETUP_IGNORE_PENDING_REBOOT=1` before re-running `setup.cmd`.
+
 ## Testing
 
 The legacy Vagrant-based test environment has been removed. Modern testing
