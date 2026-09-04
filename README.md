@@ -220,9 +220,11 @@ antivirus products leave stale entries there that a normal reboot does
 not clear).
 
 `setup.cmd` now runs a pre-check (`libs/reboot-guard.ps1`'s
-`Test-PendingRebootIndicators`) before installing anything. If any
-indicator is set, it prints which one(s) and aborts instead of letting
-Boxstarter get stuck in the loop above.
+`Test-PendingRebootIndicators`) immediately before it invokes
+Boxstarter -- after the Chocolatey/Boxstarter bootstrap steps, so a
+reboot-pending state left behind by either of those is still caught. If
+any indicator is set, it prints which one(s) and aborts instead of
+letting Boxstarter get stuck in the loop above.
 
 **Investigation**: from an elevated PowerShell prompt, check the same
 indicators directly:
