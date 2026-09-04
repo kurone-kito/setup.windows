@@ -54,6 +54,19 @@ recorded in `.github/idd/config.json`)
   status check is recorded in
   [CI Gate (Required Status Checks)](#ci-gate-required-status-checks)
   below (#61).
+- **Comment-triggered rerun (non-required companion)**:
+  `.github/workflows/idd-advisory-convergence-comment.yml` listens for
+  `pull_request_review_comment` events and, only when the comment is
+  classified IDD-originated (an E6/E13 disposition reply, reply-identity
+  stamp, or other operational marker `scripts/review-comment-origin.mjs`
+  already recognizes — ordinary human chatter like "LGTM" is not),
+  reruns the existing `idd-advisory-convergence` required-check run for
+  the PR's current HEAD SHA. It has a different job id and concurrency
+  group from the required check itself, so it can never create or
+  cancel that check-run directly (#2136, kurone-kito/setup.windows#124).
+  This automates only the reply-triggered case; it is unrelated to the
+  waiver-comment rerun case below, which still requires the manual
+  `gh run rerun` step.
 - **`ciGate.externalChecks.waivable`**: `[{ "selector":
   "idd-advisory-convergence" }]` — this repository's only waivable
   external check.
@@ -276,6 +289,14 @@ Template files and helper scripts are pinned to:
 ```text
 kurone-kito/idd-skill @ f51a8bb73a47452eff5799e8a27251b660ba4ae0
 ```
+
+This repository additionally hosts the following template workflow
+files as dogfooded copies at this pin, kept in sync manually on each
+pin bump:
+
+- `.github/workflows/idd-advisory-convergence.yml`
+- `.github/workflows/idd-advisory-convergence-comment.yml`
+- `.github/workflows/post-merge-cleanup.yml`
 
 When a future change bumps this pin, treat it as a **named-gap
 import**, not a blind resync: reconcile only the specific files that
