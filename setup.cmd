@@ -21,6 +21,25 @@ REM --- Ensure Boxstarter is available ---
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "if (-not (Get-Module -ListAvailable -Name Boxstarter.Chocolatey)) { choco install boxstarter -y }"
 
+REM --- Check for pending-reboot indicators immediately before Boxstarter
+REM --- runs (a stale/false-positive indicator here can otherwise make
+REM --- Boxstarter loop rebooting forever without ever running this
+REM --- repo's setup logic). Run this last, right before the call it
+REM --- guards, so a reboot-pending state left behind by the Chocolatey
+REM --- or Boxstarter install steps above is still caught.
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  ". '%~dp0libs\reboot-guard.ps1'; $r = Test-PendingRebootIndicators; $flagged = $r.PSObject.Properties.Name | Where-Object { $r.$_ }; if ($flagged) { Write-Warning ('Pending-reboot indicator(s) detected: ' + ($flagged -join ', ')); Write-Warning 'This may be a real pending reboot (reboot and re-run), or a known false positive -- see README.md Troubleshooting.'; Write-Warning 'If unresolved, Boxstarter can loop rebooting forever without ever running this repo''s setup logic.'; Write-Warning 'To proceed anyway, set SETUP_IGNORE_PENDING_REBOOT=1 and re-run setup.cmd.'; if ($env:SETUP_IGNORE_PENDING_REBOOT -ne '1') { exit 1 } else { Write-Warning 'SETUP_IGNORE_PENDING_REBOOT=1 is set; continuing despite the indicator(s) above.' } }"
+if errorlevel 1 (
+  echo.
+  echo Aborting: unresolved pending-reboot indicator detected. See README.md Troubleshooting section.
+  REM A bounded wait (not "pause"): keeps a double-clicked window open long
+  REM enough to read the warning without risking an indefinite hang when
+  REM this runs unattended with a console still attached (no redirected
+  REM stdin) but nobody there to press a key.
+  timeout /t 30
+  exit /b 1
+)
+
 REM --- Run the main setup via Boxstarter (provides reboot resilience) ---
 echo.
 echo Starting Boxstarter setup (reboot-resilient)...
