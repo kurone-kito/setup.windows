@@ -37,15 +37,17 @@
 #     --no-audit --no-fund` on the install: this step only needs the
 #     plain .mjs file, so lifecycle scripts the tarball's package.json
 #     might define (e.g. a `prepare` hook) never need to run.
-#   - The rerun step is skipped for a fork-origin PR (local addition,
+#   - The whole job is skipped for a fork-origin PR (local addition,
 #     absent from the pinned template): GitHub forces `GITHUB_TOKEN` to
 #     read-only for `pull_request_review_comment` on a fork-originated
-#     PR regardless of `permissions:` above, so the rerun would 403.
-#     The required check itself still runs fine on fork PRs (its own
-#     permissions are all read-only); only this automatic refresh is
-#     unavailable there -- the manual `gh run rerun` fallback in
-#     docs/idd-policy.md's CI Gate (External Checks) section still
-#     applies.
+#     PR regardless of `permissions:` above, so the rerun step would
+#     403 there -- checkout/setup-node/npm install would be wasted CI
+#     minutes on every review-thread comment for a fork PR that can
+#     never succeed anyway. The required check itself still runs fine
+#     on fork PRs (its own permissions are all read-only); only this
+#     automatic refresh is unavailable there -- the manual
+#     `gh run rerun` fallback in docs/idd-policy.md's CI Gate (External
+#     Checks) section still applies.
 # If a future change adds a `ref:` override that resolves to the PR
 # head, vendors either script into this repository, or widens
 # `permissions:` below, re-review this trust model before merging that
@@ -83,6 +85,17 @@ jobs:
   # workflow's own check-run can never be mistaken for -- or overwrite
   # -- the required check's rollup.
   refresh-if-idd-originated:
+    # Fork-origin PRs are skipped for the whole job (local addition,
+    # absent from the pinned template): the rerun step below can never
+    # succeed there (GitHub forces GITHUB_TOKEN to read-only for
+    # pull_request_review_comment on a fork-originated PR regardless of
+    # permissions: above), so checkout/setup-node/npm install would be
+    # wasted CI minutes on every review-thread comment. The required
+    # check itself still runs fine on fork PRs (its own permissions are
+    # all read-only); only this automatic refresh is unavailable there
+    # -- the manual `gh run rerun` fallback in docs/idd-policy.md's CI
+    # Gate (External Checks) section still applies.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -104,16 +117,7 @@ jobs:
             https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0
           node "$RUNNER_TEMP/idd-skill/node_modules/@kurone-kito/idd-skill/scripts/review-comment-origin.mjs"
       - name: Rerun required HEAD check
-        # Fork-origin PRs are skipped here (local addition, absent from
-        # the pinned template): GitHub forces GITHUB_TOKEN to read-only
-        # for pull_request_review_comment on a fork-originated PR
-        # regardless of the permissions: block above, so this step's
-        # `gh run rerun` call would 403. The required check itself still
-        # runs fine on fork PRs (its own permissions are all read-only);
-        # only this automatic refresh is unavailable there -- the manual
-        # `gh run rerun` fallback in docs/idd-policy.md's CI Gate
-        # (External Checks) section still applies.
-        if: steps.origin.outputs.idd_originated == 'true' && github.event.pull_request.head.repo.full_name == github.repository
+        if: steps.origin.outputs.idd_originated == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
