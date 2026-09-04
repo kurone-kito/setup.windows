@@ -47,15 +47,6 @@ on:
   pull_request_review:
     types:
       - submitted
-  # Covers E6 disposition replies (and any other reply/edit/delete on a
-  # review thread): Clause 2 of the verdict is "every advisory-bot
-  # thread resolved or dispositioned", which changes exactly when one of
-  # these events fires, not just on a new push or review submission.
-  pull_request_review_comment:
-    types:
-      - created
-      - edited
-      - deleted
   workflow_dispatch:
     inputs:
       pr_number:
@@ -67,24 +58,18 @@ permissions:
   issues: read
   pull-requests: read
 concurrency:
-  # Grouped by PR number, not github.ref: pull_request_review and
-  # pull_request_review_comment are not pull_request-family events, so
-  # github.ref does not resolve the same way for them as it does for
-  # lint.yml's pull_request-only trigger. cancel-in-progress stays true
-  # deliberately: a narrower group or cancel-in-progress:false both trade
-  # this race for an equally-racy alternative rather than closing it (see
-  # upstream idd-skill#1381) -- if the rollup ever appears stuck on a
-  # stale run for the current HEAD SHA, `gh run rerun <run-id>` on the
-  # existing pull_request-family run for that SHA is the known recovery.
-  # Upstream v0.7.0 (idd-skill#2136) closes this race a different way, by
-  # moving pull_request_review_comment into a separate
-  # idd-advisory-convergence-comment.yml companion workflow with its own
-  # job id and concurrency group. This repository deliberately keeps the
-  # combined single-workflow form for now: adopting the split needs a new
-  # companion workflow file (which would carry `actions: write`, tripping
-  # the trust-model header's "widens permissions" re-review clause) and
-  # is tracked as a follow-up rather than done as part of this pin bump
-  # (see kurone-kito/setup.windows#124).
+  # Grouped by PR number, not github.ref: pull_request_review is not a
+  # pull_request-family event, so github.ref does not resolve the same
+  # way for it as it does for lint.yml's pull_request-only trigger.
+  # Review-thread comments live in the companion
+  # idd-advisory-convergence-comment.yml workflow and must not share
+  # this group (#2136, kurone-kito/setup.windows#124).
+  # cancel-in-progress stays true deliberately: a narrower group or
+  # cancel-in-progress:false both trade this race for an equally-racy
+  # alternative rather than closing it (see upstream idd-skill#1381) --
+  # if the rollup ever appears stuck on a stale run for the current
+  # HEAD SHA, `gh run rerun <run-id>` on the existing pull_request-
+  # family run for that SHA is the known recovery.
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: true
 defaults:
