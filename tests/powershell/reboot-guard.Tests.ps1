@@ -174,5 +174,8 @@ Describe 'Test-PendingRebootIndicators' {
     $result.WindowsUpdateAutoUpdate | Should -BeTrue
     $result.PendingFileRenameOperations | Should -BeTrue
     $result.ComputerRenamePending | Should -BeTrue
+    Should -Invoke Test-Path -Times 1 -ParameterFilter {
+      $Path -eq 'HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\AvoidSpnSet'
+    }
   }
 }

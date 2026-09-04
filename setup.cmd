@@ -32,7 +32,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
 if errorlevel 1 (
   echo.
   echo Aborting: unresolved pending-reboot indicator detected. See README.md Troubleshooting section.
-  pause
+  REM A bounded wait (not "pause"): keeps a double-clicked window open long
+  REM enough to read the warning without risking an indefinite hang when
+  REM this runs unattended with a console still attached (no redirected
+  REM stdin) but nobody there to press a key.
+  timeout /t 30
   exit /b 1
 )
 
