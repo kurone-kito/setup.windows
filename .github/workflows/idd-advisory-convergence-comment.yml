@@ -33,7 +33,10 @@
 #     itself uses internally) and calls the script by its resolved
 #     path -- still sourced only from the pinned tarball, nothing
 #     vendored into this repository. The rerun step below has a
-#     published bin and uses the ordinary form.
+#     published bin and uses the ordinary form. `--ignore-scripts
+#     --no-audit --no-fund` on the install: this step only needs the
+#     plain .mjs file, so lifecycle scripts the tarball's package.json
+#     might define (e.g. a `prepare` hook) never need to run.
 #   - The rerun step is skipped for a fork-origin PR (local addition,
 #     absent from the pinned template): GitHub forces `GITHUB_TOKEN` to
 #     read-only for `pull_request_review_comment` on a fork-originated
@@ -96,7 +99,8 @@ jobs:
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          npm install --no-save --prefix "$RUNNER_TEMP/idd-skill" \
+          npm install --no-save --ignore-scripts --no-audit --no-fund \
+            --prefix "$RUNNER_TEMP/idd-skill" \
             https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0
           node "$RUNNER_TEMP/idd-skill/node_modules/@kurone-kito/idd-skill/scripts/review-comment-origin.mjs"
       - name: Rerun required HEAD check
