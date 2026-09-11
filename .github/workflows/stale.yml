@@ -21,3 +21,4 @@ jobs:
           stale-issue-message: StaleBot marked the issue as stale because there has been no activity.
           stale-pr-label: stale
           stale-pr-message: StaleBot marked the pull request as stale because there has been no activity.
+    timeout-minutes: 5
