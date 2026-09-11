@@ -23,6 +23,8 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
+      - name: Install PowerShell
+        uses: PSModule/Install-PowerShell@159c2929fac34e3c7fc55d75e8997fb27fc7f75a # v1.2.0
       - name: Install PSScriptAnalyzer
         shell: pwsh
         run: Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Force -Scope CurrentUser -Repository PSGallery
@@ -35,6 +37,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Install PowerShell
+        uses: PSModule/Install-PowerShell@159c2929fac34e3c7fc55d75e8997fb27fc7f75a # v1.2.0
       - name: Install powershell-yaml
         shell: pwsh
         run: Install-Module -Name powershell-yaml -RequiredVersion 0.4.12 -Force -Scope CurrentUser -Repository PSGallery
@@ -50,6 +54,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Install PowerShell
+        uses: PSModule/Install-PowerShell@159c2929fac34e3c7fc55d75e8997fb27fc7f75a # v1.2.0
       - name: Install powershell-yaml
         shell: pwsh
         run: Install-Module -Name powershell-yaml -RequiredVersion 0.4.12 -Force -Scope CurrentUser -Repository PSGallery
