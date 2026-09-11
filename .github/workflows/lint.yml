@@ -16,9 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Run cspell
-        uses: streetsidesoftware/cspell-action@v9
+        uses: streetsidesoftware/cspell-action@6f3c77c1406bc930f944ba97e9801a22e42caf58 # v9.1.0
       - name: Run markdownlint
-        uses: DavidAnson/markdownlint-cli2-action@v24
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
   powershell-analyzer:
     runs-on: ubuntu-slim
     steps:
