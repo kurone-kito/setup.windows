@@ -1,3 +1,6 @@
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
 name: Linting workflow
 on:
   push:
@@ -6,9 +9,6 @@ on:
   pull_request:
 permissions:
   contents: read
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.sha || github.sha }}
-  cancel-in-progress: true
 jobs:
   lint:
     runs-on: ubuntu-slim
