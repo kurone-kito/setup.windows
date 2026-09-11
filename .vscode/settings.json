@@ -6,6 +6,7 @@
     "*.md": "${capture}.*.md",
     ".gitattributes": ".gitignore, .gitmessage",
     ".markdownlint.yml": ".markdownlint-cli2.yaml",
+    ".tool-versions": ".node-version, .nvmrc",
     "AGENTS.md": "CLAUDE.md, GEMINI.md"
   },
   "files.associations": {
