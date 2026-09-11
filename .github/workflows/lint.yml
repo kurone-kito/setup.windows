@@ -1,3 +1,6 @@
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
 name: Linting workflow
 on:
   push:
@@ -6,22 +9,22 @@ on:
   pull_request:
 permissions:
   contents: read
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.sha || github.sha }}
-  cancel-in-progress: true
+run-name: ${{ github.event_name }} by @${{ github.actor }}
 jobs:
   lint:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
       - name: Run cspell
-        uses: streetsidesoftware/cspell-action@v9
+        uses: streetsidesoftware/cspell-action@6f3c77c1406bc930f944ba97e9801a22e42caf58 # v9.1.0
       - name: Run markdownlint
-        uses: DavidAnson/markdownlint-cli2-action@v24
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
   powershell-analyzer:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
+      - name: Install PowerShell
+        uses: PSModule/Install-PowerShell@159c2929fac34e3c7fc55d75e8997fb27fc7f75a # v1.2.0
       - name: Install PSScriptAnalyzer
         shell: pwsh
         run: Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Force -Scope CurrentUser -Repository PSGallery
@@ -29,11 +32,13 @@ jobs:
         shell: pwsh
         run: Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit
   pester:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Install PowerShell
+        uses: PSModule/Install-PowerShell@159c2929fac34e3c7fc55d75e8997fb27fc7f75a # v1.2.0
       - name: Install powershell-yaml
         shell: pwsh
         run: Install-Module -Name powershell-yaml -RequiredVersion 0.4.12 -Force -Scope CurrentUser -Repository PSGallery
@@ -44,11 +49,13 @@ jobs:
         shell: pwsh
         run: Invoke-Pester -Path ./tests/powershell -CI
   configuration-drift:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - name: Install PowerShell
+        uses: PSModule/Install-PowerShell@159c2929fac34e3c7fc55d75e8997fb27fc7f75a # v1.2.0
       - name: Install powershell-yaml
         shell: pwsh
         run: Install-Module -Name powershell-yaml -RequiredVersion 0.4.12 -Force -Scope CurrentUser -Repository PSGallery

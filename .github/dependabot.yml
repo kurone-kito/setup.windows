@@ -1,6 +1,13 @@
 version: 2
 updates:
   - directory: /
+    groups:
+      actions-minor:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
     labels:
       - dependencies
     package-ecosystem: github-actions

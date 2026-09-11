@@ -1,3 +1,6 @@
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
 name: Mark stale issues
 on:
   schedule:
@@ -7,11 +10,11 @@ permissions:
   pull-requests: write
 jobs:
   stale:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: actions/stale@v11
         with:
-          days-before-close: 14
+          days-before-close: 60
           days-before-stale: 60
           close-issue-message: StaleBot closed the issue due to prolonged inactivity.
           close-pr-message: StaleBot closed the pull request due to prolonged inactivity.
@@ -21,3 +24,4 @@ jobs:
           stale-issue-message: StaleBot marked the issue as stale because there has been no activity.
           stale-pr-label: stale
           stale-pr-message: StaleBot marked the pull request as stale because there has been no activity.
+    timeout-minutes: 5
