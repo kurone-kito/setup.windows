@@ -1,0 +1,17 @@
+# <type>[optional scope]: <what this change solves for users>
+#
+# <body: address purpose, context, and what changed>
+#
+# [optional footer(s)]
+# Closes #<issue>
+# Refs #<issue>
+# Co-authored-by: Name <email>
+# BREAKING CHANGE: <description>
+#
+# ──────────────────────────────────────────────────
+# Subject: lowercase, imperative mood, max 72 chars, no period
+# Body: wrap at 72 chars
+# Types: feat fix docs style refactor test chore ci build perf
+# Scope: optional, e.g. feat(ci): ...
+# Breaking: append ! to type, add BREAKING CHANGE trailer
+# Atomic: one logical change per commit

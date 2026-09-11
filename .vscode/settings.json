@@ -4,11 +4,12 @@
   "explorer.fileNesting.patterns": {
     "*.dsc.yaml": "${capture}.import.json",
     "*.md": "${capture}.*.md",
-    ".gitattributes": ".gitignore",
+    ".gitattributes": ".gitignore, .gitmessage",
     ".markdownlint.yml": ".markdownlint-cli2.yaml",
     "AGENTS.md": "CLAUDE.md, GEMINI.md"
   },
   "files.associations": {
+    ".gitmessage": "git-commit",
     ".imgbotconfig": "json",
     "LICENSE": "plaintext"
   },
