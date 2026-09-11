@@ -1,6 +1,28 @@
 chat:
   auto_reply: true
 early_access: true
+issue_enrichment:
+  labeling:
+    auto_apply_labels: true
+    labeling_instructions:
+      - label: bug
+        instructions: >-
+          Apply only when the issue reports a defect or incorrect behavior
+          in shipped code, helper scripts, or instruction files.
+      - label: documentation
+        instructions: >-
+          Apply when the issue is primarily about documentation,
+          instruction files, or docs/template content. Do not also apply
+          enhancement when the change is documentation-only.
+      - label: enhancement
+        instructions: >-
+          Apply when the issue requests new behavior or a change to code,
+          helper scripts, or workflow logic. Do not also apply
+          documentation when the change is documentation-only.
+      - label: question
+        instructions: >-
+          Apply when the issue is a question or request for information
+          rather than an actionable change.
 language: en
 reviews:
   auto_review:
