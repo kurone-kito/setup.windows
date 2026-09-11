@@ -9,6 +9,7 @@
     "AGENTS.md": "CLAUDE.md, GEMINI.md"
   },
   "files.associations": {
+    ".imgbotconfig": "json",
     "LICENSE": "plaintext"
   },
   "files.watcherExclude": {
