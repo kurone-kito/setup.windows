@@ -2,10 +2,11 @@
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
+    "*.dsc.yaml": "${capture}.import.json",
     "*.md": "${capture}.*.md",
     ".gitattributes": ".gitignore",
     ".markdownlint.yml": ".markdownlint-cli2.yaml",
-    "boxstarter.ps1": "boxstarter.min.ps1"
+    "AGENTS.md": "CLAUDE.md, GEMINI.md"
   },
   "files.associations": {
     "LICENSE": "plaintext"
