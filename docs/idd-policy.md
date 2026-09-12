@@ -262,14 +262,15 @@ see the in-file note in `SKILL.md`).
 **Status**: `installed` at
 [`.claude/skills/idd-spec-audit/`](../.claude/skills/idd-spec-audit/SKILL.md)
 (initially copied from the pinned upstream commit's
-`skills/idd-spec-audit/`, then locally adapted with two in-file notes
-— see `SKILL.md`'s two `<!-- setup.windows: ... -->` comments — that
-clarify, for this installation, that its `.claude/**` mirror-tree
-exclusion has no applicable target here (so the issue-authoring
-bundle stays in scope) and that the audit report is emitted as output
-rather than written into `references/report-template.md`; no
-bundle-internal maintenance-doc links needed relinking, unlike the
-issue-authoring companion above).
+`skills/idd-spec-audit/`, then locally adapted with two in-file
+changes: a `<!-- setup.windows: ... -->` comment clarifying that its
+`.claude/**` mirror-tree exclusion has no applicable target in this
+installation (so the issue-authoring bundle stays in scope), and an
+ordinary prose edit to the Execution model's report-output bullet
+clarifying that the report is emitted as output rather than written
+into `references/report-template.md`; no bundle-internal
+maintenance-doc links needed relinking, unlike the issue-authoring
+companion above).
 
 Read-only semantic audit of the IDD instruction corpus (leaked session
 context, cross-file contradictions, fresh-memory completability gaps,
