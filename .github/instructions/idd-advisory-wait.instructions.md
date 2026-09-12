@@ -1,6 +1,7 @@
 # IDD — Copilot Advisory-Wait Protocol
 
-Shared advisory-wait protocol used by **E14**
+Shared advisory-wait protocol used by **D4**
+(`idd-pr-submit.instructions.md`), **E14**
 (`idd-review-fix.instructions.md`), **F2** (`idd-pre-merge.instructions.md`),
 and **F3** (`idd-merge.instructions.md`). Policy constants (cap/windows)
 are named in
@@ -18,16 +19,26 @@ swaps the single bot instead of gating every configured one).
 For non-Copilot bots, the load-bearing safety net for late-arriving
 findings is the **E1 activity-universe snapshot + `review-watermark`
 delta** (`idd-review-snapshot.instructions.md`), re-checked by the
-F2/F3 merge-readiness gate
-([`idd-pre-merge.instructions.md`](idd-pre-merge.instructions.md)),
-which forbids a bare CI-green merge without a fresh covering snapshot.
+F2/F3 merge-readiness gate (`idd-pre-merge.instructions.md`), which
+forbids a bare CI-green merge without a fresh covering snapshot.
+
+**Do not build a substitute wait for a non-primary bot.** A polling
+loop, scheduled wakeup, or background monitor that blocks on a
+specific non-primary bot's review reaching current HEAD (any bot
+other than the configured `advisoryWait.primaryBotLogin` — for
+example, Codex, on a repository where it is not that configured bot)
+is not this protocol — it has none of this protocol's caps, timeouts,
+or hold routes, and the bot may never review the PR at all, so the
+wait has no bounded exit. Rely on the E1/review-watermark/F2/F3
+safety net above instead.
 
 ## Fast path — common case
 
 The advisory bot usually reviews current HEAD within minutes, reducing
 the gate to one check: poll `LAST_COPILOT_COMMIT`; once it equals
 `PR_HEAD_SHA`, the gate is **SATISFIED** — skip the AW2-AW5 machinery
-and take the caller's `SATISFIED` action (E14 → E15, F2 → CI check, F3
+and take the caller's `SATISFIED` action (D4 → rerun
+`idd-advisory-convergence` and resume D4, E14 → E15, F2 → CI check, F3
 → merge; common to both the canonical path and shell-fallback AW3 row
 one). Enter the full protocol below **only** when
 `LAST_COPILOT_COMMIT != PR_HEAD_SHA`.
@@ -89,26 +100,33 @@ distributed defaults in `docs/policy-constants.md`: `REQUEST_CAP`,
 (default) — E14 skips to E15, F2/F3 hold; `hold` — E14, F2, and F3 all
 hold on `CAP_EXHAUSTED`.
 
+**Diagnostic note**: if every documented recovery route below fails
+identically and repeatedly, check for an org-level Copilot review-quota
+outage (e.g. via status page or an org admin surface) before retrying.
+
 ### Caller mapping
 
 <!-- dprint-ignore-start -->
-| Outcome | E14 | F2 | F3 |
-| --- | --- | --- | --- |
-| `SATISFIED` | proceed to E15 | continue to CI check | proceed with merge |
-| `REQUEST_NEEDED` | request Copilot + marker + poll | return to E14 | return to E14 |
-| `RECOVERY_NEEDED` | post recovery marker + poll | post recovery marker + poll | post recovery marker; return to F2 |
-| `CAP_EXHAUSTED` | use `CAP_EXHAUSTED_ROUTE` | post cap-exhausted hold and stop | post cap-exhausted hold and stop |
-| `WAIT` | continue polling | poll then restart F2 from top | do not merge; return to F2 |
-| `HOLD` | post hold and stop | post hold and stop | post hold and stop |
+| Outcome | D4 | E14 | F2 | F3 |
+| --- | --- | --- | --- | --- |
+| `SATISFIED` | `lastCopilotCommit` matches HEAD: rerun `idd-advisory-convergence`; resume D4. Elapsed-window `SATISFIED`: exit CI-wait; proceed to E1 | proceed to E15 | continue to CI check | proceed with merge |
+| `REQUEST_NEEDED` | `copilotPending` false: request review + marker; resume D4. `copilotPending` true: exit CI-wait; proceed to E1 | request Copilot + marker + poll | return to E14 | return to E14 |
+| `RECOVERY_NEEDED` | exit CI-wait; proceed to E1 | post recovery marker + poll | post recovery marker + poll | post recovery marker; return to F2 |
+| `CAP_EXHAUSTED` | exit CI-wait; proceed to E1 | use `CAP_EXHAUSTED_ROUTE` | post cap-exhausted hold and stop | post cap-exhausted hold and stop |
+| `WAIT` | wait for Copilot's review; rerun `idd-advisory-convergence`; resume D4 | continue polling | poll then restart F2 from top | do not merge; return to F2 |
+| `HOLD` | post hold and stop | post hold and stop | post hold and stop | post hold and stop |
 <!-- dprint-ignore-end -->
 
 ### Secondary advisory bot supplement (non-gating)
 
 Orthogonal to the table above: changes no `outcome`/`f3Outcome` or
 route, never satisfies the primary gate, posts no `advisory-wait`
-marker. Full trigger condition (`secondaryRequestNeeded`/`CAP_EXHAUSTED`/
+marker. A bot check alone never confirms review of current HEAD.
+Full trigger condition (`secondaryRequestNeeded`/`CAP_EXHAUSTED`/
 stalled `SATISFIED`) and request procedure:
-`idd-review-fix.instructions.md`'s E14 step 5.
+`idd-review-fix.instructions.md`'s E14 step 5 — never poll/wait for it
+there, E1, or E2; only F2's `secondary-quiet-window` blocker
+(`idd-pre-merge.instructions.md`) waits.
 
 ### F3-specific interpretation
 
@@ -164,6 +182,13 @@ AW3 inputs:
   `<!-- advisory-wait: … -->` for current `PR_HEAD_SHA` (empty if none).
 - `REQUEST_MARKER_COUNT` — count of trusted `advisory-wait` markers
   (excludes recovery markers).
+- `SAME_HEAD_REQUEST_MARKER_PRESENT` (`#2327`) — `true` only when a
+  trusted marker for current `PR_HEAD_SHA` is specifically the plain
+  request form (`advisory-wait:`), excluding `advisory-wait-recovery:`.
+  Distinct from `EARLIEST_SAME_HEAD_AT`'s presence (which a
+  recovery-only marker also satisfies) and from `REQUEST_MARKER_COUNT`
+  (which is not head-scoped) — `AW3-S`'s non-pending entry needs this
+  narrower, head-scoped, request-only signal specifically.
 
 See [shell fallback AW2](../../docs/idd-advisory-wait-shell-fallback.md#aw2)
 for commands.
@@ -219,10 +244,15 @@ Rules:
 
 ### AW3-S — Bounded stale-request recovery (`#1571`)
 
-Fires for the unproven-coverage case (`COPILOT_PENDING_COVERS_HEAD =
-false`, no same-head marker) — E14's `REQUEST_NEEDED`-pending sub-case;
-distinct from `AW3-R` (proven coverage). Bounds remove/re-request with
-the independent, per-HEAD recovery-cycle cap from the
+Fires for two unproven-coverage cases (`COPILOT_PENDING_COVERS_HEAD =
+false` in both): the pending sub-case (`COPILOT_PENDING = true`, no
+same-head marker) — E14's `REQUEST_NEEDED`-pending sub-case; and,
+since `#2327`, the non-pending failed-to-register case (`COPILOT_PENDING
+= false`, a same-head `advisory-wait:` request marker already exists,
+and `SETTLED_WINDOW_MINUTES` has elapsed with no proof the request ever
+reached Copilot). Both are distinct from `AW3-R` (proven coverage).
+Bounds the cycle with the independent, per-HEAD recovery-cycle cap from
+the
 [terminal contract](#terminal-copilot-stall-recovery-contract-state-policy-markers-clock)
 (default 2), not `REQUEST_CAP` (30) —
 [why two paths](../../docs/idd-design-rationale.md#aw3-s-vs-aw3-r-why-two-recovery-paths).
@@ -236,7 +266,14 @@ unchanged; `"cap-exhausted"` → do **not** remove or re-request, handle
 like `CAP_EXHAUSTED` (`CAP_EXHAUSTED_ROUTE`); `"attempt"` → run the
 cycle below. Without helper runtime, derive the same decision from
 AW1-AW2 plus the terminal contract's remaining budget (trusted bound
-`advisory-wait-recovery:` markers only).
+`advisory-wait-recovery:` markers only). For the non-pending entry,
+`AW2`'s `SAME_HEAD_REQUEST_MARKER_PRESENT` is required — a same-head
+marker that is only the recovery form must never itself satisfy this
+check (a prior cycle's own marker is not proof a request was
+requested). The non-pending entry reuses `SETTLED_WINDOW_MINUTES` as
+its re-check budget (no new config value); before it elapses the
+classifier stays `"not-applicable"`/`recheck-budget-unspent` —
+ordinary lag, not failure.
 
 **Bounded cycle** (only when `"attempt"`). Before each mutating step,
 re-verify the active claim
@@ -247,22 +284,36 @@ E1 against the new HEAD. Commands for every step (same gh-then-REST
 pattern as E14's **Primary advisory bot**):
 [shell fallback AW3-S](../../docs/idd-advisory-wait-shell-fallback.md#aw3-s).
 
-1. **Remove** the stale request. If it fails because the bot is no
-   longer pending, re-run AW1-AW3 and re-evaluate `staleRequestRecovery`;
-   any other failure posts the `AW4` pending-refresh-failed hold and
-   stops — no cycle counted.
+1. **Remove** the stale request. Skip this step for a non-pending entry
+   (`#2327` — `COPILOT_PENDING` was already `false`, so nothing is
+   pending to remove) and start at step 3 instead. Otherwise, if removal
+   fails because the bot is no longer pending, re-run AW1-AW3 and
+   re-evaluate `staleRequestRecovery`; any other failure posts the `AW4`
+   pending-refresh-failed hold and stops — no cycle counted.
 2. **Verify** removal and current HEAD before proceeding.
 3. **Request** Copilot again, same fallback pattern.
 4. **Verify association**: confirm `review_requested` follows HEAD's
    `committed` event (same proof as `COPILOT_PENDING_COVERS_HEAD`). Not
    yet true is ordinary lag, not failure — do **not** redo steps 1-3;
    re-check alone after a brief pause (default: 3 attempts, a few
-   seconds apart). Still unproven after that budget: abort without
-   posting a marker or counting a cycle, return to the polling loop
-   (or E1) next interval — never tight-loop on unresolved lag.
-5. **Post exactly one** bound marker, only once every prior step is
-   verified. `<n>` is `completedCycleCount + 1`; posting last avoids
-   double-counting, since only marker **presence** counts toward budget.
+   seconds apart). Disposition after that budget depends on entry type:
+   - **Pending entry**: still unproven → abort without posting a
+     marker or counting a cycle, return to the polling loop (or E1)
+     next interval — never tight-loop on unresolved lag.
+   - **Non-pending entry** (`#2327`): the event appearing proves this
+     re-request actually registered — abort without counting (ordinary
+     success, no cycle needed; the next pass's `COPILOT_PENDING_COVERS_HEAD`
+     check picks it up normally). No event within the same short budget
+     is itself the proof this re-request _also_ failed to register —
+     the entry condition already spent a full `SETTLED_WINDOW_MINUTES`
+     confirming the original request's silence before this cycle
+     started, so the short budget is sufficient here, not a redundant
+     wait — proceed to step 5 and count the cycle.
+5. **Post exactly one** bound marker, once step 4 concludes in a
+   counted disposition — proven re-registration for a pending entry, or
+   proven failure-to-register for a non-pending entry (`#2327`). `<n>`
+   is `completedCycleCount + 1`; posting last avoids double-counting,
+   since only marker **presence** counts toward budget.
 
 **Ordinary counters are untouched**: excluded from `requestMarkerCount`
 and `#1511`'s reroll accounting, but **does** count as a same-head
@@ -273,12 +324,13 @@ verified HEAD within one pass).
 
 After a new `advisory-wait`/`advisory-wait-recovery` marker is verified
 for the current `PR_HEAD_SHA`, minimize every trusted prior marker of
-the `advisory-wait:`/`advisory-wait-recovery:`/`advisory-reroll:`
-family whose embedded HEAD SHA does **not** match, as `OUTDATED` (cuts
-F4 backlog and review-page noise — a stale-HEAD `advisory-reroll:`
-marker is exactly as much operational noise as a stale advisory-wait
-one). Find candidate IDs (trusted markers of that family with a
-differing embedded SHA), then call the minimize-markers command:
+the `advisory-wait:`/`advisory-wait-recovery:`/`<!-- advisory-wait:`/
+`advisory-reroll:` family whose embedded HEAD SHA does **not** match,
+as `OUTDATED` (cuts F4 backlog and review-page noise — a stale-HEAD
+`advisory-reroll:` marker is exactly as much operational noise as a
+stale advisory-wait one). Find candidate IDs (trusted markers of that
+family with a differing embedded SHA), then call the minimize-markers
+command:
 [shell fallback AW3-H](../../docs/idd-advisory-wait-shell-fallback.md#aw3-h).
 
 Skip entirely if the new marker was not verified, the candidate set is
@@ -337,7 +389,8 @@ hold.
 
 **`suppressedCount` unvalidated**: `#1511` is `itemCount`-only; reroll
 never zeroed it in `kurone-kito/lints-config` PRs `#243`/`#245`
-(2026-08-10/11). PR #2054 fixes it.
+(2026-08-10/11). The review-ack escape hatch below (PR `#2054`, issue
+`#2050`) covers it; the reroll itself still does not zero the count.
 
 **Already-handled escape hatch**: when the blocking suppressed
 finding(s) have already been read and handled, a reroll is
@@ -348,7 +401,10 @@ unnecessary — post a trusted `review-ack:` marker instead; see
 
 `#1572` defines the state/policy/marker contract for a terminal
 `COPILOT_UNAVAILABLE` signal that `AW3-S` above gates via its bounded
-recovery cycle
+recovery cycle — either of `AW3-S`'s two entry conditions (pending, or
+`#2327`'s non-pending failed-to-register case) posts the same bound
+`advisory-wait-recovery:` marker, so this contract's counting and clock
+below are unaffected by which one produced a given completed cycle
 ([why a separate signal](../../docs/idd-design-rationale.md#terminal-copilot-stall-recovery-contract-why-a-separate-signal)).
 `AW3-S`'s `"cap-exhausted"` still falls back to `CAP_EXHAUSTED_ROUTE`,
 not [Terminal routing](#terminal-routing-1570) below — cycle exhaustion
@@ -400,5 +456,33 @@ still needs a valid waiver), and F2/F3's `advisoryWait.copilotUnavailable`/
 > merging.
 
 **Waived**: rerun the existing `idd-advisory-convergence` run (never
-`workflow_dispatch` — see Rerun mechanics below); both fields recompute
-every call, so an expired/invalid marker reverts automatically.
+`workflow_dispatch` — see
+[rerun mechanics](idd-ci.instructions.md#rerun-mechanics)); both fields
+recompute every call, so an expired/invalid marker reverts
+automatically.
+
+**Sustained outage (`#2320`)**: when `providerOutage.declarationTarget`
+is configured and holds an active declaration for `idd-advisory-convergence`,
+it substitutes for posting a per-pull-request waiver marker on this
+one — this pull request's own terminal-unavailable state above must
+still hold independently. See
+[`docs/idd-helper-scripts.md`](../../docs/idd-helper-scripts.md#provider-outage-declaration-helper).
+
+### Both clocks re-anchor on every push (`#2338`)
+
+`advisoryWait.convergenceDeadline` (the maintainer-waiver escape hatch
+above) and `advisoryWait.terminalWindow` (the terminal contract's
+clock) measure differently — the deadline from the new HEAD commit's
+own `committedDate` (not the moment it is pushed), the window from the
+earliest trusted, active-claim-bound, agent-bound, current-HEAD
+`advisory-wait-recovery:` marker's GitHub `created_at` — but both are
+scoped to the current HEAD, so a push to a new HEAD replaces both
+anchors rather than resetting a clock that keeps running: the deadline
+re-anchors on the new commit's own timestamp, and the terminal window
+goes fully unanchored — no elapsed time at all — until a fresh
+current-HEAD recovery marker is posted. Waiting out either clock is
+therefore only a viable strategy once the diff has converged — no
+further pushes expected, independent of whether review itself has
+converged (the terminal-unavailable path exists precisely because it
+may never converge) — see roadmap `#2318` (`#2325`: this repository's
+`PT9H` override restarted four times across seven rounds).

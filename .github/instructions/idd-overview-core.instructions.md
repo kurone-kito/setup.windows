@@ -53,9 +53,8 @@ but never create new hidden-only claim comments.
   session-record checks. Generate a fresh value on every fresh claim or
   stale takeover. Reuse the same `{claim-id}` only for heartbeats of
   that already-verified claim. Reading an existing `{claim-id}` from
-  issue comments does not by itself prove ownership; the current
-  session must have recorded that token before the
-  revalidation step.
+  issue comments does not prove ownership; the current session must
+  have recorded that token on disk first (`idd-claim.instructions.md`).
 - `{prior-claim-id}` is `none` for a fresh claim on an unclaimed issue.
   For a stale-claim takeover, set it to the currently active claim's
   `{claim-id}`.
@@ -111,8 +110,9 @@ chronologically using the full rules in `idd-claim.instructions.md`.
 Key invariants: ignore untrusted authors; heartbeats require the
 `{branch}` field to match the active claim exactly (anomalous heartbeats
 do not refresh the stale clock); a new `{claim-id}` becomes active only
-when the issue is unclaimed or the current claim is already stale and
-its `{claim-id}` matches `supersedes:`; unclaim requires exact
+when the issue is unclaimed and its `supersedes:` is `none`, or the
+current claim is already stale and its `{claim-id}` matches
+`supersedes:`; unclaim requires exact
 `{agent-id}` and `{claim-id}` match. Same-agent restarts never silently
 inherit a non-stale claim. For legacy claim migration (comments without
 `{claim-id}`), see the same file.
@@ -197,12 +197,15 @@ When in scope, run:
    do not `add`, `commit`, or `push` from a worktree not on the claimed
    branch.
 5. Acquire the worktree-local claim lock immediately before the mutation,
-   using the profile-selected `claim-lock` helper (see
-   `docs/idd-helper-scripts.md`) with the current `{agent-id}` and
-   `{claim-id}`. Under the `instructions-only` profile, use the
-   helper-free fallback in `idd-work.instructions.md`, which uses the
-   same `idd-claim.lock` namespace. A `collision` is fail-closed: stop
-   unless the active claim revalidation authorizes an explicit takeover.
+   using the profile-selected `claim-lock` helper
+   (`docs/idd-helper-scripts.md`) with `{agent-id}`/`{claim-id}`.
+   Under `instructions-only`, use `idd-work.instructions.md`'s
+   helper-free fallback. A `collision` fails closed unless claim
+   revalidation authorizes an explicit takeover. Also confirm
+   `--read-tokens` finds this `{claim-id}` recorded; absent/malformed
+   recovers only via `docs/idd-helper-scripts.md`'s gated backfill
+   sequence (each step must succeed before the next; `reacquired:
+   true` required at both ends) -- else fails closed.
 
 **Recovery if a commit already landed on the wrong branch.** If this gate
 or `idd-doctor` finds a commit on the wrong branch, cherry-pick it onto

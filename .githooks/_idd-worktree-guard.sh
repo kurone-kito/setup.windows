@@ -9,6 +9,18 @@
 # branch (issue/* or roadmap-audit/*), because B1 requires that work to
 # live in a sibling worktree. Run git with --no-verify to bypass it
 # intentionally.
+#
+# By default the guard does NOT refuse a commit/push made from the
+# primary worktree while HEAD is on the repository's own base branch
+# (e.g. a session that skips B1 entirely and commits directly on
+# `developmentBranch`) -- only the implementation-branch patterns above
+# are covered. Set the separate opt-in
+# `worktreeGuard.refuseBaseBranchCommits: true` to also refuse that
+# case (#2801). It compares HEAD against the configured
+# `developmentBranch` only -- this pure-POSIX-sh hook has no network
+# access to resolve the live GitHub default branch the way
+# `idd-work.instructions.md`'s B1 does, so an absent `developmentBranch`
+# leaves this stricter check a no-op even when the opt-in is set.
 
 idd_worktree_guard_check() {
   # $1: human-readable action word ("commit" or "push").
@@ -84,6 +96,31 @@ _IDD_WTG_EOF_
   # roadmap-audit/* when the key is absent. (A detached HEAD, or an
   # unborn HEAD, reports "HEAD" here and never matches.)
   [ -n "$branch" ] && [ "$branch" != "HEAD" ] || return 0
+
+  # Opt-in stricter mode (#2801): also refuse a commit/push while HEAD
+  # is on the configured base branch itself. `developmentBranch` is a
+  # top-level config key, not nested under worktreeGuard, so it is
+  # read from the full compact document, not guard_body.
+  case "$guard_body" in
+    *'"refuseBaseBranchCommits":true'*)
+      development_branch=''
+      case "$compact" in
+        *'"developmentBranch":"'*)
+          dev_raw=${compact#*'"developmentBranch":"'}
+          development_branch=${dev_raw%%\"*}
+          ;;
+      esac
+      if [ -n "$development_branch" ] && [ "$branch" = "$development_branch" ]; then
+        printf 'IDD worktree guard: refusing to %s directly on "%s" from the primary worktree (%s).\n' \
+          "$action" "$branch" "$repo_root" >&2
+        printf 'worktreeGuard.refuseBaseBranchCommits is enabled: implementation work must go\n' >&2
+        printf 'through B1 (create a sibling worktree on an implementation branch) first.\n' >&2
+        printf 'See B1 in .github/instructions/idd-work.instructions.md.\n' >&2
+        printf '(To bypass intentionally, re-run the git command with --no-verify.)\n' >&2
+        return 1
+      fi
+      ;;
+  esac
 
   patterns='issue/* roadmap-audit/*'
   case "$guard_body" in

@@ -333,8 +333,8 @@ checks, confirm the detailed items below.
       `orphan-first-policy` value is recorded as `none`,
       `maintainer-approved`, or `public-disabled`. Public repositories
       use either `maintainer-approved` or `public-disabled`, not `none`.
-- [ ] The `setup-windows-roadmap-id` and
-      `setup-windows-blocked-by` marker names in
+- [ ] The `{{PROJECT_MARKER_PREFIX}}-roadmap-id` and
+      `{{PROJECT_MARKER_PREFIX}}-blocked-by` marker names in
       `.github/instructions/idd-discover.instructions.md` and
       `.github/instructions/idd-overview-core.instructions.md`
       match the prefix chosen for this project.

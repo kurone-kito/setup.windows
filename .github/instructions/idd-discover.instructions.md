@@ -18,12 +18,17 @@ see A0), A3 (default; see decision tree).
 
 ## Authoring label guard
 
-The configured authoring label is `issueAuthoring.authoringLabelName`
-(default: `status:authoring`); the stale threshold is
-`issueAuthoring.authoringStaleAge` (default: `PT4H`). The label doubles
-as the draft marker for a held issue (issue-authoring skill's Stage 1)
-and the claim-suppression lock this guard enforces — Discover treats
-either role the same way: skip the issue while the label is present.
+Use `issueAuthoring.authoringLabelName` (default: `status:authoring`) and
+`issueAuthoring.authoringStaleAge` (default: `PT4H`). The label marks held
+drafts and suppresses claims, so skip labeled issues. Unlabeled issues follow
+`anchor` logs; incomplete generations block. Only exact
+anchor/set/session `release-complete` gates release/guard; an absent label is
+not proof; release clears it.
+
+The
+[portable owner resolver](../../docs/idd-autonomy-contract.md#portable-authoring-owner-protocol)
+defines these owner-protocol terms for every helper profile. For
+`instructions-only`, never infer membership from the label.
 
 A0-T, A0-O, and A3 must treat a matching label as not startable. A0-T
 reports `Issue #N is currently being authored` and stops before claim;
@@ -52,23 +57,67 @@ reason and stop without claiming. Fall back to normal discovery only when
 the operator explicitly asks for normal discovery in the same run; do not
 silently search for another issue.
 
-For a valid open target, skip A0-O, A1, A1.5, A2, and candidate
-selection. Before A5, run targeted readiness and viability checks against
-that issue only:
+Run the steps below against a valid open target. Steps 1 and 2 apply
+regardless of target type; only once step 2 confirms the target is not
+a roadmap node does this shortcut skip A0-O, A1, A1.5, A2, and
+candidate selection, continuing through steps 3-5 to A5 against that
+issue only — a roadmap-node target instead follows step 2's own
+routing:
 
-1. Re-fetch the target issue.
-2. If the target issue carries the configured authoring label, report
-   `Issue #N is currently being authored`, run the stale-authoring
-   warning check above, and stop without claiming.
-3. Apply A3's readiness bullets to the target — no configured
-   blocked-by-human/needs-decision label, no open blocking dependent
-   issue (visible `Blocked by #NNN` or hidden
-   `setup-windows-blocked-by` marker, both resolved the
-   same way A3 resolves them), no external human coordination required
-   — plus one target-only check: no active, non-stale claim from a
-   trusted marker actor exists on the target, other than a claim this
-   session already recorded and verified (A4 Step 1.5 rules); a hit
-   reports "already claimed", same as A5.
+1. Fetch the target issue. If it carries the configured authoring label,
+   report `Issue #N is currently being authored`, run the
+   stale-authoring warning check above, and stop without claiming — this
+   check runs first and applies whether the target turns out to be an
+   execution leaf or a roadmap node in step 2 below, so an
+   authoring-held roadmap is never routed into step 2's traversal.
+2. If the target issue carries the configured roadmap label or an
+   `setup-windows-roadmap-id` marker — the same test
+   **A2**'s roadmap-node/execution-leaf classification rule uses (an
+   unmarked legacy umbrella isn't recognized here — retro-label it
+   first, per A1's Legacy roots) — do not continue to steps 3-5.
+   Instead:
+   - Apply **A3**'s dependency bullet to the target itself (both
+     visible `Blocked by #NNN` lines and hidden
+     `setup-windows-blocked-by` markers) and its
+     coordination/runtime-observation-precondition bullet; a
+     dependency hit reports blocked, a coordination hit reports that
+     criterion instead — either way this run stops (no fallback).
+     Skip A3's other bullets here:
+     **A1.5** already checks the roadmap's own blocked-by-human/
+     needs-decision labels and claim state, and "no open dependent
+     issues" does not apply to a root whose own children are its
+     dependents.
+   - Treat the target as the root **A1** would have selected: run
+     **A1.5** against it. A1.5's own outcome governs what happens
+     next: a close or non-autonomous-gap outcome ends this run here —
+     report and stop, never falling back to A1 the way the normal
+     roadmap path would; only a continue outcome proceeds.
+   - Run **A2**'s traversal scoped to this root and its own
+     descendants only (never a repository-wide search), then the
+     normal **A3** → **A3.5** → **A4** sequence over that scoped set:
+     A3.5 filters and continues with the remaining startable
+     candidates exactly as in the normal roadmap path — no
+     stop-without-fallback applies at this filtering step. This
+     graph-scoped continuation excludes **A0**'s own A0-O
+     orphan-fallback triggers (a)/(b)/(c) throughout: an empty or
+     fully-discarded scoped set ends the run the same way A0-T's other
+     failure branches do — report and stop.
+   - Rank the survivors down to a single highest-suitability open
+     child and run **A4.5** → **A5** against that one child only.
+     `idd-suitability.instructions.md`'s and
+     `idd-claim.instructions.md`'s existing A0-T-keyed
+     stop-without-fallback rules apply to it unchanged: an A4.5
+     rejection, a failed A5 Pre-check (a) approval re-verification, or
+     a lost A5 claim race ends this run — report and stop — rather
+     than falling back to the next-ranked survivor. Extending this
+     branch to retry a subsequent survivor on such a failure is out of
+     scope here.
+3. Apply A3's readiness bullets to the target (the same blocked-by,
+   human-coordination, and runtime-observation checks, resolved the
+   same way) — plus one target-only check: no active, non-stale claim
+   from a trusted marker actor exists on the target, other than a
+   claim this session already recorded and verified (A4 Step 1.5
+   rules); a hit reports "already claimed", same as A5.
 4. Run the normal A4 viability gate against the target only.
 5. Apply the **A3.5** issue-author approval gate against the target.
    If A3.5 classifies it as not startable, report that the gate
@@ -96,9 +145,10 @@ Read the **issue-scope** value from the Project commands table in
   roadmap path yields **no viable, startable, unclaimed candidate** —
   **trigger (a)** (zero candidates reach A3.5: A2 found none, or A3
   filtered them all), **trigger (b)** (candidates reach A3.5 but A4
-  Step 1 or Step 1.5 discards every one), or **trigger (c)** (A1 finds
-  no roadmap issues). A0-O runs **at most once** per Discover pass as
-  this fallback; once spent, a later A4 exhaustion reports and stops
+  Step 1, Step 1.5, or Step 2's floor skip discards every one), or
+  **trigger (c)** (A1 finds no roadmap issues). A0-O runs **at most
+  once** per Discover pass as this fallback; once spent, a later A4
+  exhaustion reports and stops
   (not an abort) without re-entering A0-O. A non-empty A3.5
   approval-needed bucket is not a true zero and never triggers this
   fallback. See
@@ -124,13 +174,10 @@ ran and must not be re-entered (no A1 ↔ A0-O or A4 ↔ A0-O loop).
 - For `none` and `maintainer-approved`, continue with A0-O.
 
 Search all open issues in the repository. Collect every issue that does
-NOT contain a `setup-windows-roadmap-id` marker (not itself
-a roadmap) or a `setup-windows-blocked-by` marker, AND
-otherwise passes A3's own readiness bullets (no configured
-blocked-by-human/needs-decision label, no configured authoring label,
-no open blocking dependent issue via either visible `Blocked by #NNN`
-or hidden marker form, same fail-safe treatment on an unresolvable
-reference).
+NOT contain an `setup-windows-roadmap-id` marker (not itself
+a roadmap) or an `setup-windows-blocked-by` marker, AND
+otherwise passes A3's own readiness bullets (the same five criteria A3
+lists; do not re-derive them here).
 
 Apply the configured policy before passing A0-O candidates to A3.5:
 
@@ -143,6 +190,11 @@ Apply the configured policy before passing A0-O candidates to A3.5:
   repository-wide gate enable.
 - `public-disabled`: for private or internal repositories, behave the
   same as `none`.
+
+**Autopilot floor.** In autopilot runs, pass `--autopilot` to
+`discover-orphan-filter`; skip `routed_to_human` candidates (never
+reach A3.5). No helper: apply A4 Step 2's floor rule verbatim,
+including `enabled: false`, to each footer.
 
 At least one orphan issue remains after the policy is applied: pass the
 remaining set directly to **A3.5**, skipping A1–A3.
@@ -162,13 +214,10 @@ reached only when every active discovery path returns zero: both paths
 for `orphan-first` and `roadmap-first` (orphan + roadmap fallback,
 either order); just the roadmap path for `roadmap`.
 
-**Claim-state annotation (optional).** When helper support is enabled,
-`discover-orphan-filter` accepts an opt-in `--with-claim-state` flag
-(plus `--current-claim-id`) that annotates each candidate with
-active-claim eligibility, mirroring `discover-roadmap-graph`'s flag of
-the same name — see `docs/idd-helper-scripts.md`. This lets an A0-O
-caller fold live claim state into its output the same way the roadmap
-path already can.
+**Claim-state annotation (optional).** `discover-orphan-filter`
+accepts `--with-claim-state` (plus `--current-claim-id`), mirroring
+`discover-roadmap-graph`'s flag of the same name — see
+`docs/idd-helper-scripts.md`.
 
 ## A1 — Find the roadmap
 
@@ -195,10 +244,6 @@ reached via a parent roadmap's task list and never carry their own
 umbrella, or configure **`discover.legacyRoots`** (issue numbers,
 deduped against label/marker roots; invalid fails safe to none). See
 `docs/idd-helper-scripts.md`.
-
-**Note**: Repo-wide or label-based issue queries are permitted only in
-the scoped contexts A2 enumerates below (**A0-T**, **A0-O**, **A1**,
-**A1.5**, **A3**, **A4.5**); outside those, they are prohibited.
 
 ## A1.5 — Audit completed roadmaps
 
@@ -345,8 +390,10 @@ From A2, keep only issues that satisfy **all** of the following:
   blocked if that issue is open, if no issue matches (fail-safe — a
   migration integrity problem such as a typo, deleted issue, or
   incomplete migration), or if any matching issue is open.
-- No external human coordination required to start; otherwise keep
-  scanning
+- No external human coordination or prose-only
+  runtime/production-observation precondition ("confirmed in
+  production", "observed live", "runtime-observation"; issue #2467)
+  required to start; otherwise keep scanning
 
 **When A2 finds zero candidates, or zero issues survive A3 filtering**,
 apply this decision tree — do not silently expand scope:
@@ -470,6 +517,10 @@ criteria. Fail any one → discard the issue.
   **complete** the work. Fail: requires operator to provide
   credentials; requires a product decision before the work can finish.
 
+**Structural-evidence demotion (#2767)**: Limited scope / Autonomous
+completion (never Clear verification) may demote to `warn` per
+`idd-suitability.instructions.md`'s matching edge case.
+
 If **no issue** survives the gate:
 
 - if the approval-needed fallback bucket from A3.5 is non-empty, apply
@@ -556,8 +607,7 @@ band entry at index `selectDesyncedIndex(session-token, band-size)`
 instead of index 0 — FNV-1a 32-bit over the token's UTF-16 code units
 (offset basis `0x811c9dc5`, prime `0x01000193`, wrap to 32 bits after
 every multiply, then unsigned right-shift and modulo `band-size`) over
-the band ordered by ascending issue number. Worked example: token
-`copilot-8122ca35`, band-size `3` → index `1`.
+the band ordered by ascending issue number.
 
 `session-token` **must be per-session-unique**: the bare, session-shared
 `{agent-id}` from `idd-overview-core.instructions.md` alone is **not** a
@@ -590,6 +640,11 @@ score tie band, never across bands, and never bypasses A4.5/A5. With
 deterministic **lowest issue number** pick. See
 [rationale](../../docs/idd-design-rationale.md#a4-step-2--rationale-concurrent-selection-desync).
 
+**Configured milestone-scope preference.** `discover.milestoneScope`
+(`#2340`) prefers a same-score-band candidate whose OPEN milestone
+matches, after desync and before effort — see
+[rationale](../../docs/idd-design-rationale.md#a4-step-2--rationale-milestone-scope-preference).
+
 **Author-recorded effort hint (soft tie-breaker).** When candidates
 remain tied after the score and optional desync rules, prefer the
 **lower-effort** candidate before the lowest-issue-number tie-break.
@@ -600,18 +655,17 @@ rule: reorders only within a single score tie band, never skips,
 gates, or crosses a band; the `discover-roadmap-graph` union already
 emits this order.
 
-**High-contention shared-file overlap (advisory).** Concurrent
-autopilot sessions tend to edit the same F-phase bundle instruction
-files (`bundle-review` / `bundle-merge`) and `audit/sync-manifest.json`.
-As a **soft** tie-breaker evaluated after score / desync / effort but
-before the final lowest-issue-number tie-break, prefer a candidate
-whose `## Candidate files` do **not** overlap an
-actively-claimed or open-PR issue on one of those files; the optional
-`discover-shared-file-overlap` helper (see
-[IDD helper scripts](../../docs/idd-helper-scripts.md)) reports each
-candidate's `overlapFlag` and `recommendedOrder`. **Never a hard gate**
-— overlap never overrides the score or crosses a band. See the
-[high-contention shared-file convention](../../docs/policy-constants.md#high-contention-shared-files).
+**High-contention shared-file overlap (advisory).** Concurrent sessions
+tend to edit the same F-phase bundle files and `audit/sync-manifest.json`.
+**Soft** tie-breaker after
+score/desync/milestone/effort: prefer a candidate whose `## Candidate
+files` do **not** overlap an actively-claimed or open-PR issue on one of
+those; `discover-shared-file-overlap` (see
+[IDD helper scripts](../../docs/idd-helper-scripts.md)) reports
+`overlapFlag`/`recommendedOrder`, or `manifestMissing: true` with an
+empty set. See the
+[convention](../../docs/policy-constants.md#high-contention-shared-files)
+for the current bundle ids.
 
 After picking, proceed to **A4.5** (`idd-suitability.instructions.md`).
 
@@ -626,27 +680,26 @@ mutation policy, coordination rules, decision flow, and edge cases.
 Two hidden HTML comment markers are used in issue bodies to support the
 discover phase:
 
-- **Roadmap identity** (`setup-windows-roadmap-id`): placed in
-  the roadmap issue body; A3 uses it to resolve `blocked-by` dependency
-  lookups. A1 identifies the roadmap by its configured label or umbrella
-  structure, not by this marker.
-- **Sequential dependency** (`setup-windows-blocked-by`): placed
-  in an issue body to express a hard dependency — this issue **cannot
-  start until** the roadmap with the matching `roadmap-id` is closed.
+- **Roadmap identity** (`setup-windows-roadmap-id`): in the
+  roadmap issue body; A3 uses it for `blocked-by` lookups. A1 finds the
+  roadmap by its label or umbrella structure, not this marker.
+- **Sequential dependency** (`setup-windows-blocked-by`): in an
+  issue body — this issue **cannot start until** the roadmap with the
+  matching `roadmap-id` is closed.
 
 **Do not use `setup-windows-blocked-by` to group sub-tasks under
-an active roadmap.** Sub-tasks that should be worked on while the
-roadmap is open belong in the roadmap's task list as `- [ ] #NNN`
-entries; `blocked-by` is reserved for issues that must wait for a
-separate, prior roadmap to close (cross-phase sequential dependency) —
-see the
+an active roadmap** — those belong in the roadmap's task list as
+`- [ ] #NNN` entries. `blocked-by` is only for a separate, prior
+roadmap that must close first; see the
 [A3 diagnostic](../../docs/idd-design-rationale.md#a3--diagnostic-all-candidates-blocked-by-an-open-roadmap)
-for the resulting deadlock pattern.
+for the deadlock this prevents.
 
 ## Scope invariant (summary)
 
-Do not widen issue-selection scope beyond the roadmap traversal except
-for the explicit query allowlist already defined in A0-T, A0-O, A1,
-A1.5, A3, and A4.5, or for a same-run operator opt-in per A3 step 5
-(never inferred from prior or standing instructions). A single explicit
-target authorizes only that issue.
+Do not widen issue-selection scope beyond A2's query allowlist (A0-T,
+A0-O, A1, A1.5, A3, A4.5) or a same-run operator opt-in per A3 step 5
+(never inferred from standing instructions). An explicit target
+authorizes only that issue, except when A0-T step 2 classifies it as a
+roadmap node: then it authorizes normal selection scoped to that
+roadmap's own descendants only, never an unrelated orphan issue (A0-O
+stays excluded, per A0-T step 2).

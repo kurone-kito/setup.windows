@@ -32,21 +32,29 @@ or [Core concepts](concepts.md) before using this reference.
 
 ## Policy and Support Pages
 
-| Topic                                  | Read                                                        |
-| -------------------------------------- | ----------------------------------------------------------- |
-| Cross-agent entry path                 | [IDD workflow guide](idd-workflow.md)                       |
-| Review policy choices                  | [IDD review policy profiles](idd-review-policy-profiles.md) |
-| Distributed policy defaults            | [IDD policy constants](policy-constants.md)                 |
-| Credential boundaries and threat model | [Permissions](permissions.md)                               |
-| Safe adopter customization surfaces    | [Customization](customization.md)                           |
-| Live digest and comment cleanup        | [IDD comment minimization](idd-comment-minimization.md)     |
-| Helper-script adoption policy          | [IDD helper script evaluation](idd-helper-scripts.md)       |
-| Reversible vs. gated mutations         | [IDD autonomy contract](idd-autonomy-contract.md)           |
+| Topic                                  | Read                                                                                                                  |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Cross-agent entry path                 | [IDD workflow guide](idd-workflow.md)                                                                                 |
+| Review policy choices                  | [IDD review policy profiles](idd-review-policy-profiles.md)                                                           |
+| Distributed policy defaults            | [IDD policy constants](policy-constants.md)                                                                           |
+| Credential boundaries and threat model | [Permissions](permissions.md)                                                                                         |
+| Safe adopter customization surfaces    | [Customization](customization.md)                                                                                     |
+| Live digest and comment cleanup        | [IDD comment minimization](idd-comment-minimization.md)                                                               |
+| Helper-script adoption policy          | [IDD helper script evaluation](idd-helper-scripts.md)                                                                 |
+| Reversible vs. gated mutations         | [IDD autonomy contract](idd-autonomy-contract.md)                                                                     |
+| Docs bundle frontmatter convention     | [Customizing IDD § Docs Bundle Frontmatter Convention (OKF)](customization.md#docs-bundle-frontmatter-convention-okf) |
 
 ## Maintainer Note
 
-If you maintain an IDD distribution source repository, keep exported
+**If you maintain an IDD distribution source repository**, keep exported
 template files and generated onboarding lists in sync when adding or
 removing reference pages. In the idd-skill source repository, that means
 updating `audit/sync-manifest.json`, `idd-template/ONBOARDING.md`, and
 `idd-template/README.md` in the same change.
+
+**If you imported IDD into your own repository**, you keep no exported
+template directory of your own — instead, compare an upstream change to
+this reference set against your repository's recorded local policy
+before your next re-import, rather than assuming a routine template
+update carries no local impact. See
+[Re-importing](https://github.com/kurone-kito/idd-skill/blob/main/idd-template/ONBOARDING.md#re-importing-import-named-gaps-not-a-blind-resync).

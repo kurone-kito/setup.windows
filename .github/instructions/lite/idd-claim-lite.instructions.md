@@ -22,7 +22,8 @@ collapses to a single outcome here: **STOP and report; do not claim**.
 2. **When the repository is `instructions-only`** (no helper runtime
    shipped): skip the helper commands and use the written tables only.
    That is the sole path where the tables below are the primary
-   control surface.
+   control surface. The `--record-tokens`/`--read-tokens` check
+   instead uses `docs/idd-helper-scripts.md`'s helper-free fallback.
 
 Every `node scripts/<name>.mjs` command below is the **source-repo /
 vendored-node** invocation form. Under `package-manager` /
@@ -60,7 +61,8 @@ human-gated forced-handoff evidence from a trusted actor.
 
 Re-fetch the issue immediately before running these checks. All five
 are target-issue local: claims on related roadmap or child issues do
-not block this check.
+not block this check. Owner protocol:
+`docs/idd-autonomy-contract.md#portable-authoring-owner-protocol`.
 
 ### (a) Issue-author approval
 
@@ -122,10 +124,12 @@ Pass `--nonce` when this session already recorded one for that
 `{claim-id}` (true after forced-handoff step 5) so a session that lost
 the nonce tie-break cannot pass as `already_owned`; omit it otherwise.
 
-| Top-level `state` / `action` | Meaning                                                           |
-| ---------------------------- | ----------------------------------------------------------------- |
-| `already_owned` / `keep`     | Confirmed — see the two cases below                               |
-| anything else                | Not yours — forced-handoff: Stop-and-ask; else fall through below |
+<!-- dprint-ignore-start -->
+| Top-level `state` / `action` | Meaning |
+| --- | --- |
+| `already_owned` / `keep` | Confirmed — see the two cases below |
+| anything else | Not yours — forced-handoff: Stop-and-ask; else fall through below |
+<!-- dprint-ignore-end -->
 
 `already_owned`/`keep` splits in two: if `--nonce` was passed above
 (resume/heartbeat continuation), skip to Claim verification (or
@@ -143,11 +147,13 @@ write:
 node scripts/resume-claim-routing.mjs --issue <N> --fresh-claim-gate
 ```
 
-| Helper `fresh_claim_gate.verdict` | Action                                |
-| --------------------------------- | ------------------------------------- |
-| `claimable`                       | Proceed to Claim execution (fresh)    |
-| `stale-reclaimable`               | Proceed to Claim execution (takeover) |
-| `already-claimed`                 | **STOP** — live competitor or race    |
+<!-- dprint-ignore-start -->
+| Helper `fresh_claim_gate.verdict` | Action |
+| --- | --- |
+| `claimable` | Proceed to Claim execution (fresh) |
+| `stale-reclaimable` | Proceed to Claim execution (takeover) |
+| `already-claimed` | **STOP** — live competitor or race |
+<!-- dprint-ignore-end -->
 
 Written fallback (`instructions-only` profile only — per the Helper
 runtime contract above, any other profile stops-and-asks on a
@@ -168,14 +174,15 @@ active claim is ignored as invalid — it is **not** a heartbeat
 `unclaimed-by` releases only when both
 `{agent-id}` and `{claim-id}` match the active claim. **Stale** =
 latest valid `claimed-by`'s GitHub `created_at` is
-≥ 24 h ago (`claim-stale-age`, default `24 h`). No active claim →
+≥ 12 h ago (`claim-stale-age`; this repository's configured value
+`12 h`, distributed default `24 h`). No active claim →
 unclaimed, proceed fresh. Active claim already using a `{claim-id}`
 this session **itself already recorded and verified** (a token merely
 read from the current issue comments is never enough) → already
 claimed by this session, continue with it (no new claim; use heartbeat
-rules below). Any other active claim < 24 h old → **STOP**, even when
+rules below). Any other active claim < 12 h old → **STOP**, even when
 its `{agent-id}` matches yours — same-agent restarts never silently
-inherit a non-stale claim. Any other active claim ≥ 24 h old → stale,
+inherit a non-stale claim. Any other active claim ≥ 12 h old → stale,
 proceed with takeover.
 
 **Legacy claims** (no `{claim-id}`): if the latest trusted legacy
@@ -240,15 +247,22 @@ gh api "repos/{owner}/{repo}/git/matching-refs/heads/issue/<N>-" \
   --jq '.[].ref | sub("^refs/heads/"; "")'
 ```
 
-| Match found?                                                           | Action                                                          |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------- |
-| No local or remote match                                               | Proceed to claim posting                                        |
-| Match corresponds to an inheritable claim (per (d) above)              | Proceed — expected branch                                       |
-| Match does not correspond, but an active non-stale claim references it | **STOP** — concurrent session                                   |
-| Match does not correspond, and no active claim references it           | **STOP** — hold note, possible orphaned branch; operator review |
+<!-- dprint-ignore-start -->
+| Match found? | Action |
+| --- | --- |
+| No local or remote match | Proceed to claim posting |
+| Match corresponds to an inheritable claim (per (d) above) | Proceed — expected branch |
+| Match does not correspond, but an active non-stale claim references it | **STOP** — concurrent session |
+| Match does not correspond, and no active claim references it | **STOP** — hold note, possible orphaned branch; operator review |
+<!-- dprint-ignore-end -->
 
 No remote branch with the computed name may already exist unless it is
 inheritable per the table above.
+
+Before activation, re-fetch the authoring label and paginated owner
+log. A current/incomplete hold blocks; only exact
+anchor/set/session `release-complete` with verified snapshots permits
+activation.
 
 ## Claim execution
 
@@ -272,7 +286,10 @@ differently for step 5:
    inheritable match → use the name pre-check (e) computed.
 2. **`{claim-id}`**: generate a fresh opaque token — **except**
    forced-handoff adopt-verbatim, which reuses the marker's
-   `newClaimId` instead.
+   `newClaimId` instead. Record it with the profile-selected
+   `claim-lock` helper's `--record-tokens` mode (`--worktree <path>
+   --agent-id <id> --claim-id <id>`; resolve the exact command from
+   `docs/idd-helper-scripts.md`) before step 4.
 3. **`{prior-claim-id}` / `supersedes:`**: `none` for a fresh claim or
    legacy migration; the active claim's `{claim-id}` for a stale
    takeover. Not applicable to forced-handoff (step 4 is skipped
@@ -307,7 +324,9 @@ differently for step 5:
 
 5. **Every fresh activation** (fresh claim, takeover, legacy migration,
    or forced-handoff adopt-verbatim) also posts an activation-nonce —
-   never for a plain heartbeat:
+   never for a plain heartbeat. Record it with the same
+   `--record-tokens` invocation as step 2 plus `--nonce <nonce>`
+   (primary worktree) first:
 
    ```sh
    node scripts/post-idd-marker.mjs --type activation-nonce \
@@ -337,15 +356,14 @@ the stale clock. Skip step 5 (activation-nonce).
 ## Claim verification
 
 **Already-owned continuation (no new post)**: pre-check (c)'s
-top-branch `already_owned` result already constitutes verification —
-skip the rest of this section (see the skip note under Claim
-execution). The steps below need a freshly posted event's timestamp to
-anchor them, so they apply only after a new `claimed-by` (fresh claim,
-takeover, or legacy migration).
+top-branch `already_owned` result verifies ownership. Skip checks 1–5, but run
+step 6's authoring guard; post no new `claimed-by` or nonce. Checks 1–5
+require a fresh `claimed-by` and apply only to fresh claims, takeovers, and
+legacy migrations.
 
-After posting `claimed-by`, wait the settle delay
-(`claim.verifySettleDelay`, default `PT5S`), re-read all issue
-comments, and check:
+For fresh activation, after posting `claimed-by`, wait the settle delay
+(`claim.verifySettleDelay`, default `PT5S`), re-read all issue comments, then
+check steps 1–5. Step 6 applies to both paths:
 
 1. Build the same-second contender set: every trusted `claimed-by`
    (including yours) sharing your event's `created_at` second.
@@ -358,6 +376,13 @@ comments, and check:
 5. If you posted an activation-nonce for this `{claim-id}`, recompute
    its winner and confirm it is yours (no marker posted → treat as
    passed).
+6. Re-fetch the authoring label and paginated owner log. A
+   current/incomplete hold contests this claim; only exact
+   anchor/set/session `release-complete` with verified snapshots
+   passes. If it
+   contests the claim but steps 1–5 passed and the pair is still active, post
+   and verify `unclaimed-by` before stopping. If ownership/nonce is ambiguous,
+   retain the claim and stop; never release on failed evidence.
 
 Any failure → claim contested → **STOP**, do not proceed. **Exception:
 only step 4 fails** (1-3 passed — the claim is genuinely yours) → post
@@ -366,10 +391,13 @@ provably hold it), **then STOP**. Step 5 also failing (alone or with
 step 4) → never release (shares that exact pair) — STOP as usual.
 
 **Forced-handoff adopt-verbatim** only: skip steps 1-4 (no
-`claimed-by` was posted for this path); only step 5 applies — wait the
-settle delay (`claim.verifySettleDelay`, default `PT5S`), then
-recompute the nonce winner for the adopted `newClaimId` and confirm it
-is yours.
+`claimed-by` was posted for this path). Repeat the authoring guard above
+before posting the activation nonce; only step 5 applies — wait the settle
+delay (`claim.verifySettleDelay`, default `PT5S`), then recompute the nonce
+winner for the adopted `newClaimId` and confirm it is yours. Repeat the
+authoring guard after nonce verification; on a mismatch or hold, re-resolve
+the pair and nonce before fallback, and release only after both remain
+verified.
 The successor pair is **sticky**: it re-activates on every resolution
 pass, so a later plain `claimed-by supersedes: none` will not take
 effect. To move off it, either keep adopting it verbatim, or post
@@ -400,6 +428,11 @@ node scripts/claim-lock.mjs --acquire --worktree <path> \
   --agent-id <agent-id> --claim-id <claim-id>
 ```
 
+Then run `--read-tokens --worktree <path> --claim-id <id>` and
+require `present: true` with no `malformed`; otherwise recover per
+`docs/idd-helper-scripts.md` (gated: each step succeeds,
+`reacquired: true` both ends), else stop.
+
 A matching `{claim-id}` re-acquires as a read-only check. A different
 `{claim-id}` is always a collision — re-run pre-check (c) (`--claim-id`
 first, then `--fresh-claim-gate` if not `already_owned`):
@@ -415,8 +448,7 @@ first, then `--fresh-claim-gate` if not `already_owned`):
 - `already-claimed` naming a **different** id: a live competitor holds
   it — stop, the claim was lost.
 
-No release step: `git worktree remove` at F4 deletes the lock with the
-worktree.
+No release step (F4 `git worktree remove` deletes it).
 
 Then continue to `idd-work-lite.instructions.md` — except on
 `instructions-only`, where that file declines the profile in its own

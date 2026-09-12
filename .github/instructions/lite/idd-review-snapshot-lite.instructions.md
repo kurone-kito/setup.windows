@@ -55,7 +55,11 @@ GitHub side effect, confirm all of the following:
    the package-manager-profile `idd:claim-lock` command with the same
    arguments — resolve the exact command from
    `docs/idd-helper-scripts.md` if unsure). A `collision` result is
-   fail-closed: stop rather than proceed.
+   fail-closed: stop rather than proceed. Then, separately, run
+   `--read-tokens --worktree <this-worktree-path> --claim-id <id>`
+   and require `present: true` with no `malformed`; otherwise recover
+   per `docs/idd-helper-scripts.md` (gated: each step succeeds,
+   `reacquired: true` both ends), else stop.
 6. If any check fails, stop.
 
 ## E1 — Fetch review items into ReviewItems_snapshot
@@ -168,9 +172,9 @@ different-claim watermark here.
 
 Do not create or edit the PR live status digest after posting this
 watermark unless the next route is back to E1, an F3 blocked reroute
-that returns to F2's restart path, a hold/stop, or post-merge cleanup —
-a digest edit after the watermark counts as new activity and forces a
-fresh E1 snapshot before F2 can pass.
+that leaves the F2 restart path (F1/D4), a hold/stop, or post-merge
+cleanup — a digest edit after the watermark counts as new activity and
+forces a fresh E1 snapshot before F2 can pass.
 
 ### Step 3 — Filter into ReviewItems_snapshot
 
@@ -207,6 +211,15 @@ triage where a recurrence might be, not what to conclude.
 Run one critique pass on the branch's changes every E1-E3 pass — this is
 a deterministic "always run one" step, not a judgment call whether to
 run it. Add any newly found issues to ReviewItems_snapshot.
+
+Also apply these lenses when they fit, composing when both do:
+**Mutation / write-side** (the diff implements a helper that mutates
+GitHub state, mutates git state, or performs a merge) — Fail-closed
+inputs; Validate/execute scope parity; Unsafe-output suppression;
+Schema strictness parity. **Gate-mirroring** (the diff implements a
+helper that predicts, mirrors, or pre-checks another gate's decision) —
+Validation-path parity; Input completeness; Whole-identity comparison;
+Snapshot identity; Point-in-time parity.
 
 **Incremental scope**: on the second and later passes within the same
 claim, scope the review to the diff since the previous E2's head SHA,

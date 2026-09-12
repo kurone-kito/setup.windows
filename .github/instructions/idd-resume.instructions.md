@@ -9,8 +9,9 @@ below). Read `idd-overview-core.instructions.md` for shared definitions
 each routing branch, see
 [`docs/idd-resume-detail.md`](../../docs/idd-resume-detail.md).
 
-Resume stale checks use the `claim-stale-age` policy default from
-`docs/policy-constants.md` (distributed default: `24 h`).
+Resume stale checks use the `claim-stale-age` policy value from
+`docs/policy-constants.md` (this repository's configured value: `12 h`;
+distributed default: `24 h`).
 
 ## Required Inputs
 
@@ -114,7 +115,7 @@ Sequence:
 4. Post a normal fresh A5 claim with `supersedes: none`, then continue
    to Step 1.
 
-The 30-minute quiet window and 24h stale threshold in
+The 30-minute quiet window and 12h stale threshold in
 `idd-resume-stall.instructions.md` surface an _unannounced_ stall
 only; this path's own already-announced pause waits on neither.
 
@@ -159,12 +160,12 @@ Evaluate in order; take the first matching row.
 | FH evidence names this session's already-verified `{claim-id}`                                  | STOP — current session is displaced; do not push, comment, resolve, request reviewers, or merge                               |
 | Forced-handoff recovery confirmed (§FH)                                                         | Re-claim via A5 after GitHub reflects handoff; cite evidence in digest `Authoritative by`; → Step 2                           |
 | No new-format claims + legacy `claimed-by` + later trusted `unclaimed-by` (same agent)          | Treat as unclaimed → fresh A5 claim → Step 2                                                                                  |
-| No new-format claims + legacy `claimed-by`, age < 24 h                                          | STOP — not inheritable even if agent-id matches                                                                               |
-| No new-format claims + legacy `claimed-by`, age ≥ 24 h                                          | Migrate via A5 with `supersedes: none`; → Step 2                                                                              |
+| No new-format claims + legacy `claimed-by`, age < 12 h                                          | STOP — not inheritable even if agent-id matches                                                                               |
+| No new-format claims + legacy `claimed-by`, age ≥ 12 h                                          | Migrate via A5 with `supersedes: none`; → Step 2                                                                              |
 | No active claim                                                                                 | Re-claim via A5; → Step 2                                                                                                     |
-| Active non-stale claim (< 24 h, other session)                                                  | STOP — not inheritable even if agent-id matches                                                                               |
-| Active stale claim (≥ 24 h, other session) + branch field starts with `roadmap-audit/`          | Takeover via A5 with `supersedes: <prior-id>`; then re-run A1.5; STOP after roadmap-side effects                              |
-| Active stale claim (≥ 24 h, other session)                                                      | Takeover via A5 with `supersedes: <prior-id>`; → Step 2                                                                       |
+| Active non-stale claim (< 12 h, other session)                                                  | STOP — not inheritable even if agent-id matches                                                                               |
+| Active stale claim (≥ 12 h, other session) + branch field starts with `roadmap-audit/`          | Takeover via A5 with `supersedes: <prior-id>`; then re-run A1.5; STOP after roadmap-side effects                              |
+| Active stale claim (≥ 12 h, other session)                                                      | Takeover via A5 with `supersedes: <prior-id>`; → Step 2                                                                       |
 
 All re-claims, migrations, and takeovers must use A5 race-safe verification
 from `idd-claim.instructions.md`. Forced-handoff recovery never waives the

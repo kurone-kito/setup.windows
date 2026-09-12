@@ -15,6 +15,21 @@ no-sync-required `clean`/`behind-no-conflict` exit applies the
 
 ## E4 — Classify and score ReviewItems_snapshot
 
+Once per triage pass (not per item), read the claimed issue's own body
+and note any explicit out-of-scope statement in it, trusted for the
+scope fence below only if it predates the B2 plan
+(`idd-work.instructions.md`) — an author keeps edit rights throughout
+the claim and could otherwise time an edit to force-reject a legitimate
+finding. Fetch `userContentEdits` (GraphQL; `updatedAt` also moves on
+unrelated activity, so it will not do) and find the entry with the
+latest `editedAt` at or before the plan's post time; that entry's
+`diff` (or the original creation content, if none predates the plan)
+is the trusted snapshot. A statement absent from it — added later, or
+present now but not there — needs independent corroboration (a
+maintainer comment, not another edit). Treat an unavailable or failed
+`userContentEdits` read the same way: fail closed, never assume no
+post-plan edit occurred.
+
 For each item in ReviewItems_snapshot, first classify it:
 
 - **PATH A — actionable feedback**: human reviewer threads and regular
@@ -47,6 +62,28 @@ Then apply path-specific scoring:
 - **PATH B**: no High/Medium/Low. Score only a _completed_ review of
   current HEAD as `Accepted` (confirmed/useful) or `Rejected`
   (noted, no action) — route a non-review notice to E6 instead.
+- **Scope fence (PATH A and PATH B).** A finding that asks to
+  introduce, or further broaden, a change class the claimed issue's own
+  body explicitly places out of scope scores `Low` (PATH A) or
+  `Rejected` (PATH B) and disposes **Reject forced**, regardless of
+  technical correctness or tractability, from the point that class is
+  introduced onward. A refinement or bug fix inside an
+  already-introduced instance of that class is still in-scope work and
+  scores normally. This fence
+  overrides PATH A's High-tier `Accept forced` rule: even a
+  correctness finding that would introduce or broaden a fenced class
+  does not reach `Accept forced` merely for being High-severity.
+  Record a rejected instance as a known limitation in the PR body's
+  follow-up-issues content (`idd-pr-submit.instructions.md` — mapped
+  onto the template's "Follow-up issues" section when one exists), not
+  a defect. Edit it under E12's "PR body sync" safeguards
+  (`idd-review-fix.instructions.md`: claim revalidation first, fetch
+  the full body, edit only this claim, post the full result back,
+  re-check `closingIssuesReferences`) even when E8's zero-Accepted-
+  PATH-A skip bypasses E9-E15, and E12 with it. This rule parallels
+  E10's "Round-count heuristic for genuinely-new findings" (same file):
+  that heuristic covers a shared root cause once PATH A work is
+  underway; this fence applies earlier, at PATH A/B scoring.
 
 ## E5 — Record Accept / Reject decisions
 
@@ -55,7 +92,8 @@ Record a path-specific disposition for every item:
 - **PATH A**: High-severity items reach Accepted only via "Verify
   before accept" below, or — when the actor-permission cap applies —
   an explicit maintainer confirmation reply; Medium/Low require an
-  explicit Accept or Reject decision.
+  explicit Accept or Reject decision, except a scope-fenced finding
+  (E4), which is Reject forced regardless of severity.
 - **PATH B** (a _completed_ review of the current HEAD): `Accepted`
   means the advisory confirms the implementation or captures useful
   context; `Rejected` means noted, no action required. An advisory
@@ -129,12 +167,20 @@ state of its own, but can still match a prior resolved thread's claim.
   at current HEAD, or the new occurrence carries genuinely new
   information the prior thread did not address.
 
-**Reasoned-rejection convergence.** The iterate-to-zero loop may converge
-by reasoned rejection of peripheral or verified-false items — not every
-comment needs a code change. Record the reason in the disposition reply;
-"a bot raised it" alone never forces a change (e.g., a "credential
-leak" flag on a placeholders-only config file:
-`**Rejected** — verified placeholders-only`).
+**Round-count cutoff (`critiqueLoop.deferAfterRounds`, default `15`).**
+Once the claim's `review-watermark` post count (paginated,
+including minimized ones and this pass's own E1 post) reaches the
+threshold, disposition an undispositioned Low-severity (E4) PATH A
+item **Reject (defer)** instead of the normal judgment — never an
+already-Accepted item mid-fix (`e10NoProgressHoldAfter` unaffected) nor
+a CODEOWNER/required-reviewer item (E6's AMD exception applies). Reply
+`**Rejected** — deferred to follow-up issue #<n> (round
+<round>/<threshold>): {reason}`, resolve normally, and bundle every
+item from this cutoff into one follow-up issue per E6's
+follow-up-issue rule, each with an AC bullet and the
+`<!-- setup-windows-authoring-defer-source: review-fix-loop-cutoff -->`
+marker. See
+[rationale](../../docs/idd-design-rationale.md#e4e5-round-count-defer-cutoff).
 
 ## E6 — Post disposition replies
 
@@ -162,8 +208,9 @@ reviewer feedback:
 - After posting your reply, **immediately resolve the thread** — except
   for `**Awaiting maintainer decision**`. When helper runtime is enabled,
   the profile-selected resolve-review-thread command (`--pr <number>
-  --comment-id <id> --apply`, with `--body`/`--claim-issue`/`--claim-id`;
-  see `docs/idd-helper-scripts.md`) posts the reply and resolves in one
+  --comment-id <id> --apply`, with `--body`/`--claim-issue`/`--claim-id`
+  or `--claimless`; see `docs/idd-helper-scripts.md`) posts the reply
+  and resolves in one
   call, replying before resolving so a failed reply never leaves a
   silently-resolved thread; the manual REST + GraphQL
   `resolveReviewThread` sequence is the fallback. Resolving means "agent
@@ -317,14 +364,8 @@ review-ack --from-pr <pr-number> --agent-id <id> --timestamp
 review-ack: {agent-id} {PR_HEAD_SHA} {ISO8601-acknowledged-at}
 ```
 
-_Worked example_: a review posts a regular-comment finding plus a
-suppressed one. Disposition the regular-comment finding normally
-(`**Rejected** — verified placeholders-only`), then also post
-`review-ack: claude-code-1a2b3c4d 4b825dc642cb6eb9a060e54bf8d69288fbee4904 2026-08-19T00:10:00Z`
-(plain text, no HTML comment) to cover the suppressed one — the
-regular-comment rejection alone never sets `converged`, and this is
-not a license to skip **AW6** or the fix flow when the suppressed
-finding needs a code change.
+_Worked example_: see
+[rationale](../../docs/idd-design-rationale.md#review-ack-worked-example).
 
 PATH B — Advisory non-review notice (rate-limit / quota / queued / bare
 ack / error, as defined in E4):
@@ -438,17 +479,20 @@ update unless you intentionally return to E1 afterward.
 
 ## E8 — Accepted PATH A count check
 
-If the Accepted PATH A count is zero → proceed to the
-**E-phase branch-sync check** below.
-
-Otherwise continue to `idd-review-fix.instructions.md`.
+Zero Accepted PATH A → **E-phase branch-sync check** below (per the
+Skip condition note above); otherwise →
+`idd-review-fix.instructions.md`.
 
 ## E-phase branch-sync check
 
 After the review loop confirms no PATH A items remain (from E3 or E8),
 check the current branch state before routing to F-phase. This gate uses
-merge-from-`main` (never rebase) when synchronization is required,
-preserving review history on the already-published PR branch.
+merge-from-`{development-branch}` (never rebase) when synchronization is
+required, preserving review history on the already-published PR branch.
+`{development-branch}` is the value resolved in
+`idd-work.instructions.md`'s B1
+[Resolve the development branch](idd-work.instructions.md#b1--create-worktree-with-branch)
+step.
 
 When helper runtime is enabled, call:
 `idd-branch-conflict-state --pr {pr-number}`
@@ -471,7 +515,8 @@ Route based on `branchState` from the helper (or `mergeable` /
   `{latest-ci-completed-at}`, following the E1 Step 2 rules) — otherwise
   F2's review-currency check treats your own dispositions as new
   activity and bounces back to E1 needlessly. Skip the refresh on the
-  sync path (E1 re-snapshots after merging `main`) or on a hold. `clean`
+  sync path (E1 re-snapshots after merging `{development-branch}`) or on
+  a hold. `clean`
   here means conflict-freeness only — see the `baseAdvancedSinceMergeBase`
   note under F1 in `idd-pre-merge.instructions.md`. **Then** proceed to
   `idd-pre-merge.instructions.md` (F1).
@@ -491,19 +536,20 @@ Route based on `branchState` from the helper (or `mergeable` /
   a PR comment documenting the state and stop. Do not proceed to F-phase
   without confirmed branch-state evidence.
 
-**Sync path** (merge-from-`main`):
+**Sync path** (merge-from-`{development-branch}`):
 
 1. **Active review gate**: unresolved review threads, unreplied
    comments, or a reviewer's `CHANGES_REQUESTED` state require explicit
    operator confirmation before this merge, since the merge commit will
    appear in PR history.
-2. Merge `main` into the feature branch:
-   `git fetch origin main && git merge origin/main`. Use the
+2. Merge `{development-branch}` into the feature branch:
+   `git fetch origin {development-branch} && git merge
+   origin/{development-branch}`. Use the
    [signed-commit merge wrapper](../../docs/idd-helper-scripts.md#signed-commit-merge-wrapper-shared-git-procedure)
    when primary signing is non-interactive-hostile. That wrapper's
    merge invocation includes a conventional `-m` subject (for example
-   `chore: merge origin/main into the claimed branch`) so a commitlint
-   `commit-msg` hook does not reject the merge commit.
+   `chore: merge origin/{development-branch} into the claimed branch`)
+   so a commitlint `commit-msg` hook does not reject the merge commit.
 3. If conflicts arise, resolve them and complete the merge with that
    same procedure — mirrors the D1 rebase note.
 4. Run **post-fix-validate**.
@@ -511,31 +557,44 @@ Route based on `branchState` from the helper (or `mergeable` /
    commits).
 6. Return to `idd-review-snapshot.instructions.md` (E1).
 
-## Merge-main livelock under fast-moving `main`
+## Merge-development-branch livelock under fast-moving {development-branch}
 
-Under heavy concurrent-session load, `main` can advance faster than one
-sync cycle finishes, livelocking naive retries before ever reaching F3
-(background:
+Under heavy concurrent-session load, `{development-branch}` can advance
+faster than one sync cycle finishes, livelocking naive retries before
+ever reaching F3 (background:
 [design rationale](../../docs/idd-design-rationale.md#merge-main-livelock-under-fast-moving-main)).
 
 **Rule**: post the watermark as the **last** action before F3's
 `idd-merge-execute.mjs --apply`, every pass — anything after (a CI
-rerun settling, a new disposition reply, another `main` advance)
-stales it, failing `--apply` closed on `review-currency` regardless
+rerun settling, a new disposition reply, another `{development-branch}`
+advance) stales it, failing `--apply` closed on `review-currency` regardless
 of CI color; re-post before retrying. A stale `idd-advisory-convergence`
 rollup: see [rerun mechanics](idd-ci.instructions.md#rerun-mechanics).
 
 ## Zero-Accepted-PATH-A advisory re-review gate
 
 Applies only from the branch-sync check's no-sync-required `clean` /
-`behind-no-conflict` exit, and only when the last non-empty
-`ReviewItems_snapshot` pass this episode had zero Accepted PATH A items
-**and** at least one PATH B item got a _completed-review_ disposition
-(never a notice-only rejection — see the E6 non-review-notice rule).
-Otherwise a no-op: a true-virgin empty snapshot (no PATH B ever
-dispositioned this episode) never fires it; a later-pass empty snapshot
-after a sync loop-back still does, since the lookback still finds the
-prior non-empty pass. (Rationale for the gap this closes:
+`behind-no-conflict` exit, and fires under either of two conditions:
+(a) the last non-empty `ReviewItems_snapshot` pass this episode had
+zero Accepted PATH A items **and** at least one PATH B item got a
+_completed-review_ disposition (never a notice-only rejection — see
+the E6 non-review-notice rule); or (b) the current HEAD is eligible
+for **AW3-S**'s settled-window (non-pending) entry (running
+`advisory-wait-state` reports `staleRequestRecovery.action` as
+`"attempt"` for that entry) — D4 and F2 each already consult **AW3-S**
+independently for this same settled-window entry (`#2726`), but a
+true-virgin empty snapshot otherwise never runs E14 through this gate
+specifically; condition (b) is a defense-in-depth backstop that
+guarantees this path also reaches the stale-request recovery cycle
+(and its route to `COPILOT_UNAVAILABLE`), rather than depending
+solely on D4/F2 revisits eventually accumulating enough AW3-S cycles
+on their own. Otherwise a no-op: a true-virgin empty snapshot with no
+entry eligible for AW3-S's settled-window (no PATH B ever
+dispositioned this episode, and no stale same-head request either)
+never fires it; a
+later-pass empty snapshot after a sync loop-back still fires via (a),
+since the lookback still finds the prior non-empty pass. (Rationale
+for the gap condition (a) closes:
 [design rationale](../../docs/idd-design-rationale.md#zero-accepted-path-a-advisory-re-review-gate).)
 Run this gate **after** any branch-sync merge settles — requesting
 first would let a later merge invalidate the review just obtained.

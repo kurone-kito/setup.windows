@@ -5,22 +5,13 @@ are an agent working in this repository for the first time, start with
 [Getting started](getting-started.md) or [Core concepts](concepts.md);
 otherwise use the table below to find a page by topic.
 
-Upstream (`kurone-kito/idd-skill`) generates this table from an OKF
-(Open Knowledge Format) frontmatter block on each page. This
-repository's own `docs/` bundle does not carry that frontmatter — it
-was intentionally stripped from imported pages to match this
-repository's existing plain-`# Heading`-only convention (no local
-`docs-bundle-frontmatter` checker is configured) — so this table is a
-plain, hand-maintained index instead of a generated one.
+Every page in this bundle follows the OKF (Open Knowledge Format)
+frontmatter convention this table is generated from — see
+[Customizing IDD § Docs Bundle Frontmatter Convention
+(OKF)](customization.md#docs-bundle-frontmatter-convention-okf) before
+adding a page of your own.
 
 ## Reference Map
-
-The table below is maintained by hand in this repository. The
-`audit:generated` marker around it is retained only as an
-import/template-drift aid for future pin bumps (it lets a diff against
-upstream's generated version locate the matching block quickly) — no
-local tooling in this repository actually regenerates this table from
-it.
 
 <!-- audit:generated id=idd-template-docs-index-okf-table -->
 
@@ -39,8 +30,10 @@ it.
 | reference | [IDD Resume — Detail Reference](idd-resume-detail.md) | Provides the full narrative detail behind idd-resume.instructions.md's compact routing tables for branches that need careful judgment. |
 | reference | [Onboarding Reference — Agent Entry and Verification](onboarding/agent-entry-and-verification.md) | Provides the detailed agent-entry examples and verification checklist referenced by ONBOARDING.md steps 5 and 6. |
 | reference | [Onboarding Reference — Issue-Mediated Bootstrap](onboarding/issue-mediated-bootstrap.md) | Documents an opt-in alternate bootstrap path that imports the IDD template through a reviewed issue-branch-PR cycle instead of theirs-flow's direct, unreviewed commit. |
+| reference | [Onboarding Reference — Optional Host Setup](onboarding/optional-host-setup.md) | Documents the optional host-level setup steps (worktree guard, idd-doctor CI gate, advisory-convergence CI workflow, vendored-bundle linguist attributes) that ONBOARDING.md now only points to. |
 | reference | [Onboarding Reference — Placeholder Values](onboarding/placeholders.md) | Provides the full derivation and replacement rules for every template placeholder used during onboarding. |
 | reference | [Onboarding Reference — Policy Decisions](onboarding/policy-decisions.md) | Provides the detailed policy-decision guidance behind ONBOARDING.md's operator-confirmation steps. |
+| reference | [Onboarding Reference — Project Tuning](onboarding/project-tuning.md) | The post-hearing judgment calls idd-onboard's CLI does not automate — agent-entry file surgery, non-default profile artifacts, extra trusted marker actors, claim-timing/label-name overrides, the reserved-label guard, the issue-authoring companion install, and command-row retuning. |
 | reference | [Template Distribution Maintainer Reference](onboarding/template-distribution.md) | Explains how the template's generated file-distribution lists in ONBOARDING.md stay correct as files are added, removed, or moved. |
 | reference | [IDD Policy Constants](policy-constants.md) | Inventories the distributed IDD policy defaults and names which configuration surface owns each one. |
 | reference | [IDD Detailed Reference](reference.md) | Maps each operational question to the authoritative phase file or policy page that answers it. |
