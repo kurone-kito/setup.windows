@@ -262,13 +262,16 @@ see the in-file note in `SKILL.md`).
 **Status**: `installed` at
 [`.claude/skills/idd-spec-audit/`](../.claude/skills/idd-spec-audit/SKILL.md)
 (initially copied from the pinned upstream commit's
-`skills/idd-spec-audit/`, then locally adapted with two in-file
-changes: a `<!-- setup.windows: ... -->` comment clarifying that its
-`.claude/**` mirror-tree exclusion has no applicable target in this
-installation (so the issue-authoring bundle stays in scope), and an
-ordinary prose edit to the Execution model's report-output bullet
-clarifying that the report is emitted as output rather than written
-into `references/report-template.md`; no bundle-internal
+`skills/idd-spec-audit/`, then locally adapted with three in-file
+changes: in `SKILL.md`, a `<!-- setup.windows: ... -->` comment
+clarifying that its `.claude/**` mirror-tree exclusion has no
+applicable target in this installation (so the issue-authoring bundle
+stays in scope), and an ordinary prose edit to the Execution model's
+report-output bullet clarifying that the report is emitted as output
+rather than written into `references/report-template.md`; in
+`references/report-template.md`, added per-file `Location A`/
+`Location B` fields to the R2 finding shape, matching the `Location`
+field every other rule set's shape already has; no bundle-internal
 maintenance-doc links needed relinking, unlike the issue-authoring
 companion above).
 

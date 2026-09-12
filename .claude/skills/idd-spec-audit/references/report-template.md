@@ -28,7 +28,9 @@ was skipped.
 
 - **Concept**: `[one entry from the closed v1 index]`
 - **Files in conflict**: `[path A]` vs. `[path B]`
+- **Location A**: `[line number or section heading in path A]`
 - **Quote A**: `[short quote]`
+- **Location B**: `[line number or section heading in path B]`
 - **Quote B**: `[short quote]`
 - **Why they conflict**: `[one line]`
 - **Appeared in**: `[K]/[N]`
