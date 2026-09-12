@@ -128,5 +128,5 @@ body:
     attributes:
       label: Checklist
       options:
-        - label: I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and confirmed this bug has not already been reported.
+        - label: I have read [CONTRIBUTING.md](https://github.com/kurone-kito/setup.windows/blob/master/.github/CONTRIBUTING.md) and confirmed this bug has not already been reported.
           required: true
