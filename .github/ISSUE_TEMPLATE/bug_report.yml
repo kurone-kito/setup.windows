@@ -13,45 +13,120 @@ body:
     id: overview
     attributes:
       label: Bug Overview
-      description: A clear and concise overview of the bug.
+      description: A clear and concise overview of the bug, and what you expected to happen instead.
       placeholder: When I do "X", "Y" happens instead of "Z".
-    validations:
-      required: true
-
-  - type: textarea
-    id: behavior
-    attributes:
-      label: Expected Behavior
-      description: A clear and concise description of what you expected to happen.
-      placeholder: When I do "X", I expect "Z" to happen.
     validations:
       required: true
 
   - type: textarea
     id: steps
     attributes:
-      label: Steps to Reproduce the Bug
+      label: Steps to Reproduce
       description: Detail the series of steps required to reproduce the bug.
-      placeholder: When I run "X" using [...], "X" fails with "Y" error message. If I check the terminal outputs and/or logs, I see the following info.
+      placeholder: |
+        1. Run `setup.cmd` with ...
+        2. ...
     validations:
       required: true
 
-  - type: textarea
-    id: environment
+  - type: dropdown
+    id: os-edition
     attributes:
-      label: Environment Details
-      description: Please provide details about your environment.
-      value: |
-        - Target deployment platform: [e.g. AWS/GCP/local cluster/etc...]
-        - Target OS: [e.g. RHEL 9/Ubuntu 24.04/etc...]
-        - Version of this project or specific commit: [e.g. 1.4.3/commit hash]
-        - Version of any relevant project languages: [e.g. Kubernetes 1.30/Python 3.9.7/etc...]
+      label: OS edition
+      description: See the "OS Support" table in README.md.
+      options:
+        - Windows 11 Pro / Enterprise
+        - Windows 11 Home
+        - Windows 10 22H2 Pro / Enterprise
+        - Windows 10 22H2 Home
+        - Windows Server 2019+
+        - Windows 10 < 22H2 (Unsupported)
+        - Other/unsure
     validations:
       required: true
 
-  - type: textarea
-    id: context
+  - type: input
+    id: os-build
     attributes:
-      label: Additional Context
-      description: Add any other context about the problem here.
-      placeholder: Feel free to add any other context/information/screenshots/etc... that you think might be relevant to this issue in here.
+      label: OS build number
+      description: Run `winver` or `[System.Environment]::OSVersion.Version` in PowerShell.
+      placeholder: e.g. 22631.3737
+    validations:
+      required: true
+
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: Architecture
+      options:
+        - x86_64
+        - ARM64
+    validations:
+      required: true
+
+  - type: dropdown
+    id: config-profile
+    attributes:
+      label: $ConfigProfile
+      description: The `$ConfigProfile` value set in `boxstarter.ps1` (Phase 2).
+      options:
+        - full
+        - min
+        - unsure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: winget-path
+    attributes:
+      label: winget installation path
+      description: See "Phase 2" in the Architecture diagram in README.md.
+      options:
+        - winget configure (normal)
+        - winget import (degraded mode)
+        - unsure
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Repository version, commit, or tag
+      placeholder: e.g. v1.2.3, or a commit hash
+    validations:
+      required: false
+
+  - type: dropdown
+    id: setup-phase
+    attributes:
+      label: Failed setup phase
+      description: See the Architecture diagram in README.md.
+      options:
+        - "Phase 0: OS support check"
+        - "Phase 1: Environment detection"
+        - "Phase 2: winget configure or winget import"
+        - "Phase 3: Chocolatey (fonts, vb-cable) + posh-git"
+        - "Phase 4: Architecture-conditional packages"
+        - "Phase 5: Post-install"
+        - "Phase 6: Remote Desktop"
+        - "Phase 7: Windows Update & teardown"
+        - Unknown/other
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log or error output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and confirmed this bug has not already been reported.
+          required: true
