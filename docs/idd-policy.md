@@ -257,6 +257,41 @@ see the in-file note in `SKILL.md`).
   `.github/idd/config.json`; the bundle's distributed default of `3`
   rounds applies
 
+### IDD Spec Audit Companion
+
+**Status**: `installed` at
+[`.claude/skills/idd-spec-audit/`](../.claude/skills/idd-spec-audit/SKILL.md)
+(initially copied from the pinned upstream commit's
+`skills/idd-spec-audit/`, then locally adapted with three in-file
+changes: in `SKILL.md`, a `<!-- setup.windows: ... -->` comment
+clarifying that its `.claude/**` mirror-tree exclusion has no
+applicable target in this installation (so the issue-authoring bundle
+stays in scope), and an ordinary prose edit to the Execution model's
+report-output bullet clarifying that the report is emitted as output
+rather than written into `references/report-template.md`; in
+`references/report-template.md`, added per-file `Location A`/
+`Location B` fields to the R2 finding shape, matching the `Location`
+field every other rule set's shape already has; no bundle-internal
+maintenance-doc links needed relinking, unlike the issue-authoring
+companion above).
+
+Read-only semantic audit of the IDD instruction corpus (leaked session
+context, cross-file contradictions, fresh-memory completability gaps,
+automation blockers, restatement-discipline drift). Never edits files
+or mutates issues; adopted to sanity-check the instruction corpus after
+the v0.7.0 → v0.11.0 pin resync (#152 and related issues).
+
+**Pinned commit**:
+`kurone-kito/idd-skill @ 1f90787ebf4021673ce6e5eb69741df331fd2037`
+(v0.11.0, 2026-09-12). This is a fresh install with no prior local
+copy to keep in lockstep, so it is pinned independently rather than
+blocked on the repository-wide pin bump tracked separately (#152 and
+related issues) — at the time of this companion's import, the rest of
+this repository's `idd-template/`-derived files are still pinned to
+`f51a8bb73a47452eff5799e8a27251b660ba4ae0` (v0.7.0); see
+[Upstream pin](#upstream-pin) below for the authoritative, currently-landed
+repo-wide pin record.
+
 ### IDD Label Names
 
 Distribution defaults, no `labels.*` override recorded in
