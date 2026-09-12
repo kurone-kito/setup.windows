@@ -54,6 +54,19 @@ model.
   inputs above (summary docs rely on the files they cite by design, so
   they are not audited as if they were the primary spec).
 
+  <!-- setup.windows: this repository's `.claude/**` is NOT a
+  generated-mirror tree in the sense the bullet above describes (that
+  description is written from upstream kurone-kito/idd-skill's own
+  perspective, where `.claude/**` really does mirror a canonical
+  source elsewhere in that same repository). In this installation,
+  `.claude/skills/issue-authoring/` and `.claude/skills/idd-spec-audit/`
+  are themselves the canonical installed copies, with no separate
+  local source they mirror -- so this exclusion currently has no
+  applicable target here, and the Scope section's "cover every present
+  entry file" / "audit the issue-authoring skill bundle" requirements
+  above are unaffected: the installed issue-authoring bundle stays
+  in scope for every rule set. -->
+
 ## Rule sets
 
 Run all five rule sets on every pass; do not skip one to save time. A
