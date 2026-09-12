@@ -1,2 +1,3 @@
 ignores:
   - .github/CODE_OF_CONDUCT*
+  - node_modules/**/*.md

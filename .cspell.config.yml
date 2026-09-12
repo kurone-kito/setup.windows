@@ -80,6 +80,7 @@ words:
   # IDD workflow terms (imported from upstream idd-skill core template)
   - desync
   - desynced
+  - dofork
   - esac
   - esync
   - ghes
@@ -89,6 +90,7 @@ words:
   - pyproject
   - pytest
   - qwen
+  - remediations
   - toctou
   - undispositioned
   - unioned
