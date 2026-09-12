@@ -190,7 +190,11 @@ re-derive it.
   conditional-target note), route findings through this
   installation's normal manual issue-filing process instead.
 - Write the aggregated result using
-  [references/report-template.md](references/report-template.md).
+  [references/report-template.md](references/report-template.md) as
+  the shape to follow, not a file to overwrite: emit the completed
+  report as this pass's own output (a chat reply, an issue/PR comment
+  drafted through the normal issue-authoring flow, or a caller-supplied
+  destination), consistent with "Read-only, always" above.
 
 ## See also
 
