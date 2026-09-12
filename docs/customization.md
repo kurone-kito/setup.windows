@@ -463,21 +463,24 @@ merges — a maintainer must separately register `idd-advisory-convergence`
 as a **required** status check in the repository's branch-protection
 Ruleset; this is a GitHub-settings action taken outside of IDD
 automation, not something an agent applies on its own. Once
-registered, a repository hosting the newer companion
+registered, a repository hosting the companion
 `idd-advisory-convergence-comment.yml` workflow scopes refresh to
 IDD-originated review-thread comments only — an ordinary human reply
 does **not** re-trigger the required check there, since the required
 workflow itself no longer listens for `pull_request_review_comment` in
-that split design. This repository does not host that companion
-workflow yet (tracked in
-[#124](https://github.com/kurone-kito/setup.windows/issues/124)): it
-retains the pre-split combined trigger, so the required workflow
-itself still listens for `pull_request_review_comment` directly — any
-review-thread reply here, IDD-originated or not, triggers a fresh run.
-That trigger only creates a fresh run; the run's own `advisory-convergence`
-verdict logic (not who commented) decides whether it reports passing.
-The manual `gh run rerun` recovery path described below remains the
-deliberate, direct way to force a recheck without waiting on a reply.
+that split design. This repository hosts that companion workflow
+(added via
+[#124](https://github.com/kurone-kito/setup.windows/issues/124)): only
+a comment classified as IDD-originated (an E6/E13 disposition reply,
+reply-identity stamp, or other operational marker the required check
+already honors) re-runs the existing HEAD-associated required run,
+through the companion; an ordinary human reply does not. The companion
+itself stays pinned to the pre-v0.11.0 commit (tracked in #163) like
+the required workflow it refreshes, but the split-trigger design is
+already in effect. The manual `gh run rerun` recovery path described
+below remains the deliberate, direct way to force a recheck without
+waiting on a reply — and the only path available for a comment that
+does not classify as IDD-originated.
 This is `idd-advisory-convergence`, not
 `lint.yml`.
 Repositories that want human-led or gradual IDD adoption should not
@@ -506,16 +509,14 @@ a maintainer must also
 **re-run the existing** PR-linked check run **for the current HEAD
 SHA** — the Actions UI "Re-run jobs" button, or
 `gh run rerun <run-id>` — for the required check to actually
-reflect it. In a repository hosting the companion
-`idd-advisory-convergence-comment.yml` workflow, only an IDD-originated
-review-thread comment refreshes that same HEAD run through the
-companion; this repository retains the pre-split combined trigger
-instead (tracked in
+reflect it. This repository hosts the companion
+`idd-advisory-convergence-comment.yml` workflow (added via
 [#124](https://github.com/kurone-kito/setup.windows/issues/124)), so
-**any** review-thread reply here — IDD-originated or not — already
-triggers a fresh run of the required workflow directly, without a
-companion. The manual `gh run rerun` step above remains the deliberate
-way to force that recheck without posting a reply first.
+only an IDD-originated review-thread comment refreshes that same HEAD
+run through the companion; an ordinary human reply does not. The
+manual `gh run rerun` step above remains the deliberate way to force
+that recheck without posting a reply first, and the only way to
+refresh from a reply that doesn't classify as IDD-originated.
 `workflow_dispatch` does
 **not** reliably do this:
 a dispatched run has no `pull_request` context of its own, so GitHub
