@@ -569,7 +569,7 @@ enable **Dismiss stale pull request approvals when new commits are
 pushed** (or its equivalent) so approval applies to the workflow
 revision that will merge. Without those settings, CODEOWNERS only
 requests or routes a review and does not make approval a merge gate.
-The [dry-run — Readiness assessment](../../ONBOARDING.md#dry-run--readiness-assessment)
+The [dry-run — Readiness assessment](https://github.com/kurone-kito/idd-skill/blob/main/idd-template/ONBOARDING.md#dry-run--readiness-assessment)
 report's `CODEOWNERS present` item checks only that a CODEOWNERS file
 exists; it does not verify workflow-path coverage, producer binding, or
 these required-review settings (preventive; no observed incident yet).

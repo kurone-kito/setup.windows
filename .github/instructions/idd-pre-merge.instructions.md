@@ -94,10 +94,10 @@ nonce was recorded for the active claim.
 
 **No claimed issue**: the readiness collector requires either
 `--claim-issue <issue-number>` (with `--claim-id`) or `--claimless`
-(#2017) — pass `--claimless` instead when this PR has no linked issue to
-claim (`closingIssuesReferences` empty); it cannot combine with
-`--claim-issue`/`--claim-id` and fails closed if `closingIssuesReferences`
-is non-empty. See
+(kurone-kito/idd-skill#2017) — pass `--claimless` instead when this PR
+has no linked issue to claim (`closingIssuesReferences` empty); it
+cannot combine with `--claim-issue`/`--claim-id` and fails closed if
+`closingIssuesReferences` is non-empty. See
 [docs/idd-helper-scripts.md's Readiness command](../../docs/idd-helper-scripts.md)
 for the full flag reference.
 
