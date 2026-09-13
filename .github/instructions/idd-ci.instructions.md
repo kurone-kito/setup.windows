@@ -225,8 +225,8 @@ the check. Recover by rerunning the _existing_ non-bot
 original actor's privileges and re-enters `action_required` (approve
 via `POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve` if it
 must run). The check also self-heals on the next non-bot trigger — a
-push, a review-thread reply, or (once the companion's `issue_comment`
-trigger is live, #163) a regular PR comment classified IDD-originated.
+push, a review-thread reply, or a regular PR comment classified
+IDD-originated (via the companion's `issue_comment` trigger).
 
 **If rerunning the passing non-bot instance alone does not clear the
 rollup (`#1745`)**: a HEAD can carry several `idd-advisory-convergence`

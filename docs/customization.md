@@ -502,22 +502,25 @@ the selector `idd-advisory-convergence`. That waiver path only exists
 once `ciGate.externalCheckWaivers.mode` is `maintainer-authorized`
 **and** `idd-advisory-convergence` is itself listed under
 `ciGate.externalChecks.waivable` — enabling waiver mode for some other
-external check never silently makes this one waivable too. **Posting a
-waiver comment does not by itself turn the check green**: a waiver is
+external check never silently makes this one waivable too. A waiver is
 a regular PR conversation comment, which is not one of the required
 workflow's triggers (`pull_request`/`pull_request_target` push --
 `pull_request_review` submission is not one either, since #2764 Phase
-1 moved it to the non-required companion), so after posting a waiver
-a maintainer must also
-**re-run the existing** PR-linked check run **for the current HEAD
-SHA** — the Actions UI "Re-run jobs" button, or
-`gh run rerun <run-id>` — for the required check to actually
-reflect it. This repository hosts the companion
-`idd-advisory-convergence-comment.yml` workflow (added via
-[#124](https://github.com/kurone-kito/setup.windows/issues/124)), so
-only an IDD-originated review-thread comment refreshes that same HEAD
-run through the companion; an ordinary human reply does not. The
-manual `gh run rerun` step above remains the deliberate way to force
+1 moved it to the non-required companion), so a completed run's
+conclusion never changes on its own when a waiver is posted. This
+repository hosts the companion `idd-advisory-convergence-comment.yml`
+workflow (added via
+[#124](https://github.com/kurone-kito/setup.windows/issues/124),
+reconciled to add the `issue_comment` trigger in #163): since a posted
+maintainer-authorized waiver comment classifies as an operational
+marker (IDD-originated), it now automatically reruns the existing HEAD
+run through the companion, the same as any other IDD-originated
+regular PR comment or review-thread reply; an ordinary human reply
+does not. If that automatic rerun does not land, **re-run the existing**
+PR-linked check run **for the current HEAD SHA** manually instead —
+the Actions UI "Re-run jobs" button, or `gh run rerun <run-id>` — to
+force it to reflect the waiver.
+The manual `gh run rerun` step above remains the deliberate way to force
 that recheck without posting a reply first, and the only way to
 refresh from a reply that doesn't classify as IDD-originated.
 `workflow_dispatch` does

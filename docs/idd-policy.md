@@ -100,10 +100,17 @@ recorded in `.github/idd/config.json`)
     --apply --yes
   ```
 
-  **Posting a waiver comment alone does not turn the check green.** A PR
-  comment is not one of `idd-advisory-convergence.yml`'s trigger events,
-  and a completed run's conclusion never changes on its own — after
-  posting a valid waiver, re-run the check via
+  **Posting a waiver comment no longer requires a separate manual rerun
+  step on its own.** A PR comment is not one of
+  `idd-advisory-convergence.yml`'s own trigger events, and a completed
+  run's conclusion never changes on its own — but the repository also
+  hosts the companion `idd-advisory-convergence-comment.yml` workflow
+  (#163 reconciliation), which listens for `issue_comment` and, since a
+  posted maintainer-authorized waiver comment classifies as an
+  operational marker (IDD-originated), automatically reruns the
+  existing `idd-advisory-convergence` run for the current HEAD SHA. If
+  that automatic rerun does not land (e.g. the companion is disabled, or
+  the fallback is faster), re-run the check manually instead via
   `gh run rerun <run-id>` on the existing `pull_request`-family run for
   the current HEAD SHA (found via `gh run list
   --workflow=idd-advisory-convergence.yml --json
