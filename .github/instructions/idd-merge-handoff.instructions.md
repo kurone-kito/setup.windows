@@ -23,7 +23,7 @@ stop and report.
      stop.
 2. Read the repository's recorded merge policy from repository
    documentation that future IDD sessions read. If no policy is
-   recorded, treat it as `fully_autonomous_merge` (distributed default).
+   recorded, treat it as `human_merge` (distributed default).
 3. If the recorded value is not one of `fully_autonomous_merge`,
    `human_merge`, or `separate_merge_agent`, treat it as an unknown merge
    policy: stop, post a hold comment, and request maintainer decision.

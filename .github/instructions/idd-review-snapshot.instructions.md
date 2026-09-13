@@ -6,7 +6,10 @@ critique pass (E2), and checking whether ReviewItems_snapshot is empty (E3).
 
 Before posting any E-phase operational comment or GitHub reply, apply
 the shared claim revalidation gate. The active claim must still use your
-current `{claim-id}`.
+current `{claim-id}` — this also serves as E1's phase-entry self-check:
+E1 re-fetches all of its state from GitHub on every entry, so, unlike
+B1/B3, there is no local plan or worktree artifact that could go stale
+between checks.
 
 **If ReviewItems_snapshot is empty after E3**: proceed to the
 E-phase branch-sync check in `idd-review-triage.instructions.md`.
@@ -160,8 +163,12 @@ ignore them and rerun E1 under the successor claim.
 **Hide superseded same-claim watermarks.** After the new watermark is
 verified on GitHub, minimize every strictly older trusted **same-claim**
 `review-watermark`/`review-baseline` comment as `OUTDATED` (cuts F4
-backlog and review-page noise). Find candidate subject IDs (trusted
-same-claim watermarks older than the new one), then call:
+backlog and review-page noise). Find candidate subject IDs (older
+trusted same-claim watermarks), then call:
+
+`--subject-ids` needs a GraphQL node id, not a REST numeric id;
+convert with `gh api repos/{owner}/{repo}/issues/comments/{comment_id}
+-q '.node_id'` (other kinds: `--help` below).
 
 ```sh
 node scripts/minimize-superseded-markers.mjs \
@@ -196,7 +203,14 @@ regardless of maintainer response).
 
 **Review bodies** where the reviewer's latest state is
 `CHANGES_REQUESTED` — exclude reviews already replied to and
-re-review-requested in a previous E13/E14 pass.
+re-review-requested in a previous E13/E14 pass. **Embedded-finding
+gap (helper-first, optional):** a `COMMENTED`-state review can still
+carry a file/line-cited finding with no thread of its own, in an
+older collapsible body format some bots use (e.g. CodeRabbit's
+"Nitpick comments" / "Outside diff range comments") — a helper that
+parses the embedded findings and compares against the threaded-comment
+count (see `docs/idd-design-rationale.md`) detects this; add one
+PATH B item per uncovered finding.
 
 **Regular comments** where the last speaker isn't any IDD agent and no
 reply from **you** exists after that comment's timestamp — exclude

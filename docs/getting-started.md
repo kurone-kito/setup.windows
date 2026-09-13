@@ -29,11 +29,13 @@ Open an agent session in the target repository and ask it to import the
 IDD template from the idd-skill source repository. If the template has
 already been copied, start from the local `ONBOARDING.md` file instead.
 
-The onboarding guide copies the portable instruction files, asks for
-project-specific command values, and updates agent entry files such as
-`AGENTS.md` (Codex CLI, OpenCode, and Grok Build), `CLAUDE.md`,
-`GEMINI.md`, or `.github/copilot-instructions.md` when that file
-exists.
+The onboarding guide is a thin orchestrator: it copies the portable
+instruction files, asks for project-specific command values, and
+updates agent entry files such as `AGENTS.md` (Codex CLI, OpenCode, and
+Grok Build), `CLAUDE.md`, `GEMINI.md`, or Copilot instructions. When a
+capable helper runtime is available, it points the session at
+`idd-onboard --hear` instead of walking through the policy and
+placeholder companion docs by hand.
 
 ### Validate the import with IDD doctor (optional)
 
@@ -62,11 +64,11 @@ not just documentation preferences.
 ### Merge policy
 
 Before unattended runs begin, choose and record a merge policy with
-`fully_autonomous_merge` preselected as the distributed default, and ask
-whether the operator wants an explicit opt-out to `human_merge` or
+`human_merge` preselected as the distributed default, and ask
+whether the operator wants to opt in to `fully_autonomous_merge` or
 prefers `separate_merge_agent` as a non-default split-authority profile.
 Keep the selected policy in repository documentation that future IDD
-sessions read. Missing policy defaults to `fully_autonomous_merge`;
+sessions read. Missing policy defaults to `human_merge`;
 unknown recorded policy values must stop with a maintainer hold until
 corrected.
 
@@ -81,16 +83,16 @@ the loop starts:
 
 For broad requests, use the optional issue-authoring companion to draft
 a roadmap and focused child issues before starting the execution loop.
-Use task-list links to group active roadmap work. Reserve
-`idd-skill-blocked-by` markers for true sequential dependencies on a
-separate roadmap.
+Use task-list links to group active roadmap work. Reserve the
+blocked-by marker (using your configured prefix) for true sequential
+dependencies on a separate roadmap.
 
 When a project has genuine parallel tracks or multi-session coordination
 boundaries, nested roadmap hierarchies let each track close
 independently before the parent roadmap closes. See
-[Recursive Roadmap Hierarchies](idd-workflow.md#recursive-roadmap-hierarchies)
-in the workflow guide for structure examples, the grouping-versus-dependency
-distinction, and how discovery and bottom-up audit behave across levels.
+[Roadmap Claim Guardrails](idd-workflow.md#roadmap-claim-guardrails)
+in the workflow guide for how nested roadmap claims stay
+coordination-only and how bottom-up audit closes each level.
 
 ## 4. Start the Loop
 

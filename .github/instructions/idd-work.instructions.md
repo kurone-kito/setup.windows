@@ -3,11 +3,27 @@
 Read this file after a successful claim. It covers worktree creation (B1),
 planning (B2), implementation (B3), and the self-review loop (C).
 
+If this agent is running as a delegated worker under the
+[orchestrator fan-out variant](../../docs/idd-workflow.md#orchestrator-fan-out-variant),
+the same
+[wake-up discipline](idd-ci.instructions.md#wake-up-discipline)
+topology-safety condition applies throughout B through F4: never end a
+turn assuming an unconfirmed background wait resumes it, even when the
+delegation brief itself already restates the warning -- wait
+synchronously or with a confirmed topology-safe wake for any
+backgrounded command, and confirm the result before ending the turn.
+
 ---
 
 ## B1 — Create worktree (with branch)
 
-Before creating, check for local conflicts in this order:
+Before creating, check for local conflicts in this order. Concurrent
+workers sharing one clone: serialize every `git fetch`/`merge --ff-only`/
+worktree add/remove call against the shared clone -- here, and at F4
+cleanup's own worktree removal -- behind the
+[clone-scoped lock](../../docs/idd-helper-scripts.md#clone-scoped-lock)
+(see the [fan-out variant](../../docs/idd-workflow.md#orchestrator-fan-out-variant)
+for when this applies).
 
 1. Ensure the local `main` branch is up to date and has no local
    commits. Run this from the primary worktree while on `main`:
@@ -84,49 +100,66 @@ repository root. Compute the path as
 `../<repo-name>.<normalized-branch>` where `<normalized-branch>` is the
 branch name with every `/` replaced by `-`.
 
-Example: repo `setup.windows`, branch `issue/123-add-foo` → worktree path
+Example: repo `setup.windows`, branch `issue/123-add-foo` → path
 `../setup.windows.issue-123-add-foo`.
 
 **Harness-native worktree tools**: an agent harness's own worktree
-primitive — for example, Claude Code's `EnterWorktree` — is a third
-path outside the two enumerated below. Use one only when both its
-target directory can be pinned to the sibling path above and its
-branch can be pinned to the `issue/<number>-<slug>` branch — never a
-tool-chosen default of either. `EnterWorktree`'s create action always
-places the worktree under a harness-owned directory (observed as
-`.claude/worktrees/agent-<hash>`), never the sibling path above, so it
-can never satisfy the directory half of this rule — never use it to
-create the B1 worktree. Grok Build's `grok --worktree`, subagent
-`isolation: worktree`, and `x.ai/git/worktree/*` likewise place
-worktrees in a harness-owned location and cannot pin the sibling path
-or the `issue/<number>-<slug>` branch — never use them to create the
-B1 worktree (same failure class as #1930). When a harness-native tool
-cannot pin both, use the documented `git worktree add` path below (or
-WorkTrunk) instead.
+primitive (e.g. Claude Code's `EnterWorktree`) is a third path outside
+the two enumerated below. Use one only when both its target directory
+can be pinned to the sibling path above and its branch to
+`issue/<number>-<slug>` — never a tool-chosen default. `EnterWorktree`
+always places the worktree under a harness-owned directory
+(`.claude/worktrees/agent-<hash>`), never the sibling path — never use
+it here. Grok Build's `grok --worktree`, subagent `isolation:
+worktree`, and `x.ai/git/worktree/*` likewise can't pin either — never
+use them (same class as #1930). When a tool can't pin both, use
+`git worktree add` below (or WorkTrunk) instead.
 
 **Step 1 — Check for orphaned path**: if the target path already exists
 but is not listed in `git worktree list`, stop and report for manual
 cleanup before continuing.
 
-**Step 2 — Create**: use **WorkTrunk** if available. The create verb is
-`wt switch --create` (the older `wt new` subcommand was removed):
+**Step 2 — Create**: `<base-branch>` below is `{development-branch}` —
+resolve it first: read `developmentBranch` from
+`.github/idd/config.json`, else `gh repo view --json
+defaultBranchRef --jq .defaultBranchRef.name`; validate the result
+([defaults](../../docs/policy-constants.md#branch-synchronization-defaults)),
+fail closed if invalid/absent on `origin`, never fall back. Then
+`git fetch origin {development-branch}` (may be missing/stale
+otherwise). Use **WorkTrunk** if available (create verb:
+`wt switch --create`; `wt new` was removed):
 
 - macOS/Linux: `wt switch --create -b <base-branch> <branch-name>`
 - Windows: `git-wt switch --create -b <base-branch> <branch-name>`, or the
   same `wt switch --create -b <base-branch> <branch-name>` if `git-wt` is
   unavailable
 
-`<base-branch>` is normally `main`. In a **non-interactive / automation**
-context, append `-x <noop>` (e.g. `-x true`) — otherwise WorkTrunk tries
-to change the caller's directory and can hang; `-x` makes it create, run
-the pre-start hook, and exit cleanly.
+Non-interactive/automation: append `-x <noop>` (e.g. `-x true`) so
+WorkTrunk creates, runs the pre-start hook, and exits without
+changing the caller's directory.
 
-If WorkTrunk is not available, choose the correct case:
+**Pre-start hook approval hang** (confirmed live 2026-09-09, issue
+`#2797`): even with `-x <noop>`, `wt switch --create` still hangs
+non-interactively when the `[pre-start]` hook's own install command has
+not already been approved — WorkTrunk's own `approvals.toml` mechanism
+prompts for command approval on first run and fails outright outside a
+TTY, with `Cannot prompt for approval in non-interactive environment. To
+skip prompts in CI/CD, add --yes`. Before the first `wt switch --create`
+in such an environment, run `wt config approvals add --yes` once from
+the primary worktree to pre-approve the project's hook and alias
+commands (stored in `~/.config/worktrunk/approvals.toml`, scoped to the
+git project so the approval carries over to every sibling worktree).
+This one-time pre-approval step is narrower than adding the global
+`-y`/`--yes` flag to every `wt switch` call, which would also silently
+skip approval for any other command WorkTrunk runs on that invocation —
+prefer the pre-approval step for that reason.
+
+If WorkTrunk is unavailable, choose the correct case:
 
 <!-- dprint-ignore-start -->
 | Case | Command |
 | --- | --- |
-| Fresh claim | `git worktree add <path> -b <branch-name> origin/main` |
+| Fresh claim | `git worktree add <path> -b <branch-name> origin/{development-branch}` |
 | Takeover — local branch exists | `git worktree add <path> <branch-name>` |
 | Takeover — remote branch only | `git fetch origin && git worktree add <path> -b <branch-name> origin/<branch-name>` |
 | Takeover — neither local nor remote (rare) | treat as fresh claim; preserve the inherited branch name |
@@ -139,11 +172,20 @@ tools" above), acquire the
 immediately after the worktree exists, **before Step 3** —
 `install-deps` itself writes into the worktree and runs lifecycle
 hooks, so acquiring the lock any later leaves that install unprotected.
+Also re-run `--record-tokens` (with the same `{nonce}` the A5 write
+used — `--record-tokens` overwrites rather than merges, so omitting it
+here drops the nonce from this worktree's own copy) for this
+worktree's own copy of the
+[generated-tokens record](idd-claim.instructions.md#worktree-local-lock-file-same-machine-collision)
+at the same point — the A5 copy lives in the primary worktree's admin
+directory, not this one, so the later Claim revalidation gate's
+`--read-tokens` check has nothing to find here until this step runs it.
 
 WorkTrunk's pre-start hook runs before the create command returns. If it
 installs dependencies, its **first** command must acquire the lock for
-the new worktree with the current `{agent-id}` / `{claim-id}`, then run
-the install — acquiring the lock afterward is too late. Under
+the new worktree with the current `{agent-id}` / `{claim-id}` and
+re-run `--record-tokens` (with the same `{nonce}` the A5 write used),
+then run the install — doing either afterward is too late. Under
 `package-manager`, the new worktree's `idd:claim-lock` bin may not exist
 yet: invoke a pre-install-available helper from the primary worktree
 with the new path as `--worktree`, or use the helper-free fallback
@@ -185,13 +227,43 @@ Before continuing to B2, verify all of the following:
   `main`.
 - `git worktree list` includes the new sibling worktree path.
 - The agent's current working directory is the new sibling worktree
-  path, not the primary worktree.
+  path, not the primary worktree; a launch-workspace-bound file-tool
+  harness (Grok Build observed) needs this absolute path, not
+  `cd`/`pwd`.
 
 If any check fails, the B1 worktree-creation contract has been
 violated: stop, post a hold note describing which check failed, and do
 not continue to B2 from the primary worktree. Repair by removing the
 misplaced branch (after confirming no work is lost) and recreating the
 sibling worktree through the Worktree creation steps above.
+
+The optional local `_idd-worktree-guard.sh` hook (enabled via
+`worktreeGuard.enabled: true`) automates part of this self-check by
+refusing a commit/push from the primary worktree while HEAD matches an
+implementation-branch pattern (default `issue/*`, `roadmap-audit/*`).
+It does **not** catch skipping B1 and committing on the base
+branch — set `worktreeGuard.refuseBaseBranchCommits: true` (#2801) to
+also refuse that case.
+
+If WorkTrunk reports its `Cannot change directory — shell integration
+installed but not active` diagnostic, re-verify the current working
+directory on every later command — see
+[rationale](../../docs/idd-design-rationale.md#worktrunk-cwd-caveat).
+
+### Already inside a host-isolated worktree
+
+If this agent's own environment is already a host-isolated worktree
+from the harness or orchestrator, "primary worktree" above does not
+apply: there is no separate worktree to manage or return to. Skip
+Worktree creation; run **install-deps** and verify
+`git rev-parse --abbrev-ref HEAD` returns the claimed
+`issue/<number>-<slug>` branch as the substitute for the B1
+self-check. On a mismatch, post a hold note and stop for the harness
+or orchestrator — never remove or recreate this checkout.
+
+At F4, skip the primary-worktree fetch/switch/merge and `git worktree
+remove` steps; let the harness reclaim it and finish the rest (issue
+close, digest, comment cleanup).
 
 ## B2 — Create and refine plan
 
@@ -205,7 +277,10 @@ mechanical file/close-based signal stronger than A4.5's title/
 declaration heuristic (a weak **title-only** match is **not** a hit
 here). Keep it cheap: one fetch plus a bounded merged-PR scan.
 
-1. `git fetch origin main`.
+1. `git fetch origin {development-branch}` (concurrent workers sharing
+   one clone: behind the
+   [clone-scoped lock](../../docs/idd-helper-scripts.md#clone-scoped-lock),
+   same as B1).
 2. **Closed-by-a-merged-PR signal**: re-fetch the issue; if it is now closed
    with a linked closing PR, the deliverable already shipped:
 
@@ -227,8 +302,9 @@ here). Keep it cheap: one fetch plus a bounded merged-PR scan.
 
 **On a hit → verify-then-close** (never silent re-implementation, and never an
 auto-close on a weak signal): confirm the issue's acceptance criteria already
-hold on current `main`, then close the issue with a comment referencing the
-superseding PR. If the criteria only **partly** hold, keep the issue open,
+hold on current `{development-branch}`, then close the issue with a
+comment referencing the superseding PR. If the criteria only
+**partly** hold, keep the issue open,
 record the overlap, and plan only the genuinely-remaining work. On no hit,
 continue with the plan below.
 
@@ -257,6 +333,13 @@ silent edit. Resume planning only after the addendum is recorded.
 
 On no conflict, continue with the plan below.
 
+### B2.2 — Example field-name verification
+
+When the issue's "Proposed change" or "Acceptance criteria" cites an
+existing schema field, config key, or token as an example (not one it
+adds), verify it exists as cited; fix or drop if not, hold if unclear
+(`#2806`).
+
 Draft an implementation plan and post it as an issue comment, then run
 a critique pass for correctness and concreteness (see
 `idd-overview-appendix.instructions.md` for per-agent implementation),
@@ -269,23 +352,36 @@ plan comment and verified claim.
 
 ## B3 — Implement
 
-**Plan-comment checkpoint**: before writing any implementation code,
-confirm the B2 plan comment already exists on the issue. If it does
-not, stop and return to B2. If code was already written before this
-checkpoint is noticed, disclose the ordering deviation on the issue,
+### B3 self-check
+
+Before implementing, verify B2 actually finished, not merely started:
+the B2 plan comment reflects the refined, post-critique plan (draft →
+critique pass → refined final plan posted as a follow-up or update to
+the same comment) -- a draft posted before its critique pass does not
+satisfy this. Claim ownership revalidation needs no separate check
+here: it already applies to every B3 mutation via the
+[claim revalidation gate](idd-overview-core.instructions.md#claim-revalidation-gate).
+If the plan is not actually finalized, stop and return to B2.
+
+The following is a repair path only for an ordering violation that has
+already occurred, not an alternative route: disclose the deviation on
+the issue, name the skipped checkpoint step (the B3 self-check above),
 post the plan retroactively with an explicit note about the
 reordering, and run the C1 critique pass against the completed diff.
 
 Implement the plan, running **fix-validate** before each atomic commit
-(one logical change per commit).
+(one logical change per commit). Non-interactive-hostile signing: use
+the [signed-commit merge wrapper](../../docs/idd-helper-scripts.md#signed-commit-merge-wrapper-shared-git-procedure)
+instead.
 
-**Commit signing block**: if the configured primary commit signer blocks
-non-interactively (pinentry / TTY EOF / hardware-touch timeout), see
-`docs/idd-helper-scripts.md`'s
-[Signed-Commit Merge Wrapper](../../docs/idd-helper-scripts.md#signed-commit-merge-wrapper-shared-git-procedure)
-section, which also covers the everyday `git commit` case, before
-falling back to `--no-gpg-sign` per
-`idd-overview-appendix.instructions.md`'s "Commit signing" section.
+**Verify a commit actually landed before trusting a subsequent push.**
+A `commit-msg` hook (e.g. commitlint's body-max-line-length) can
+silently reject a long single-line body, so no commit is created but
+the next `git push` reports "Everything up-to-date" — a misleading
+no-op. Prefer `git commit -F <file>` with a pre-wrapped body over a
+long `-m` message, and confirm the commit landed (compare `git
+rev-parse HEAD` before/after, or check the reported commit hash)
+before trusting the push.
 
 **De-duplication refactors**: when consolidating a wrapper function used
 at multiple call sites, check whether any call site's old delegate path
@@ -312,11 +408,65 @@ pre-push-validate requirements above. Otherwise treat it as a real
 failure and fix it. See
 [rationale](../../docs/idd-design-rationale.md#b3--local-test-flakiness-under-concurrent-load-hosted-ci-is-authoritative).
 
+**Editing a docs/instructions file**: before editing any `docs/**.md`
+or `.github/instructions/**.md` file, check whether it is a generated
+mirror. A `.github/instructions/**.instructions.md` file carries an
+`idd-generated-from` banner at its top when it is one -- the banner
+itself names the canonical source and the resync command, valid only
+for an `exact`/`concreted`-style pair. A `docs/**.md` file may not
+carry that banner even when it is a mirror; check this repository's
+sync manifest (for example `audit/sync-manifest.json` in the
+`idd-skill` source repository, or your own repository's equivalent
+config) for an entry naming this file as a mirror target instead, and
+follow that entry's own mode contract. An `exact`/`concreted`-style
+entry auto-regenerates the mirror from its named canonical source when
+the resync command runs -- edit only that source, never the mirror
+directly, or the edit is silently discarded on the next sync. Any
+other mode (for example one that only requires certain text or
+patterns to be present, with no single canonical source to
+auto-regenerate from) follows its own stated contract instead --
+consult the manifest entry itself rather than assuming auto-regenerate
+applies. See
+[rationale](../../docs/idd-design-rationale.md#b3--edit-the-canonical-source-of-a-generated-docsinstructions-file-not-its-mirror).
+
 If B3 or C must stop for a hold, use the shared Hold / suspend rules in
 `idd-overview-appendix.instructions.md` and update the issue digest with the
 blocking condition before stopping. Do not use the digest as the only
 record of unfinished work; material decisions still need issue comments
 or commits.
+
+**Unplanned follow-up work**: If B–C reveals a separate follow-up, do not call
+`gh issue create` or the REST issues API. This direct-creation anti-pattern is
+documented in the [B–C design rationale](../../docs/idd-design-rationale.md#work-and-self-review).
+If the optional `issue-authoring`
+companion is installed, invoke its Stage 1 hold/contract. Its reuse-first
+check must reject targets under another hold. A target with the configured
+authoring label outside this session's set is unavailable unless this pass
+explicitly resumes that interrupted set; verify its set identity from the
+companion's durable owner markers and add its
+published issues to the working set first. Unrelated holds stay unavailable.
+If the companion builds an optional discarded validation probe
+(throwaway, unpublished), run it in a separate temporary worktree;
+otherwise skip it. Never run or discard that probe in the current issue
+worktree.
+Before every edit, require per-target atomic or append-only owner-marker
+acquisition and a fresh body/label re-read; on conflict, keep the label, stop,
+and use another target or a separate comment.
+
+For a set, use a valid parent roadmap shell as anchor when present; otherwise
+use the designated lead. A roadmap's `## Tracks` may be empty until child
+numbers exist. Then publish/acquire ready children under that anchor,
+renew/revalidate it around each acquisition, wire numbers into any roadmap,
+leave the authoring label on every target, then resume B–C.
+After anchor acquisition, persist/verify exact `anchor`/`set` in the originating
+issue's durable Stage 1 hold; resume must recover it, not infer from label or
+choose another lead. On interruption, retain labels, stop B–C, and resume only
+after completion. If Stage 1 publishes nothing (including after a non-ready
+bucket), comment it before resuming and list it in PR follow-ups once PR
+exists. Keep Stage 1 B–C hold; never release
+a follow-up or start a second loop. If the companion is unavailable, record the
+proposal in a comment/PR follow-ups; never create it ad hoc or improvise
+worker-side authoring.
 
 ---
 
@@ -331,8 +481,22 @@ problems exist. See `idd-overview-appendix.instructions.md` for per-agent
 implementation. The distributed defaults for the C-phase skip and loop
 guards are listed in `docs/policy-constants.md`. A repository may
 configure `critiqueLoop.delegate` to point this step at a different
-reviewer instead of the per-agent mechanism; see `docs/idd-workflow.md`'s
-"Critique pass invocation" section.
+reviewer instead of the per-agent mechanism. When helper runtime is
+enabled, resolve the effective `critiqueLoop.delegate` with the
+[`idd-critique-delegate`](../../docs/idd-helper-scripts.md#effective-c1-critique-delegate)
+helper — `node scripts/idd-critique-delegate.mjs` for source-repo /
+vendored-node profiles; for package-manager / ephemeral-npx, resolve
+the profile-selected command from `docs/idd-helper-scripts.md` rather
+than hardcoding that bare binary name — instead of hand-deriving it;
+for `instructions-only` execution, apply the
+resolution order directly instead: repo-local `critiqueLoop.delegate`
+always wins outright, and only when it is genuinely absent does a
+local runtime's user-global config file apply. A repository may also
+configure `critiqueLoop.telemetryHook` for a separate fire-and-forget
+per-round JSON record (round, repo, issue, PR,
+findings/severity/accepted/rejected counts, delegate usage, timestamp)
+that C2/C4 below invoke but that never gates control flow; see
+`docs/idd-workflow.md`'s "Critique pass invocation" section for both.
 
 **Objective diff validation floor**: neither C2 nor C4 below may skip to
 `idd-pr-submit.instructions.md` unless **fix-validate** — the same
@@ -358,6 +522,11 @@ Zero issues reported: skip to `idd-pr-submit.instructions.md` when the
 floor (C1) has passed, else continue to C5. One or more issues:
 continue to C3 regardless of the floor — C4 applies the floor check
 after Accept/Reject scoring.
+
+**Telemetry hook**: on a zero-issue round (either branch above — a
+round that continues to C5 for the floor only is still a zero-finding
+round and must not lose its record), invoke `critiqueLoop.telemetryHook`
+(C1) with zero findings/accepted/rejected counts — fire-and-forget.
 
 ### C3 — Score issues
 
@@ -385,6 +554,12 @@ satisfy the floor only; the second bullet's remaining Low Accepts stay
 unfixed, per the guard.
 
 Otherwise continue to C5.
+
+**Telemetry hook**: once final (before C5, PR submission, or C4's own
+hold) invoke `critiqueLoop.telemetryHook` (C1) with this round's
+findings, severity, accepted/rejected counts, and delegate usage —
+fire-and-forget. A delegate's own fail-closed hold (`docs/idd-workflow.md`)
+stops before C2 and has no telemetry record.
 
 ### C5 — Fix accepted issues
 

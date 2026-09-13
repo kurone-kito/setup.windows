@@ -3,6 +3,57 @@
 Read this file after A1 selects an open roadmap and before A2
 enumerates child issues.
 
+## Canonical A1.5 path (helper-first)
+
+When helper runtime is enabled, use the profile-selected roadmap-audit
+execution helper as the canonical A1.5 evidence collector and mutation
+path.
+
+```sh
+# source repo / vendored-node
+node scripts/idd-roadmap-audit-execute.mjs --roadmap <number>
+
+# package-manager / ephemeral-npx
+<profile-selected-roadmap-audit-execute-command> --roadmap <number>
+```
+
+Resolve `<profile-selected-roadmap-audit-execute-command>` from
+`docs/idd-helper-scripts.md`; do not hardcode `node scripts/...` for
+non-vendored profiles.
+
+Default (no `--apply`) dry-runs the roadmap-graph traversal and prints
+a JSON verdict — see the helper's own `--help` for the exact field
+contract, exit codes, and not-owned reason codes; treat that as
+authoritative over any paraphrase here. It gates only the MECHANICAL
+completion preconditions (all descendants closed/complete; no
+open/unresolved/inaccessible/linked-PR/nested-roadmap/childless/cycle/
+human-gate blocker) — it does **not** verify the roadmap's free-form
+success criteria or autonomy-gap items, and does **not** gate on a
+duplicate graph reference (only a cycle blocks `ready`, even though
+the written procedure below always treats a duplicate reference as
+unresolved). The caller must still confirm all of these separately
+before `--apply`, exactly as every other helper-first section in this
+repository already states for its own helper:
+
+```sh
+# source repo / vendored-node
+node scripts/idd-roadmap-audit-execute.mjs --roadmap <number> \
+  --claim-id <claim-id> --agent-id <agent-id> --apply
+
+# package-manager / ephemeral-npx
+<profile-selected-roadmap-audit-execute-command> --roadmap <number> \
+  --claim-id <claim-id> --agent-id <agent-id> --apply
+```
+
+`<claim-id>` must be the roadmap-audit-scoped claim (branch
+`roadmap-audit/<number>-<slug>`) posted per the written claim step
+below; an ordinary execution claim on the roadmap issue does not
+authorize closure.
+
+If the helper is unavailable, its output cannot be parsed, or its
+verdict disagrees with live state, fall back to the written A1.5
+procedure below.
+
 ## A1.5 — Audit completed roadmaps
 
 After A1 selects an open roadmap, inspect whether the roadmap appears

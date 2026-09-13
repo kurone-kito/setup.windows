@@ -67,7 +67,8 @@ Quiet window alone never authorizes takeover.
 ## S3 — Stale threshold (ownership gate)
 
 Takeover only if latest valid trusted `claimed-by` `created_at` is
-**≥ 12 h** ago (`claim-stale-age`).
+**≥ 12 h** ago (`claim-stale-age`; this repository's configured value,
+distributed default `24 h`).
 
 | Claim age | Action            |
 | --------- | ----------------- |

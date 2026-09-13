@@ -289,17 +289,20 @@ warning.
   unmarked human `pull_request_review_comment` — only IDD-originated
   comments (disposition prefix, reply-identity stamp, or an
   operational marker the check already honors) refresh the existing
-  HEAD run, through that companion workflow. This repository does not
-  host that companion workflow yet (tracked in
-  [#124](https://github.com/kurone-kito/setup.windows/issues/124)): it
-  retains the pre-split combined trigger, so **any**
-  `pull_request_review_comment` — IDD-originated or not — re-triggers
-  the required job here. That trigger only creates a fresh run;
-  whether the run's own `advisory-convergence` verdict logic reports
-  it passing is unaffected by who commented. Until the companion
-  workflow is adopted, the manual `gh run rerun` recovery path in
+  HEAD run, through that companion workflow. This repository hosts
+  that companion workflow (added via
+  [#124](https://github.com/kurone-kito/setup.windows/issues/124)), so
+  only a comment classified as IDD-originated re-triggers the required
+  job here; an ordinary human `pull_request_review_comment` does not.
+  Each IDD-originated reply (an E6/E13 disposition, for example) still
+  spends one fresh run of its own — posting many such replies in quick
+  succession can pile up sibling runs that cancel each other via the
+  required workflow's shared concurrency group (`idd-ci.instructions.md`
+  §Rerun mechanics; kurone-kito/setup.windows#161). The manual
+  `gh run rerun` recovery path in
   [CI Gate (External Checks)](idd-policy.md#ci-gate-external-checks)
-  is still how an IDD-originated reply's refresh gets confirmed here.
+  is still how a refresh gets confirmed for a comment that doesn't
+  classify as IDD-originated.
 - **`reviewPolicy`.** `human-required` and `no-advisory` make
   `advisory-convergence` `not_applicable` (ready without Copilot
   clauses). `copilot-advisory`, `external-bot`, absent, or an

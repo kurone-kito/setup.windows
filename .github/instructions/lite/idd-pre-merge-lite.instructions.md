@@ -55,7 +55,7 @@ This check never rebases, merges, or pushes.
      re-run the helper after a short wait, up to 3 attempts; only a
      result still `"recheck"` after that budget falls through to stop
      per the condition above.
-   - Any other value the helper currently reports (`"merge-main"` or
+   - Any other value the helper currently reports (`"merge-base"` or
      `"hold-unknown"`), or the helper is unavailable, fails, or
      disagrees with live state: stop per the
      condition above — the merge-based resync and any content-conflict

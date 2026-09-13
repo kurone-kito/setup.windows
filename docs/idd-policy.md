@@ -82,7 +82,7 @@ recorded in `.github/idd/config.json`)
   hand-writing marker comments:
 
   ```sh
-  npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0 \
+  npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
     idd-external-check-waiver --pr <number> \
     --check idd-advisory-convergence \
     --reason "<short reason>" \
@@ -232,7 +232,7 @@ Helper scripts run via `npx` against the pinned upstream package spec
 into this repository or installed as a project dependency:
 
 ```sh
-npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0 <idd-command>
+npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 <idd-command>
 ```
 
 ### Issue-Author Approval Gate
@@ -283,14 +283,15 @@ the v0.7.0 → v0.11.0 pin resync (#152 and related issues).
 
 **Pinned commit**:
 `kurone-kito/idd-skill @ 1f90787ebf4021673ce6e5eb69741df331fd2037`
-(v0.11.0, 2026-09-12). This is a fresh install with no prior local
-copy to keep in lockstep, so it is pinned independently rather than
-blocked on the repository-wide pin bump tracked separately (#152 and
-related issues) — at the time of this companion's import, the rest of
-this repository's `idd-template/`-derived files are still pinned to
-`f51a8bb73a47452eff5799e8a27251b660ba4ae0` (v0.7.0); see
-[Upstream pin](#upstream-pin) below for the authoritative, currently-landed
-repo-wide pin record.
+(v0.11.0, 2026-09-12). This was a fresh install with no prior local
+copy to keep in lockstep, so it was pinned independently of the
+repository-wide pin bump (#152 and related issues) rather than blocked
+on it; that pin bump has since landed at the same commit, so this
+companion and the rest of the repository's `idd-template/`-derived
+files now agree — except the three CI workflow YAML files tracked
+separately in #163, which remain at the older pin until that issue
+lands; see [Upstream pin](#upstream-pin) below for the authoritative,
+currently-landed repo-wide pin record.
 
 ### IDD Label Names
 
@@ -325,12 +326,16 @@ clone.
 Template files and helper scripts are pinned to:
 
 ```text
-kurone-kito/idd-skill @ f51a8bb73a47452eff5799e8a27251b660ba4ae0
+kurone-kito/idd-skill @ 1f90787ebf4021673ce6e5eb69741df331fd2037 (v0.11.0, 2026-09-12)
 ```
 
 This repository additionally hosts the following template workflow
-files as dogfooded copies at this pin, kept in sync manually on each
-pin bump:
+files as dogfooded copies, kept in sync manually on each pin bump.
+**These three files intentionally remain pinned to the previous
+commit** (`f51a8bb73a47452eff5799e8a27251b660ba4ae0`, v0.7.0) until
+issue #163 lands, so that this pin bump's own reconciliation and
+the CI workflow reconciliation each stay internally coherent as
+separate, independently reviewable changes:
 
 - `.github/workflows/idd-advisory-convergence.yml`
 - `.github/workflows/idd-advisory-convergence-comment.yml`

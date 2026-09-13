@@ -19,22 +19,21 @@ Keep the operator-confirmation boundary explicit.
 
 Choose exactly one merge policy before unattended runs begin:
 
-- `fully_autonomous_merge` (distributed default): one trusted agent
-  session may execute merge phase F3 after the normal claim, freshness,
-  CI, advisory, and review gates pass
-- `human_merge`: worker sessions stop at the merge-policy handoff gate
-  and a human maintainer performs the merge
+- `human_merge` (distributed default): worker sessions stop at the
+  merge-policy handoff gate and a human maintainer performs the merge
+- `fully_autonomous_merge`: one trusted agent session may execute merge
+  phase F3 after the normal claim, freshness, CI, advisory, and review
+  gates pass
 - `separate_merge_agent`: worker sessions stop at the default handoff
   gate and a separately authorized merge-capable actor performs the
   final merge path
 
-Use `fully_autonomous_merge` as the proposed default unless the
-operator explicitly opts out. For public or OSS repositories, recommend
-`human_merge` before granting unattended credentials. For repositories
-where lightweight-tier ("weak-model") sessions run the loop unattended,
-recommend `human_merge` or `separate_merge_agent` instead of
-`fully_autonomous_merge`, since that tier should not run the
-autonomous merge phases. See
+Propose `human_merge` as the default unless the operator explicitly
+opts in to `fully_autonomous_merge`. For public or OSS repositories, or
+whenever lightweight-tier ("weak-model") sessions run the loop
+unattended, recommend keeping `human_merge` (or `separate_merge_agent`)
+instead of opting in to `fully_autonomous_merge`, since that tier
+should not run the autonomous merge phases. See
 [Model capability expectations](../idd-workflow.md#model-capability-expectations).
 
 ### Credential scope
@@ -296,7 +295,16 @@ based on content? If yes, and the repository keeps the distributed IDD
 label names (or any other label such an auto-labeler could plausibly
 infer), adopt the guard recipe in
 [Customizing IDD — Reserved-label guard recipe](../customization.md#reserved-label-guard-recipe)
-before relying on unattended discovery or hold semantics.
+before relying on unattended discovery or hold semantics. When a local
+`kurone-kito/idd-skill` clone is available, prefer declaring
+`labels.untrustedLabelerLogins` and running the `idd-onboard` CLI's
+`--substitute` stage over the manual recipe — both paths, and the
+trade-offs between them, are documented at that same recipe link. The `idd-suggest-untrusted-labelers`
+sweep helper only proposes candidate logins for a human to review; it
+is read-only and never writes `.github/idd/config.json` itself, so
+still add each accepted candidate to `labels.untrustedLabelerLogins`
+by hand and (re-)run `--substitute` afterward — stopping after the
+sweep alone leaves the repository without the generated guard.
 
 ### Bootstrap execution mode
 
@@ -320,6 +328,64 @@ and only switch modes on explicit confirmation. See
 [Onboarding Reference — Issue-Mediated
 Bootstrap](issue-mediated-bootstrap.md) for the full procedure and
 prerequisites.
+
+### Development branch
+
+Confirm the long-lived branch that receives IDD feature pull requests,
+distinct from the repository's trusted GitHub default branch used for
+workflow/configuration checkout. Propose the repository's live GitHub
+default branch as the candidate, then require explicit confirmation or
+correction before recording anything else. Before recording an
+explicitly selected branch, verify it exists on the configured remote
+— report a missing or malformed branch instead of creating one or
+silently falling back to another candidate.
+
+An absent `developmentBranch` resolves the live repository default
+branch, preserving backwards compatibility for a repository already
+onboarded without this setting. Release, hotfix, and
+development-to-default promotion flows are outside this decision's
+support boundary, as are arbitrary feature-branch namespaces and Git
+Flow CLI automation — the only supported topology is an
+`issue/<number>-<slug>` feature branch merging into the one configured
+development branch.
+
+Recommend the operator apply the same branch-protection rules to an
+explicitly selected development branch that they would apply to a
+default branch: IDD's own gates check CI, review, freshness, and claim
+state, but repository-level safeguards such as force-push prevention
+and required reviews still come from GitHub branch protection, not
+from IDD.
+
+### Path-scoped domain guidance reach
+
+Ask this question during onboarding: does any repository-specific
+domain guidance the repository relies on for review quality — a note
+that a directory or file extension does not follow the language's
+standard idiom, for example "these `.cs` files are UdonSharp, not
+standard C#" — actually reach **every** configured advisory bot the
+merge gate depends on, or does it live only in one bot's own config
+file (for example CodeRabbit's `path_instructions` in
+`.coderabbit.yaml`)?
+
+**Why this matters under this repository's own merge policy.** Under
+the distributed `copilot-advisory` review policy combined with
+`fully_autonomous_merge`, the primary advisory bot's review is a real,
+autonomous merge gate — not merely informational. A secondary bot
+knowing the domain constraint does not help if the primary, gating bot
+never sees it: that bot stays strictly less informed than the
+repository's own docs, free to raise standard-language-idiomatic
+suggestions an executing agent might then implement into code the
+domain cannot actually compile.
+
+**Field evidence**: a fresh onboarding session hit exactly this shape
+(`kurone-kito/vrchat-world-template`, a Unity/UdonSharp repository with
+no `package.json`) — domain guidance configured only in the secondary
+bot's config file left the primary gating bot uninformed.
+
+If the answer is no, either duplicate the guidance into a form the
+primary bot reads (for example, a repository instructions file the
+primary bot's own product supports) or document the gap so it is not
+silently relied upon.
 
 ## Related default policies to confirm
 
@@ -368,12 +434,30 @@ It should also confirm that any required status check registered
 through GitHub's classic branch-protection API uses the explicit
 `checks` array rather than a plain string-array `contexts` field:
 
-- Recommended: register required checks with an explicit `checks`
-  array. Use `app_id: -1` (any producer) for `idd-advisory-convergence`
-  specifically — only the adopter's own hosted workflow ever produces a
-  check with that exact name — but not as a blanket choice for every
-  required check: keep a specific `app_id` pin on any check where
-  verifying the producer matters. GitHub's classic API silently
+- Register required checks with an explicit `checks` array. Use
+  `app_id: -1` (any producer) for `idd-advisory-convergence` only when the
+  adopter explicitly accepts that trust scope: the value identifies no
+  individual workflow, so another workflow or any credential with
+  `statuses: write` or `checks: write` can publish a check with that exact
+  name (preventive; no observed incident yet). Regardless of whether the
+  check uses `app_id: -1` or a specific producer pin, protect the active
+  CODEOWNERS file and any higher-priority candidate locations, as well as all
+  workflow paths and trusted helper/configuration inputs, with CODEOWNERS. For
+  runner-selection variables and self-hosted runner administration and
+  integrity, require an equivalent protected trust boundary as well
+  (preventive; no observed incident yet). For autonomous merging, keep
+  every owner reachable through changed workflow or
+  input paths within the same trust boundary, or use a dedicated gate that
+  verifies approval from the protected-path owner; otherwise plan for a
+  human merge or hold (preventive; no observed incident yet). Also enable
+  **Require review from Code Owners** on the protected default branch, or
+  the equivalent repository-ruleset requirement, and enable **Dismiss
+  stale pull request approvals when new commits are pushed** (or its
+  equivalent). Without those settings, CODEOWNERS only routes or requests
+  a review and does not make approval a merge gate (preventive; no observed
+  incident yet). This is not a blanket choice for every required check: keep
+  a specific `app_id` pin on any
+  check where verifying the producer matters. GitHub's classic API silently
   rewrites a `contexts` `PUT` into `app_id`-pinned `checks` entries,
   and a pinned entry is exactly what the fail-closed "Source-pinned
   required-check trust" default
@@ -405,6 +489,11 @@ Use a structure like this:
 ## IDD Policy Configuration
 
 This repository uses the following IDD policies:
+
+### Development Branch
+
+**Branch**: `{develop | main | ...}` (absent: resolves the live
+repository default branch)
 
 ### Merge Policy
 
@@ -443,6 +532,19 @@ This repository uses the following IDD policies:
   `{yes | no / not applicable}`
 - **Producer-identity choice**: `{app_id: -1 (any producer) |
   intentionally pinned}`
+- **If `app_id: -1` is selected, explicit trust-scope acceptance and
+  check-publishing credential review recorded**: `{yes | no / not
+  applicable}`
+- **Workflow/trusted-input protection and protected-owner boundary
+  recorded**: `{same trust boundary | dedicated gate | human merge/hold |
+  not applicable}`
+- **Runner-selection and self-hosted runner integrity protection
+  recorded**: `{yes | no | not applicable}`
+- **Merge-gate action dependency trust recorded**: `{full commit-SHA pins |
+  mutable publisher/tag scope accepted | not applicable}`
+- **`Require review from Code Owners` enabled**: `{yes | no | unknown}`
+- **Dismiss stale pull request approvals when new commits are pushed**:
+  `{yes | no | unknown}`
 - **If intentionally pinned, `ciGate.trustSourcePinnedRequiredChecks`
   opt-in recorded**: `{yes | no / not applicable}`
 
@@ -521,7 +623,7 @@ Keep these rules in mind:
   approval model that the distributed runtime already enforces
 - use `skipIssueAuthorApprovalGate: true` when the repository
   intentionally opts out; omitted or `false` keeps the gate enabled
-- replace `kurone-kito` in `trustedMarkerActors` with a
+- replace `{{TRUSTED_MARKER_ACTOR}}` in `trustedMarkerActors` with a
   single JSON-escaped GitHub login string first, then add any extra
   quoted array entries manually for additional trusted marker actors
 - keep command strings JSON-escaped instead of pasting fragile raw shell

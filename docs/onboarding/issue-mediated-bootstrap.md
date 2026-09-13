@@ -44,10 +44,11 @@ outside this alternate's own scope.
 
 ## Drafting the bootstrap issue
 
-Draft the bootstrap issue only after Steps 1A-1C conclude ("the
-hearing"): the operator-confirmed placeholder values and the Step 1B
-policy decisions must already be settled, because the issue body has to
-carry them.
+Draft the bootstrap issue only after a confirmed `--hear` transcript
+exists (or, for a session with no helper runtime, after Steps 1A-1C
+conclude by prose — "the hearing"): the operator-confirmed placeholder
+values and the Step 1B policy decisions must already be settled,
+because the issue body has to carry them.
 
 **The issue body must be self-contained.** Unlike a normal IDD issue,
 there is no `.github/idd/config.json` yet in the target repository for
@@ -63,8 +64,13 @@ review-thread resolution policy, and the rest of the list in
 **Pin the process reference.** The issue's process section must point
 at idd-skill's own canonical `idd-template/ONBOARDING.md` Steps 2
 (fetch or copy template files), 4 (replace placeholders), 5 (update
-agent entry files), and 6 (verification checklist) — pinned to a
-specific released tag or commit SHA, for example:
+agent entry files), and 6 (verification checklist), plus
+[Onboarding Reference — Project Tuning](project-tuning.md) for the
+judgment calls those steps do not cover (helper-runtime profile
+wiring, non-default review-policy artifacts, extra trusted marker
+actors, the reserved-label guard, and the issue-authoring companion
+install/destination) — pinned to a specific released tag or commit
+SHA, for example:
 
 ```text
 https://raw.githubusercontent.com/kurone-kito/idd-skill/<tag-or-sha>/idd-template/ONBOARDING.md
@@ -87,10 +93,7 @@ independent fetch loops that each need pinning separately:
   `?ref=<tag-or-sha>` to that endpoint;
 - the `curl` fallback loop uses a hardcoded `Base URL:`
   (`https://raw.githubusercontent.com/kurone-kito/idd-skill/main/idd-template/`)
-  — pin it by replacing `main` with the same `<tag-or-sha>` there, i.e.
-  `https://raw.githubusercontent.com/kurone-kito/idd-skill/main/idd-template/`
-  becomes
-  `https://raw.githubusercontent.com/kurone-kito/idd-skill/<tag-or-sha>/idd-template/`.
+  — pin it by replacing `main` with the same `<tag-or-sha>` there.
 
 Option B copies whatever revision is currently checked out in the local
 clone — pin it by checking out that exact tag or SHA before running
@@ -102,14 +105,13 @@ you read were pinned.
 
 **If the confirmed helper runtime profile is `vendored-node`**, its
 profile-conditional helper bundle needs more than a pin. The
-single-file direct download in upstream's
-[Profile-conditional helper files](https://github.com/kurone-kito/idd-skill/blob/f51a8bb73a47452eff5799e8a27251b660ba4ae0/idd-template/docs/onboarding/template-distribution.md#profile-conditional-helper-files-vendored-node)
-section (not carried into this repository's own copy of
-`template-distribution.md`, which does not use `vendored-node`) supplies
-only `minimize-superseded-markers.mjs`, not the complete `vendored-node`
-bundle — per that section, getting every file the profile requires
-needs a full `idd-skill` clone (not just the `idd-template/` subtree),
-checked out at the same `<tag-or-sha>`, with this run from it:
+single-file direct download in
+[Profile-conditional helper files](template-distribution.md#profile-conditional-helper-files-vendored-node)
+supplies only `minimize-superseded-markers.mjs`, not the complete
+`vendored-node` bundle — per that section, getting every file the
+profile requires needs a full `idd-skill` clone (not just the
+`idd-template/` subtree), checked out at the same `<tag-or-sha>`, with
+this run from it:
 
 ```sh
 node scripts/idd-onboard.mjs --import \
@@ -126,11 +128,8 @@ angle-bracket author-time fills — keep them as shell variables (never
 angle brackets) in the generated issue body, since the issue-authoring
 release contract's checklist requires no unsubstituted placeholders
 remain before the authoring hold is released
-(`.claude/skills/issue-authoring/references/contract.md`, "Authoring
-hold and release" — this repository's install location, matching the
-same reference in
-[`docs/dotfiles-boundary.md`](../dotfiles-boundary.md)), and this value
-has nothing to substitute until the
+(`skills/issue-authoring/references/contract.md`, "Authoring hold and
+release"), and this value has nothing to substitute until the
 executor actually runs the command. Direct the issue's process
 section to that full-clone path rather than the single-file download,
 so this issue's own acceptance criterion below ("every file required
@@ -204,6 +203,50 @@ single-file direct download documented in `template-distribution.md`'s
 `minimize-superseded-markers.mjs`, not the rest of the profile's
 bundle, so it alone does not satisfy this issue's acceptance criterion
 below.
+
+**Prefer embedding the confirmed `--hear` transcript itself.** If the
+hearing produced a confirmed transcript (`--hear --apply`'s or the TTY
+wizard's printed JSON), paste it verbatim as a fenced JSON block in the
+issue body instead of re-typing the Step 1B list from prose — the
+transcript already carries every placeholder and policy answer this
+issue needs, keyed by catalog `id`, and the executing session reads it
+directly rather than re-deriving anything. Only fall back to the
+per-value list below for a no-helper-runtime hearing that produced no
+transcript.
+
+**The raw transcript is not enough for the issue-authoring companion
+item on its own.** The transcript's `issue-authoring-companion` answer
+only carries the operator's real choice (`installed` / `not
+installed`). This bootstrap issue always defers those files (see
+"Do not draft this" below) and, when the real choice is `installed`,
+also needs the confirmed native destination for the companion
+follow-up issue to read later — neither the forced `not installed`
+core-bootstrap override nor the destination has its own transcript
+field. Add both as an explicit override note directly below the
+embedded transcript:
+
+```markdown
+Issue-authoring companion status (core-bootstrap, temporary): not
+installed (always, regardless of the transcript's real
+`issue-authoring-companion` answer — see the note below).
+Issue-authoring companion target state (the transcript's real answer,
+for the companion follow-up issue to read later): <installed, native
+destination `<value>` | not installed>
+```
+
+**The raw transcript is also not enough for a `repository-override`
+claim-timing or `custom-taxonomy` label-names answer.** The catalog's
+`claim-timing` and `idd-label-names` items only capture whether the
+repository overrides the distributed defaults, not the literal
+override values — no catalog field carries the actual ISO-8601
+duration pair or label strings (see
+[Onboarding Reference — Project Tuning](project-tuning.md#claim-timing-overrides-and-custom-label-names)
+for the same gap on the direct-import path). When either answer is not
+`distributed-defaults`, add the literal values as an explicit override
+block alongside the embedded transcript, using that same reference's
+field names (`claimTiming.staleAge` / `claimTiming.heartbeatInterval`,
+or `labels.roadmapLabelName` / `labels.blockedByHumanLabelName` /
+`labels.needsDecisionLabelName`).
 
 Use these operator-confirmed values, already collected during the
 hearing (Steps 1A-1C), instead of re-deriving them:
@@ -319,10 +362,14 @@ placeholder in
 that value is derived. The suitability score of `1` reflects that
 Discover structurally cannot route this issue pre-import, not a quality
 judgment about the change itself; per the issue-authoring skill's
-contract, a score of `1` also carries the `status:blocked-by-human`
-label, which correctly signals that this issue needs a human or a
-narrowly-scoped, pre-authorized agent rather than the ordinary
-autonomous loop. Use the operator-confirmed `labels.blockedByHumanLabelName`
+contract, a score of `1` carries the configured `blocked-by-human` label
+(default `status:blocked-by-human`), unless an
+`authoring-bucket: needs-decision` marker substitutes the
+configured needs-decision label instead (see
+[Authoring-bucket marker](https://github.com/kurone-kito/idd-skill/blob/main/skills/issue-authoring/references/contract.md#authoring-bucket-marker))
+— here the label applies, correctly signaling that this issue needs a
+human or a narrowly-scoped, pre-authorized agent rather than the
+ordinary autonomous loop. Use the operator-confirmed `labels.blockedByHumanLabelName`
 value from Step 1B for both issue publication and label creation below —
 default to `status:blocked-by-human` only when that default was actually
 selected, never unconditionally. A pre-import repository may not have
@@ -389,7 +436,7 @@ examples ("start issue authoring to implement {inferred gap}", "run the
 IDD loop"). Derive `{inferred gap}` and the other prompt content using
 the same repository-evidence-read method the optional Dry-run readiness
 report already performs
-([Dry-run — Readiness assessment](https://github.com/kurone-kito/idd-skill/blob/f51a8bb73a47452eff5799e8a27251b660ba4ae0/idd-template/ONBOARDING.md#dry-run--readiness-assessment))
+([Dry-run — Readiness assessment](https://github.com/kurone-kito/idd-skill/blob/main/idd-template/ONBOARDING.md#dry-run--readiness-assessment))
 — detected package manager, missing prerequisites, and so on — rather
 than inventing a new inference mechanism. Run that read **fresh, after
 this merge**, not reused from the pre-import dry-run's stored output:

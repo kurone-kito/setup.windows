@@ -1,7 +1,8 @@
 # IDD — Copilot Advisory-Wait Protocol (Lite)
 
 Lite profile for helper-enabled weak/local models. Same semantics as
-the full-size Copilot advisory-wait protocol file, restricted to the
+the full-size Copilot advisory-wait protocol file
+(`idd-advisory-wait.instructions.md`), restricted to the
 **E14-caller subset only**. Used by
 `idd-review-fix-lite.instructions.md`'s E14 step, and read (fast-path
 fields only) by `idd-review-snapshot-lite.instructions.md`'s E1
@@ -18,8 +19,9 @@ use the full-size advisory-wait instructions instead of this file.
   `POST` under Markers below is the established canonical fallback for
   that mechanical step, not a decision-making shortcut.
 - `instructions-only`: do not use this lite file.
-- Any mismatch between this file and the full-size advisory-wait
-  protocol file is a bug in this file.
+- Any mismatch between this file and the full-size
+  `idd-advisory-wait.instructions.md` protocol file is a bug in this
+  file.
 
 ## Scope boundary (F2/F3 excluded)
 
@@ -40,6 +42,12 @@ lite F1-F2 helper-read-only subset, the lite F2.5 handoff-stop, F3-F5
 excluded) never reaches those call sites. If it somehow does anyway,
 stop and ask for a stronger session or a human to run the full-size
 advisory-wait instructions directly.
+
+**Do not build a substitute wait for a non-primary bot.** Same
+prohibition as the full-size file's Scope section — rely on the
+standard E1/review-watermark/F2/F3 safety net there instead of a
+custom poll on any bot other than the configured
+`advisoryWait.primaryBotLogin`.
 
 ## Stop-and-ask conditions
 

@@ -4,9 +4,138 @@ This document records the current decision on optional helper scripts for
 the IDD workflow. It exists so future reviews can reference the trade-off
 directly instead of re-evaluating the same suggestion from scratch.
 
+## Flag-name and field-name conventions
+
+Several helpers require a specific flag name that does not match
+instinct, and throw rather than defaulting to a same-named flag from a
+different helper. `--issue` is the sharpest trap: it is a genuine,
+functioning flag on several other helpers -- required outright on
+`forced-handoff-marker.mjs` and `claim-approval-gate.mjs`, and
+required as one of a small set of mutually exclusive input flags on
+`discover-viability-gate.mjs` (or `--issues`) and
+`suitability-triage.mjs` (or `--body-file` / `--stdin`) -- which primes
+the instinct to reach for it elsewhere. `audit-authored-issue.mjs` also
+accepts a genuine, functioning `--issue`: normally optional (it only
+sharpens the `authoring-owner-marker-trail` check's target match), but
+required once `--new-issue` and `--journal-comments-file` are both
+given, so the journal cross-check always has a resolvable issue
+identity to verify against. But the claim-revalidation flag
+on most mutation-capable helpers is named `--claim-issue` instead, and
+requiredness varies by helper:
+
+- **Unconditionally required** (modulo an explicit opt-out):
+  `pre-merge-readiness.mjs` throws without `--claim-issue` unless
+  `--claimless` is passed.
+- **Required only under `--apply`, with an explicit opt-out**:
+  `audit-pr-cleanup.mjs` and `live-status-digest.mjs` both accept
+  `--skip-claim-check` in place of `--claim-issue`/`--claim-id`.
+- **Required only under `--apply`, with no opt-out**:
+  `disposition-non-review-notices.mjs` and `resolve-review-thread.mjs`.
+  None of these four ever need the flag outside `--apply`.
+- **Optional, with auto-discovery when omitted**:
+  `advisory-convergence.mjs` (falls back to the PR's closing-issue
+  references) and `idd-roadmap-audit-execute.mjs` (the flag, when
+  given, is only cross-checked against `--roadmap`; the apply-mode
+  identity flag there is `--claim-id`, not `--claim-issue`).
+
+`live-status-digest.mjs` is the one helper where `--issue` and
+`--claim-issue` coexist as genuinely different flags: `--issue` is the
+digest's own target (mutually exclusive with `--pr`), and
+`--claim-issue` is the separate claim-revalidation flag -- the two are
+not interchangeable there either. (`idd-merge-execute.mjs` forwards
+any flag it does not recognize verbatim to `pre-merge-readiness.mjs`,
+so `--claim-issue` reaches it transitively even though it declares no
+such flag of its own.)
+
+No single top-level decision/verdict field name is consistent across
+the evidence-collector family. This reflects organic accretion across
+many independently authored helpers rather than a recorded design
+decision, and no normalization is currently planned. Read each
+helper's own `--help` output or its documented JSON shape rather than
+assuming a field name carries over -- a name that looks like a field in
+the source (a type or local-variable name) is not necessarily one of
+the printed object's own top-level keys. Representative examples:
+`advisory-convergence.mjs` and `pre-merge-readiness.mjs` both return a
+top-level `ready` boolean (the latter alongside `blockers`);
+`idd-roadmap-audit-execute.mjs` also returns `ready`;
+`discover-readiness-check.mjs` returns `ready` in its default
+per-issue mode, but a structurally different `{eligible,
+eligible_count, total}` shape under `--swarm-floor`;
+`discover-viability-gate.mjs` returns `viable` and `discarded` (not
+`passed` -- that name exists only on an internal per-issue helper,
+never copied into the printed output); `suitability-triage.mjs`
+returns `passed` for its live `--issue` invocation, but its offline
+`--body-file`/`--stdin` mode intentionally carries no aggregate
+`passed` value at all; `claim-approval-gate.mjs` returns `approved`.
+The mutation-style helpers overlap rather than cleanly splitting on
+one field: `audit-pr-cleanup.mjs` exposes both `mode`
+(`dry-run`/`apply`) and `status` (a seven-value vocabulary: `clean`,
+`needs-apply`, `permission-blocked`, `rescan-failed`, `failed`,
+`incomplete`, `applied`); `disposition-non-review-notices.mjs` prints
+no `status` key at all in its default dry-run mode, and its `status`
+value (`applied`/`failed`) under `--apply` is still driven only by
+`applied`/`failed` -- `--apply` output also carries a separate
+`staleSkipped` array (#2695: Codex summary items whose live state
+was re-checked and found no longer Completed immediately before
+posting), which does not affect `status`; `resolve-review-thread.mjs`
+returns `mode` (`dry-run`/`apply`) alongside its own separate
+`status?` (`applied`/`failed`).
+
+## Contents API permission-masking probe (kurone-kito/idd-skill#2716)
+
+`loadTrustedIddConfig` (`src/scripts/idd-config.mts`) fetches
+`.github/idd/config.json` at a trusted `ref` via the GitHub Contents API
+and returns `null` (documented-defaults fallback) only on a confirmed
+404; any other failure, including a permission denial, throws instead of
+guessing. Whether GitHub's Contents API masks a `403` (permission denied)
+as a `404` for a token lacking Contents read access was an open empirical
+question -- a related masking pattern is already documented for the
+branch-protection/ruleset endpoints specifically (`trustEmptyProtectionReads`,
+see `docs/policy-constants.md`).
+
+**Verified 2026-09-08**: no masking observed for the Contents API. A
+disposable **private** repository
+(`kurone-kito/idd-skill-issue-2716-contents-api-probe`, intentionally
+retained rather than deleted -- see kurone-kito/idd-skill#2716) ran a GitHub
+Actions workflow declaring `permissions: { contents: none }` at the job
+level, then used the workflow's own ephemeral `GITHUB_TOKEN` to request
+an existing file at a valid ref via
+`GET /repos/{owner}/{repo}/contents/{path}?ref={sha}`. Response:
+`403` with body `{"message": "Resource not accessible by integration"}`
+-- a genuine, unambiguous permission denial, not a `404`. The repo is
+**private** deliberately: a public repo's `contents: none` token can
+still read publicly-visible content and return `200`, which would prove
+nothing about masking.
+
+`loadTrustedIddConfig`'s existing fail-closed `deriveGhHttpStatus(error)
+=== 404` check is therefore correct as written and needs no change for
+this finding. See the function's own JSDoc for the same note attached
+directly to its contract.
+
 ## Decision
 
 In the idd-skill source repository, the following optional helpers were adopted:
+
+### Helper contract classes
+
+Every helper below falls into one of two contract classes:
+
+- **Evidence collectors** — read-only. They never post comments, resolve
+  review threads, merge, or close anything; they emit machine-readable
+  evidence (usually JSON) for the calling phase to interpret.
+- **Dry-run-by-default authoring helpers** — capable of mutating GitHub
+  state (posting a comment, resolving a thread, merging, closing), but
+  only under an explicit `--apply` flag (plus interactive confirmation
+  where noted); the default invocation always prints what it would do
+  without acting.
+
+Going forward, a per-helper bullet should state only what doesn't
+already follow from its class — an additional confirmation step, a
+narrower evidence scope, an unusual flag name — not a restatement of
+the class itself; existing bullets are not retrofitted by this
+preamble. Whenever a helper cannot complete autonomously, its own
+bullet documents the fallback path beside the helper's invocation, not
+in this preamble, since the fallback differs per helper.
 
 **Discover & Claim Phase Helpers (Phase 1):**
 
@@ -16,7 +145,14 @@ In the idd-skill source repository, the following optional helpers were adopted:
   with opt-in `--with-claim-state` / `--current-claim-id` active-claim
   annotation parity with `discover-roadmap-graph`'s flag of the same name
   (referenced in
-  [kurone-kito/idd-skill#1395](https://github.com/kurone-kito/idd-skill/issues/1395))
+  [kurone-kito/idd-skill#1395](https://github.com/kurone-kito/idd-skill/issues/1395)).
+  Default-on (not opt-in): excludes a candidate whose most recent trusted
+  `A4.5 suitability gate rejection` comment carries a still-current
+  `<!-- {prefix}-triage-verdict: <outcome> -->` marker for one of the four
+  non-label outcomes, bucketed under `filtered.triage_verdict_rejected`
+  (referenced in
+  [kurone-kito/idd-skill#2243](https://github.com/kurone-kito/idd-skill/issues/2243);
+  see its `--help` for the fetch-scope and staleness details)
 - `scripts/discover-roadmap-graph.mjs` for A1.5/A2 recursive roadmap graph
   enumeration and classification
 - `scripts/idd-roadmap-audit-execute.mjs` for the A1.5 roadmap-completion
@@ -32,7 +168,12 @@ In the idd-skill source repository, the following optional helpers were adopted:
   [kurone-kito/idd-skill#1071](https://github.com/kurone-kito/idd-skill/issues/1071))
 - `scripts/discover-readiness-check.mjs` for A3 readiness criterion
   evaluation (referenced in
-  [kurone-kito/idd-skill#391](https://github.com/kurone-kito/idd-skill/issues/391))
+  [kurone-kito/idd-skill#391](https://github.com/kurone-kito/idd-skill/issues/391)).
+  Default-on (not opt-in): the same triage-verdict marker exclusion as
+  `discover-orphan-filter.mjs` above, surfaced as a
+  `triage_verdict:<outcome>` entry in `filteredOut[].reasons` (referenced
+  in
+  [kurone-kito/idd-skill#2243](https://github.com/kurone-kito/idd-skill/issues/2243))
 - `scripts/discover-viability-gate.mjs` for A4 viability gate evaluation
   across limited scope, clear verification, and autonomous completion
   criteria (referenced in
@@ -92,7 +233,7 @@ In the idd-skill source repository, the following optional helpers were adopted:
 
 - `scripts/branch-conflict-state.mjs` for read-only branch conflict and
   synchronization state classification; used by D/E/F routing to decide
-  whether `merge-main`, `hold-unknown`, or no action is needed without
+  whether `merge-base`, `hold-unknown`, or no action is needed without
   mutating the worktree or PR branch (added in 0.2.0)
 - `scripts/verify-install-deps.mjs` for B1 Step 3 `install-deps`: runs
   the underlying install command, verifies a key post-install binary
@@ -102,6 +243,69 @@ In the idd-skill source repository, the following optional helpers were adopted:
   [kurone-kito/idd-skill#1237](https://github.com/kurone-kito/idd-skill/issues/1237)).
   Source-repo internal helper; not distributed via the package-manager
   / ephemeral-npx profiles.
+- `scripts/idd-critique-delegate.mjs` for the effective
+  `critiqueLoop.delegate` verdict consumed by both C1 and E10:
+  `usable`, `source`, `command`, `mode`, and a machine-readable
+  `reason` when unusable, delegating entirely to the existing exported
+  resolvers (referenced in
+  [kurone-kito/idd-skill#2329](https://github.com/kurone-kito/idd-skill/issues/2329))
+- `scripts/idd-critique-telemetry-hook.mjs` for the C-phase effective
+  `critiqueLoop.telemetryHook` verdict (`usable`, `source`, `command`,
+  and a machine-readable `reason` when unusable), plus fire-and-forget
+  invocation via `--invoke`: pipe the per-round JSON payload on stdin
+  and it invokes the resolved hook, always exiting `0` regardless of
+  the hook's own success or failure (referenced in
+  [kurone-kito/idd-skill#2679](https://github.com/kurone-kito/idd-skill/issues/2679))
+- `scripts/authoring-owner-provenance.mjs` for the review-fix-loop-cutoff
+  auto-release exception's provenance check
+  (`skills/issue-authoring/references/contract.md`): computes the sha256
+  of a live issue body's exact UTF-8 content and compares it against that
+  same issue's own Stage 1 `mode=acquire` `authoring-owner` marker's
+  recorded `body-sha256`, reporting a machine-readable
+  `pass`/`mismatch`/`not-found` verdict — `not-found` is never treated as
+  a pass. Read-only: never posts, labels, or mutates anything (referenced
+  in
+  [kurone-kito/idd-skill#2891](https://github.com/kurone-kito/idd-skill/issues/2891)).
+  Anchors on the target's own trusted, owner-marker-shaped comments
+  (every one still containing the case-insensitive
+  `<marker-prefix>-authoring-owner:` token, whether or not it parses),
+  taken in deterministic comment order. If ANY of those comments was
+  edited after posting (`updatedAt` differs from `createdAt`), the whole
+  log is rejected up front, before a first candidate is even chosen — an
+  editor cannot make the true Stage 1 acquire vanish from consideration
+  by editing it into something unparseable or retargeting it, letting a
+  later acquire silently win instead (PR #2901 review round 6, Copilot;
+  contract.md: owner comments are append-only). Past that check, the
+  _first_ candidate in comment order is scrutinized whatever its shape —
+  not merely the first one that happens to parse and match this target —
+  and must itself parse, name this issue as its target, and be a valid
+  Stage 1 `mode=acquire` marker, or this reports `not-found` rather than
+  silently skipping it for a later, validly-parsing marker (PR #2901
+  review round 7, Copilot). "Valid" means every condition contract.md
+  attaches to a genuine acquire: `mode=acquire` itself (every other mode
+  — `bootstrap`, `resume`, `heartbeat`, `release`, ... — presupposes a
+  prior acquire, so a well-formed history never opens with one);
+  `supersedes=none` (contract.md requires this specifically for
+  `acquire`); a real 64-hex `body-sha256`, never the sentinel `none`; and
+  its own `anchor` names the same issue as its own `target` (a mismatch
+  means the marker declares itself a multi-target set's non-anchor
+  child, out of scope for this single-target-orphan helper) (PR #2901
+  review round 5, chatgpt-codex-connector and Copilot). Only it, not any
+  later marker, is guaranteed to have hashed the body as published: a
+  same-generation racer, a `bootstrap`/`resume` recovery, or a legitimate
+  re-acquisition after a full release cycle all hash whatever body is
+  live at their own posting time, not the originally published one —
+  comparing against any of those instead would make the check pass
+  trivially for a body edited before that later marker (PR #2901 review,
+  chatgpt-codex-connector across four rounds). `target` comparisons fold
+  case, since GitHub owner/repo names are case-insensitive. Two accepted
+  limitations, both fail-closed (never a false `pass`): a marker whose
+  own `anchor` differs from its own `target` (a multi-target set's
+  non-anchor child, out of scope here); and tampering with the true
+  Stage 1 acquire that leaves no authoring-owner token at all — deleting
+  it outright, or editing it into ordinary prose — which cannot be
+  detected by a live comment-log reader (PR #2901 review rounds 5-7,
+  chatgpt-codex-connector and Copilot)
 
 **Review & Merge Phase Helpers:**
 
@@ -198,6 +402,20 @@ In the idd-skill source repository, the following optional helpers were adopted:
   trust explicitly while collaborator-permission trust stays opt-in
   (the `IDD_TRUST_COLLABORATOR_MARKERS` environment variable or the
   `trustCollaboratorMarkers` config field)
+- `scripts/sweep-authoring-markers.mjs` (#2935) for the fetch-driven
+  hide-on-supersede sweep the issue-authoring contract's Stage 2 release
+  flow depends on: given one or more `--issue` targets, it fetches each
+  issue's comments via GraphQL (selecting `isMinimized`, which REST
+  never carries), classifies every comment with
+  `matchCanonicalAuthoringMarkerFamily`, keeps only the newest
+  trusted-actor match per `authoring-owner`/`authoring-publication-intent`
+  family, and minimizes every other eligible candidate in one mutation
+  pass via `minimize-superseded-markers.mjs`'s own `runMinimize` —
+  replacing the ~8-step manual paginate/classify/filter procedure the
+  contract previously described in prose at three separate points. Same
+  mandatory trusted-author gate as `minimize-superseded-markers` (no
+  `--allow-untrusted` escape hatch: this sweep's own "newest"
+  determination depends on the trust filter)
 - `scripts/review-disposition-verify.mjs` for read-only E7 disposition
   marker presence verification across PATH A and PATH B items
 - `scripts/disposition-non-review-notices.mjs` for dry-run/apply
@@ -304,10 +522,18 @@ default below is unchanged.
   - `leaves`: `[{ number: number, title: string, state: string,`
     `labels: string[], classification: "execution",`
     `roadmapMarkerId: string, autopilotSuitability: number | null,`
-    `effort: "S" | "M" | "L" | null, sourceRoots: number[] }]` — the union of
-    open execution leaves. Each leaf records every roadmap root it is reachable
-    from in `sourceRoots` (provenance); a leaf shared by sibling epics appears
-    **once** and is never double-counted.
+    `effort: "S" | "M" | "L" | null, milestone: string | null,`
+    `sourceRoots: number[] }]` — the union of open execution leaves. Each
+    leaf records every roadmap root it is reachable from in `sourceRoots`
+    (provenance); a leaf shared by sibling epics appears **once** and is
+    never double-counted. `milestone` (`#2340`) is the leaf's **open**
+    milestone title, or `null` when it has no milestone, the milestone is closed,
+    or the field is absent from the API response — the input to
+    `discover.milestoneScope`'s A4 Step 2 tie-breaker (see
+    [Discover](../.github/instructions/idd-discover.instructions.md)); this
+    same field is emitted by `discover-orphan-filter.mjs`'s `orphans` /
+    `routed_to_human` candidates too, though that helper does not itself
+    read `discover.milestoneScope`.
   - **Opt-in leaf annotations** (additive; absent flags leave the leaf shape
     byte-stable and make no extra API call). `--with-claim-state` adds
     `activeClaim` (always an object: `{ present, stale, claimId, agentId,`
@@ -321,7 +547,8 @@ default below is unchanged.
     later trusted heartbeat; `false` otherwise, including whenever
     `present` is `false`. It is **purely diagnostic**: unlike `stale`, it
     never feeds `claimEligible` or `readiness.startable` below, and it
-    never changes the 24h stale-takeover threshold
+    never changes the 12h stale-takeover threshold (this repository's
+    configured `claimTiming.staleAge`; distributed default `24h`)
     (`idd-resume-stall.instructions.md` S3). `--with-readiness` adds
     `readiness: { ready: boolean, reasons: string[], authoringHeld: boolean,`
     `startable: boolean }` — the A3 startability of each open leaf (dependency
@@ -354,9 +581,11 @@ default below is unchanged.
     "is there more startable work?" without iterating every leaf; both are
     absent otherwise so the flag-absent shape stays byte-stable.
   - **Ranking** (global-by-score): `leaves` is sorted by
-    `autopilotSuitability` **descending**, tie-broken by issue number
-    **ascending** (stable). A missing or out-of-range score is treated as
-    the configured suitability floor for ordering so unscored work is not
+    `autopilotSuitability` **descending**, then an optional
+    `discover.milestoneScope` match (`#2340`), then `effort`
+    **ascending** (`S` < `M` < `L`), then issue number **ascending**
+    (stable). A missing or out-of-range score is treated as the
+    configured suitability floor for ordering so unscored work is not
     buried, but a coherently scored leaf never ranks below an unscored leaf
     at the same effective value — scored work always sorts first at a tie.
     The score is an advisory ranking hint only; it never replaces the
@@ -430,6 +659,12 @@ node scripts/discover-readiness-check.mjs --swarm-floor <N>
 - **Boundary**: read-only and advisory — selecting the next issue still runs
   the A3/A4/A4.5/A5 gates. Optional flags: `--owner` / `--repo` / `--policy`
   / `--now`.
+- **kurone-kito/idd-skill#2243 triage-verdict cost note**: the default-on
+  triage-verdict exclusion (see the `discover-readiness-check.mjs` bullet
+  above) runs for every candidate every cheaper check already lets
+  through, so a full repo-wide `--swarm-floor` sweep makes one extra
+  comments-plus-timeline API call pair per otherwise-ready candidate, not
+  just per swept issue.
 
 ### Discover Viability Gate Contract
 
@@ -439,10 +674,17 @@ one or more issues.
 - **Inputs**: `--issue <number>` (repeatable) or `--issues <n1,n2,...>`,
   with optional `--csv`, `--owner <owner>`, and `--repo <repo>`.
 - **JSON output**:
-  - `viable`: `[{ number: number, title: string }]`
+  - `viable`: `[{ number: number, title: string, criteria?: [{ id: string,`
+    `name: string, result: "pass" | "warn" | "fail", evidence: string }] }]`
+    -- `criteria` is present only when at least one criterion was
+    structural-evidence-**demoted** (`#2767`: a lexical `fail` that all
+    three structural signals -- `verificationCommand`,
+    `candidateFilesExist`, `trustedEditor` -- demote to a `warn`-annotated
+    pass); an ordinary fully-passed issue keeps the pre-`#2767` two-field
+    shape, `criteria` omitted entirely, not an empty array.
   - `discarded`: `[{ number: number, title: string,`
     `failedCriteria: string[], criteria?: [{ id: string, name: string,`
-    `result: "pass" | "fail", evidence: string }] }]`
+    `result: "pass" | "warn" | "fail", evidence: string }] }]`
   - `summary`: `{ total: number, viableCount: number,`
     `discardedCount: number, discardedByCriterion: Record<string, number> }`
 - **Error conditions**: missing issue arguments or unknown flags throw;
@@ -453,9 +695,23 @@ one or more issues.
 
   ```json
   {
-    "viable": [{ "number": 123, "title": "trim helper docs" }],
+    "viable": [
+      { "number": 123, "title": "trim helper docs" },
+      {
+        "number": 125,
+        "title": "add retry to flaky helper",
+        "criteria": [
+          {
+            "id": "limited_scope",
+            "name": "Limited scope",
+            "result": "warn",
+            "evidence": "Structural evidence (verification command, candidate file, trusted editor) demotes an otherwise-failing lexical scan."
+          }
+        ]
+      }
+    ],
     "discarded": [{ "number": 124, "title": "rewrite workflow", "failedCriteria": ["limited_scope", "autonomous_completion"] }],
-    "summary": { "total": 2, "viableCount": 1, "discardedCount": 1, "discardedByCriterion": { "limited_scope": 1, "autonomous_completion": 1 } }
+    "summary": { "total": 3, "viableCount": 2, "discardedCount": 1, "discardedByCriterion": { "limited_scope": 1, "autonomous_completion": 1 } }
   }
   ```
 
@@ -471,7 +727,9 @@ A4 Step 2 de-prioritization order. Evidence-only: it claims nothing.
 - **Inputs**: `--candidate <number>` (repeatable) or `--candidates <n1,n2>`,
   with optional `--owner <owner>`, `--repo <repo>`, `--policy <path>`,
   `--manifest <path>` (default `audit/sync-manifest.json`), `--bundles
-  <id1,id2>` (default `bundle-review,bundle-merge`), `--now <ISO8601>`, and
+  <id1,id2,...>` (default
+  `bundle-core,bundle-review-triage-phase,bundle-review-fix-phase,bundle-merge-phase`),
+  `--now <ISO8601>`, and
   `--check-overlap`. The cross-issue active-set discovery (open PRs plus the
   claim comments of issues that have a remote `issue/<n>-*` branch, resolved
   with the shared claim-state rules and the configured claim stale age) is
@@ -489,6 +747,15 @@ A4 Step 2 de-prioritization order. Evidence-only: it claims nothing.
 - **JSON output**:
   - `repository`: `{ owner: string, repo: string }`
   - `checkedOverlap`: `boolean`
+  - `manifestMissing`: `boolean` — `true` when `--manifest`'s target file does
+    not exist (`ENOENT`); the CLI still exits 0, with `highContentionFiles`
+    reported as an empty set rather than fabricated from the manifest path
+    itself. A manifest that fails to parse (invalid JSON syntax) keeps the
+    prior fail-closed behavior (the CLI throws), unchanged. A manifest that
+    parses but has an unexpected shape (e.g. `{}`, a non-array
+    `bundleBudgets`) is not validated here — `resolveHighContentionFiles`
+    silently treats it as contributing no bundle files, a pre-existing
+    behavior this change does not alter.
   - `highContentionFiles`: `string[]` (sorted)
   - `candidates`: `[{ number: number, score: number | null,`
     `effectiveScore: number, candidateFiles: string[],`
@@ -504,7 +771,13 @@ A4 Step 2 de-prioritization order. Evidence-only: it claims nothing.
 - **Behavior boundary**: evidence-only and heuristic. `## Candidate files` are
   advisory cues, not an exhaustive manifest, so the overlap signal must stay a
   soft A4 Step 2 tie-breaker — never a claim gate. The written discover
-  instructions remain authoritative.
+  instructions remain authoritative. A candidate whose issue body carries no
+  `## Candidate files` section is a structural no-op for this check —
+  `candidateFiles` comes back `[]` and `overlapFlag` comes back `false`
+  regardless of real file contention, not a signal that no contention exists
+  (`#2462`); the
+  `issue-authoring` skill's roadmap-child contract requires the section for
+  exactly this reason.
 
 The exported template remains portable without a `scripts/` directory.
 Adopters can copy the helper separately when they want the same
@@ -812,6 +1085,12 @@ The adopted helper boundaries are intentionally narrow:
   (dry-run); add `--apply --claim-issue <n> --claim-id <id>` to post.
   Pass `--advisory-bot-logins` / `--trusted-marker-logins` to override the
   defaults.
+- A rate-limit/usage-limit notice this helper dispositions can coexist
+  with a passing GitHub _check_ from the same bot -- the check is a
+  liveness signal only, not confirmation of a genuine review against
+  current HEAD;
+  see [re-trigger guidance](policy-constants.md#advisory-review-defaults)
+  (#2466).
 - Detects advisory-bot regular comments that the single-sourced
   `isAdvisoryNonReviewNotice` classifier (`protocol-helpers`) recognizes
   (rate-limit / usage-limit), and emits / posts the canonical
@@ -858,7 +1137,10 @@ The adopted helper boundaries are intentionally narrow:
   `node scripts/resolve-review-thread.mjs --pr <number> --comment-id <id>`
   (dry-run); add `--body "<disposition>" --apply --claim-issue <n>
   --claim-id <id>` to post the reply and resolve the thread. Optional
-  `--owner` / `--repo` / `--agent-id` / `--trusted-marker-logins`.
+  `--owner` / `--repo` / `--agent-id` / `--trusted-marker-logins`. For a
+  claimless PR (`closingIssuesReferences` empty), pass `--claimless`
+  instead of `--claim-issue`/`--claim-id` (#2616, mirrors
+  `pre-merge-readiness.mjs`'s `--claimless`, #2017).
 - Maps `--comment-id` (the review comment's REST id) to its owning review
   thread by matching it against the `databaseId` of the comments inside each
   GraphQL `reviewThreads` node (both the threads and the nested comments
@@ -879,14 +1161,16 @@ The adopted helper boundaries are intentionally narrow:
 - **Dry-run** reports the resolved `threadId` and current `alreadyResolved`
   state without posting; a comment with no owning thread omits `threadId`
   and includes an `error` note.
-- **Fail-closed**: `--apply` requires `--body` and the
-  `--claim-issue` / `--claim-id` pair, re-validates the active claim before
-  **each** of the reply and the resolve (scoped to trusted marker authors,
-  aborting on a targeting `forced-handoff`), and binds the mutation to the
-  claimed PR by requiring the active claim's branch to equal the PR's head
-  branch. GraphQL `errors` fail fast rather than masquerading as a missing
-  thread, and a partial apply (reply posted, resolve not confirmed) still
-  reports the posted `replyId`.
+- **Fail-closed**: `--apply` requires `--body` and, unless `--claimless`,
+  the `--claim-issue` / `--claim-id` pair; absent `--claimless` it
+  re-validates the active claim before **each** of the reply and the
+  resolve (scoped to trusted marker authors, aborting on a targeting
+  `forced-handoff`), and binds the mutation to the claimed PR by requiring
+  the active claim's branch to equal the PR's head branch. `--claimless`
+  itself fails closed against a non-empty `closingIssuesReferences`.
+  GraphQL `errors` fail fast rather than masquerading as a missing thread,
+  and a partial apply (reply posted, resolve not confirmed) still reports
+  the posted `replyId`.
 - Stable contract: [`resolve-review-thread.schema.json`][resolve-review-thread-schema].
 - The written E13 reply-and-resolve rule in
   `idd-review-fix.instructions.md` stays authoritative; this helper is the
@@ -961,6 +1245,52 @@ default `instructions-only` profile keep using the written shell /
     the consumer-side gate (`summarizeExternalCheckWaivers` in
     `protocol-helpers.mts`) when no claim resolves there, so posting one
     against a claimed PR would just be rejected `wrongClaim`.
+  - for the `idd-advisory-convergence` selector specifically (#2328), the
+    report carries `advisoryConvergenceWaiverPrecondition`, built by the
+    same shared function `pre-merge-readiness` publishes it from, and a
+    closed hatch is a blocking reason. That check never treats a posted
+    waiver as active until its precondition opens, so posting one earlier
+    produces a marker the gate ignores. Only the exact selector is gated:
+    the gate itself never counts a glob waiver for this check either.
+  - the helper evaluates only the **deadline** opener, never terminal
+    Copilot unavailability, which needs trusted advisory-wait
+    recovery-marker state it does not collect. The report says so with
+    `terminalEvaluated: false`, and the blocking reason states that the
+    deadline has not passed rather than claiming no opener applies.
+    `--allow-closed-precondition` posts anyway, for an operator who knows
+    the terminal opener does apply; the precondition is still reported as
+    closed, so the override is visible in the output.
+  - the deadline itself is read from the **raw** policy document, not the
+    normalized one: `normalizePolicyConfig` does not carry
+    `advisoryWait.convergenceDeadline` through, so reading it from the
+    normalized policy would silently substitute the 24h default for a
+    repository that configured something shorter.
+  - `--apply` is idempotent (#2328): it reuses an existing valid waiver
+    for the same selector, HEAD, and claim instead of appending a second
+    marker, reporting `reusedWaiver` with that comment's id and url and
+    posting nothing. The earliest match wins, so a retry converges on one
+    marker. Validity comes from `summarizeExternalCheckWaivers`, so an
+    expired, wrong-HEAD, or wrong-claim waiver is never reused. Reuse wins
+    over a freshly requested expiry: re-running with a different
+    `--expires-in` reports the existing marker rather than posting a second
+    one carrying the new value, matching the release-marker rule that a
+    retry must never append an indistinguishable duplicate. To change an
+    expiry, let the existing waiver lapse or supersede it deliberately.
+  - the reuse check and the post are **not** one atomic step, and GitHub
+    comments have no compare-and-swap -- the same limitation the claim
+    protocol records for its own markers. Two concurrent `--apply` runs
+    can therefore both observe no waiver and both post. That is reconciled
+    after the fact rather than prevented: the helper re-reads once the post
+    lands, and when more than one valid waiver exists for the selector it
+    reports them all in `concurrentWaivers`, warns on stderr, and names the
+    earliest, which is the one a deterministic reader resolves to. It does
+    not delete the extras -- removing a marker another session just posted
+    is a maintainer's call, not the helper's -- so minimize them by hand.
+    That post-write read degrades to a warning rather than failing closed:
+    the waiver already exists and the write cannot be undone, so a read
+    failure reports `reconcileInconclusive` and still renders the applied
+    result with its comment url. Only the pre-write read fails closed, where
+    an unreadable list could actually cause the duplicate.
 
 ### External-check waiver contract
 
@@ -974,6 +1304,22 @@ auditable and fail-closed.
 _{actor}: external check waiver for IDD F phase._
 ```
 
+`run-id:{run-id}` is an optional trailing field (kurone-kito/idd-skill#2657,
+Copilot review PR #2895: shown as its own separate extended form below, so
+neither snippet reads as though the field were required):
+
+```md
+<!-- idd-external-check-waiver: {agent-id} {claim-id|none} {head-sha} check:{check-selector} reason:{reason-token} expires:{iso8601} run-id:{run-id} -->
+
+_{actor}: external check waiver for IDD F phase._
+```
+
+the posting GitHub Actions run's own `GITHUB_RUN_ID`, carried verbatim (not
+percent-encoded -- it is a numeric run id, not free text). Every
+person-authored waiver omits it and parses exactly as before this field
+existed; it exists only for the automated `self-referential-bootstrap-auto`
+waiver kind below.
+
 Interpretation rules:
 
 - `agent-id`, `claim-id`, `head-sha`, `check`, `reason`, and `expires`
@@ -983,6 +1329,16 @@ Interpretation rules:
   marker body.
 - `check` may be an exact selector or a glob pattern, matching the
   `ciGate.externalChecks.*[].selector` plus `matchMode` contract.
+- `check:` and `reason:` hold single whitespace-free tokens in the raw
+  marker body: the authoring helper percent-encodes the check selector
+  and reason text with `encodeURIComponent` when writing the marker,
+  and decodes them back via `decodeURIComponent` on read (falling back
+  to an empty string -- which fails closed -- on a decode error). A
+  hand-written value containing a space or another character outside
+  the `check:\S+`/`reason:\S+` shape parses as malformed with no
+  automatic warning or reply unless percent-encoded first (a space
+  becomes `%20`); prefer the authoring helper below over hand-writing
+  the marker so this encoding is applied automatically.
 - Missing or unparseable body fields, unknown selectors, expired
   comments, wrong HEAD, wrong claim, or untrusted authors must fail
   closed.
@@ -1038,6 +1394,489 @@ Interpretation rules:
   - in solo-maintainer repositories, this helper-generated comment is
     the authorization path; a normal PR approval is not equivalent
 
+#### Automated self-referential-bootstrap-auto waiver (kurone-kito/idd-skill#2657)
+
+A narrow, documented exception to "human maintainer only" above: when a
+PR's own diff touches `idd-advisory-convergence`'s committed trigger-file
+allowlist (the check's own source, its policy inputs, or its workflow
+files -- a fixed, committed set of paths, never derived from imports),
+that PR cannot benefit from its own fix to the checker while still
+unmerged. This source repository's own copy of the allowlist -- checked
+both by its own top-level workflow's posting step and, at consume time,
+by `resolveSelfReferentialTriggerFiles` recognizing this exact
+repository -- lists a hand-curated set of `.mts`/workflow paths, its real
+checker files, regardless of its own configured `helperRuntime.profile`
+(`package-manager`, chosen for its own IDD dependency, unrelated to this
+workflow's own file layout). For every other repository, both the
+distributed `idd-template/` posting step and `resolveSelfReferentialTriggerFiles`
+independently derive a profile-appropriate set instead, on a
+profile-invariant base of the two workflow paths plus
+`.github/idd/config.json`, adding: compiled `scripts/*.mjs` paths for
+`vendored-node`; the dependency manifest and lockfiles for
+`package-manager`; nothing further for `ephemeral-npx` (whose own
+checker version pin already lives in the base set's config file, via
+`helperRuntime.packageSpec` -- see
+[Customizing IDD](customization.md)); or nothing further for any other
+profile. The config file is included for every profile, not only
+`ephemeral-npx` (kurone-kito/idd-skill#2657, Codex review round 8):
+both this posting job and the verdict job check out the trusted default
+branch, never the PR head, so a PR that fixes a broken checker by
+migrating `helperRuntime.profile` itself (e.g. `package-manager` to
+`ephemeral-npx`, to work around a broken lockfile/manager detection)
+resolves the OLD, still-broken profile on both sides -- scoping the
+config file to only the profile a PR happens to migrate TO would leave
+every other profile's own migration-via-config-only fix unable to
+trigger this bypass, the exact trap this mechanism exists to escape.
+Since a `vendored-node`/`package-manager`
+adopter never ships this source repository's own `src/scripts/*.mts`
+files, an
+unconditional match against them left the mechanism both non-functional
+for adopters and gameable via a PR touching a path that does not exist in
+their own checkout at all. `idd-advisory-convergence.yml` detects this
+from a
+separate job with `issues: write` as its only write permission (the
+verdict job stays read-only; it additionally gains `actions: read`,
+required for the run-id trust verification's own
+`GET /repos/{owner}/{repo}/actions/runs/{run-id}` call in a private
+repository) and posts a marker as `github-actions[bot]` via
+`GITHUB_TOKEN`, using the CLI's `--auto-bootstrap` mode. The verdict job
+also runs `needs:` this posting job (with `if: ${{ !cancelled() }}` so it
+still runs when the posting job skips) so an allowlisted PR's own
+bootstrap marker is guaranteed to exist -- posted or definitively not --
+before the verdict job ever fetches PR comments; without that ordering
+the two jobs race, since posting a PR comment does not itself trigger a
+fresh run of this workflow:
+
+```sh
+idd-external-check-waiver --pr 123 \
+  --check "idd-advisory-convergence" \
+  --reason "self-referential-bootstrap-auto" \
+  --run-id "$GITHUB_RUN_ID" \
+  --auto-bootstrap \
+  --apply --yes
+```
+
+`--auto-bootstrap` differs from ordinary usage in exactly five ways:
+
+- it skips the collaborator-authority check entirely (there is no human
+  actor to authorize -- the trust model below replaces it);
+- `--reason` must equal the literal token `self-referential-bootstrap-auto`
+  (a value the parser rejects for every other purpose) and `--run-id` is
+  required; `--expires`/`--expires-in` are rejected -- the expiry is
+  always computed internally, independent of
+  `advisoryWait.convergenceDeadline`. The base window is the PR's HEAD
+  commit timestamp plus a fixed `PT24H`, but two further rules apply
+  (Codex review, PR #2895): the duration clamps to the configured
+  `ciGate.externalCheckWaivers.maxValidity` when that is shorter than
+  `PT24H` (an adopter with a stricter configured maximum still gets a
+  marker, just a shorter-lived one, instead of every post being
+  rejected by that same policy's own validation), and if the
+  HEAD-anchored result would already be non-future (a stale HEAD from a
+  `reopened` trigger with no new commit), the window anchors on the
+  current time instead, so a stale-enough PR still gets a
+  genuinely-future expiry rather than one rejected outright;
+- it resolves the linked issue's real active claim exactly like the
+  ordinary path when exactly one resolves, but falls back to the same
+  claimless `none` binding `--claimless` renders (rather than blocking)
+  when ZERO candidates resolve at all (Codex review, PR #2895) -- the
+  fixed workflow invocation never passes `--issue`/`--claim-id`/
+  `--claimless`, so a fully claimless allowlisted PR under the default
+  `advisoryWait.convergenceScope: "all-prs"` (no linked issue, e.g. a
+  human-authored checker-file edit outside IDD) would otherwise be
+  permanently unable to post this waiver. Safe because the consumer's own
+  `none`-sentinel match (below) only ever succeeds when it independently
+  finds no active claim either, so this can never paper over a genuine
+  claim mismatch. Restricted to the zero-candidate case specifically, not
+  an AMBIGUOUS one (more than one candidate resolves, Copilot review, PR
+  #2895): some claim genuinely exists there, just not uniquely
+  identified from this input, and this file's own claim resolution
+  cannot prove `advisory-convergence.mts`'s own (different)
+  claim-resolution mechanism would treat that ambiguity the same way, so
+  an ambiguous PR still blocks. Explicitly combining the literal
+  `--claimless` flag with `--auto-bootstrap` is still rejected as
+  redundant caller error;
+- it never reuses an existing marker (kurone-kito/idd-skill#2657, Codex
+  review round 2, PR #2895): the generic reuse scan every other
+  `--apply` invocation runs first (to avoid double-posting on a retry)
+  is skipped entirely here, since it correlates only on selector,
+  reason, HEAD, and claim -- never the `run-id:`/event-type trust chain
+  below -- so a same-repository PR-controlled `pull_request` workflow
+  could otherwise prepost a same-reason marker with no verifiable
+  `run-id:` and trick this job into believing a valid waiver already
+  exists, skipping its own post. Always attempting to post is at worst
+  a harmless extra marker; the consumer's trust check below already
+  accepts any candidate that verifies;
+- when the post succeeds, the job's own workflow steps additionally
+  upload a run-scoped GitHub Actions artifact named
+  `idd-self-waiver-marker-<comment-id>-<body-digest>`
+  (kurone-kito/idd-skill#2912, round 2, extended round 3, extended round
+  4) -- the posted comment's own numeric id, a literal `-`, and the
+  SHA-256 hex digest of that comment's exact body, and nothing else, as
+  the artifact's name (never its content, so the consumer never needs to
+  download or unzip it). This is the channel condition 7 below reads to
+  bind a marker to the run's own trusted execution: artifacts are scoped
+  to the run that uploaded them by the Actions runtime's own dedicated
+  upload token, never by the shared `GITHUB_TOKEN` `permissions:`
+  surface an issue comment (or a check run) is created and mutated
+  through, so no OTHER same-repository workflow run can add, edit, or
+  remove an entry from this specific run's own artifact list. The body
+  digest is hashed from an API-returned body on both the posting and
+  consuming sides, so an unedited comment digests identically regardless
+  of which side computed it -- specifically, the posting side hashes
+  ONLY the `body` field GitHub's create-comment response returns for the
+  exact POST that created the comment, never a later re-read. An earlier
+  design (round 3) instead preferred a body observed in a LATER, separate
+  post-write re-read (falling back to the locally-sent string only when
+  that re-read came up empty, and labeling the result
+  `ExternalCheckWaiverReport.bodyDigestSource: 'constructed'` when it
+  did) -- a Copilot review of that round's own commit found this opened a
+  window: a same-repository `issues: write` workflow could edit the
+  genuine comment's body between the POST returning and that later
+  re-read running, and the reconcile-preferring design would then hash
+  and report the FORGED body as trustworthy. Round 4 removed that
+  fallback entirely; `bodyDigestSource` no longer exists, and the digest
+  is reported only when the create-comment response itself carried a
+  body.
+
+The marker is honored only when **all** of the following hold, verified
+by `advisory-convergence.mts` itself (not the generic
+`resolveTrustedCollaboratorMarkerLogins` trust surface, since this check
+needs a live per-marker run lookup no other consumer needs):
+
+1. the comment author is exactly `github-actions[bot]`;
+2. the `reason:` token is exactly `self-referential-bootstrap-auto`;
+3. `GET /repos/{owner}/{repo}/actions/runs/{run-id}` for the marker's
+   `run-id:` returns `path` equal to
+   `.github/workflows/idd-advisory-convergence.yml`, `head_sha` equal to
+   the marker's `{head-sha}`, and `head_repository.full_name` equal to
+   the current repository;
+4. that same response's `event` field is exactly `pull_request_target`,
+   never `pull_request` -- closing the gap where a same-repository PR
+   editing the workflow YAML can still trigger a `pull_request`-triggered
+   run of it during a `pull_request`/`pull_request_target` migration
+   window (kurone-kito/idd-skill#2764 Phase 1);
+5. the PR's own changed files (fetched independently at consume time,
+   never trusted from the posting job's own internal check) include at
+   least one path from the trigger-file allowlist above
+   (kurone-kito/idd-skill#2657, Codex review, PR #2895) -- conditions 3
+   and 4 alone only prove the marker cites a genuine
+   `pull_request_target` run of this exact workflow file/head/repo, not
+   that the run's own allowlist check found a match, so without this a
+   same-repository PR could forge a marker citing the ordinary verdict
+   job's own trivially-discoverable run id for its own HEAD and bypass
+   advisory convergence for a change that never touched the allowlist at
+   all;
+6. `GET /repos/{owner}/{repo}/actions/runs/{run-id}/jobs` for that same
+   `run-id:` reports the run's own `idd-advisory-convergence-self-waiver`
+   job's "Post the self-referential-bootstrap-auto waiver" step with
+   `conclusion: success`, AND the marker comment's own `createdAt` falls
+   within that step's `[started_at, completed_at]` execution window
+   (kurone-kito/idd-skill#2912) -- conditions 3 and 4 alone prove only
+   that SOME genuine run of the right shape exists, never that THAT run's
+   own job actually posted THIS specific comment; a same-repository
+   `pull_request`-triggered workflow (untrusted, but able to post
+   `github-actions[bot]`-authored comments the same way the genuine
+   posting job does) can discover a legitimate, concurrently running
+   `pull_request_target` run's id via the public Actions API and cite it
+   in a forged marker, satisfying conditions 1-5 without having been
+   posted by that run's job at all. Binding to the post step's own
+   recorded conclusion and execution window closes this; and
+7. the marker's own comment `(id, body digest)` pair appears in the SET
+   of such pairs the cited `run-id:`'s own trusted job execution recorded
+   actually posting, recovered from a run-scoped GitHub Actions artifact
+   that job uploads immediately after posting (named
+   `idd-self-waiver-marker-<comment-id>-<body-digest>` -- see
+   `listWorkflowRunArtifacts` in `provider-adapter-github.mts`)
+   (kurone-kito/idd-skill#2912, round 2, extended round 3, extended round
+   4) -- condition 6
+   above proves only that the cited run's job succeeded and posted SOME
+   comment within a tight execution window, never THIS EXACT comment (and
+   never that its content stayed unchanged since); a same-repository
+   `pull_request`-triggered workflow can post a forged marker inside that
+   same window, wait for the genuine marker to post, and then either
+   DELETE it (`issues: write` permits deleting ANY issue comment on the
+   repository, not only ones the deleting token itself authored), leaving
+   the forged marker as the sole survivor of a plain "no duplicate
+   currently visible" scan (round 1's gap), or EDIT it in place --
+   `issues: write` permits rewriting an existing comment's body too,
+   which preserves that comment's `id` and `createdAt` while replacing
+   its content, so binding on `id` alone (round 2) would still accept the
+   rewritten body. Binding on the `(id, body digest)` pair instead of `id`
+   alone closes both: artifacts are scoped to the run that uploaded them
+   by the Actions runtime's own dedicated upload token, never by the
+   shared `GITHUB_TOKEN` `permissions:` surface comments (and condition
+   6's own job/step data) are read and, in the comment's case, mutated
+   through -- so no unrelated run can add, edit, or remove an entry from
+   that trusted set regardless of which `permissions:` it self-grants,
+   and a LATER edit to the live comment changes its digest without being
+   able to retroactively change what the artifact already recorded.
+   Deleting or editing the genuine comment only removes/changes it in the
+   live comment scan condition 7 itself needs to correlate an entry back
+   to its own `id` (two distinct candidates sharing the same cited run id
+   AND the same wall-clock second are ambiguous for that correlation and
+   both fail closed, never guessing a winner) -- it degrades this
+   mechanism to "no auto-waiver", never "the forged or edited marker
+   validates". The one residual: an attacker who additionally
+   self-grants the broader, repository-wide `actions: write` permission
+   could delete the genuine run's own artifact through Actions' own
+   artifact-management endpoint, which still only degrades to "no
+   auto-waiver", never a forged one -- outside the `issues: write`-scoped
+   threat model this condition (and the independent review findings that
+   prompted both rounds) are framed against.
+
+A marker missing `run-id:`, whose run, run-jobs, or run-artifacts data
+cannot be resolved, targets another head SHA or repository, ran under
+any event other than `pull_request_target`, whose PR diff does not touch
+the trigger-file allowlist, whose cited run's own posting step did not
+report `success` within its own execution window, or whose own comment
+`(id, body digest)` pair is absent from (or ambiguous within) the cited
+run's artifact-recorded trusted set, is rejected the same way a manual
+waiver from an untrusted actor is today. Unlike an ordinary
+maintainer-authorized waiver (gated behind
+`deadlinePassed || terminalUnavailable`), a valid
+self-referential-bootstrap-auto waiver is evaluated **unconditionally** --
+it makes `ready` true immediately, without waiting for the deadline clock
+or a proven Copilot outage, since the whole point is bootstrapping a fix
+to the deadline mechanism itself. It stays gated on the applicability
+scope, though: under `convergenceScope: "idd-claimed"`, a PR whose
+linked issue's claim history is ambiguous or lacks a currently active
+claim resolves `indeterminate`, not `not_applicable` -- deliberately
+kept **not** self-bootstrap-eligible (Copilot review, PR #2895, round
+10), unlike the ordinary maintainer waiver's own `not_applicable`-only
+gate, since that path requires an actual human judgment call that this
+one never makes. Do not widen this exception to any other reason
+token, actor, or check selector.
+
+**A narrow, inherent dead zone remains** (kurone-kito/idd-skill#2657,
+Codex review, PR #2895, round 9): being in the trigger-file allowlist
+does not mean every possible bug in that file can be self-bootstrapped.
+Both the posting job and the verdict job always check out the
+repository's default branch, never the PR head -- required so neither
+job ever executes PR-controlled code with `issues: write` -- so a bug
+specifically WITHIN the code that decides whether/how to invoke
+`--auto-bootstrap` (its own branches in `external-check-waiver.mts`),
+the four Actions-API methods the trust chain above itself calls
+(`getWorkflowRun`, `getWorkflowRunJobs`, `listWorkflowRunArtifacts`,
+`listChangeRequestChangedFiles` in `provider-adapter-github.mts`), or the
+seven conditions' own verification functions in `advisory-convergence.mts`
+(`verifySelfReferentialBootstrapWaiverRun`,
+`verifySelfReferentialBootstrapWaiverProvenance`,
+`verifySelfReferentialBootstrapWaiverArtifactBinding`, and the rest) cannot
+be rescued by this mechanism: the OLD, buggy version of exactly that
+code is what would have to decide to trust the fix. This is the same
+fixed point every self-hosting bootstrap has, and isolating marker
+emission into a
+smaller module would shrink it, never eliminate it. The rest of each
+listed file's surface -- most of it, since each implements far more
+than this one trust path -- remains genuinely bootstrappable as
+described above. For the residual case, the
+[maintainer-authorized waiver backstop](#external-check-waiver-contract)
+this repository already configures is the documented human off-ramp
+for precisely this situation, not a gap this mechanism itself needs to
+close.
+
+### Provider health helper
+
+- Command: `node scripts/provider-health.mjs [--owner <owner>] [--repo <repo>]`
+- Published bin: `idd-provider-health`
+- Stable contract:
+  [`provider-health.schema.json`][provider-health-schema]
+- Purpose (#2319): IDD already observes advisory-review and Actions
+  degradation, but only one pull request at a time, in three
+  unconnected places (an advisory bot's rate-limit/quota comment
+  classified as a non-review notice, the Actions billing/spend-limit
+  block CI shape, and `advisory-wait-state.mts`'s own per-pull-request
+  terminal state). Nothing aggregates those signals across pull
+  requests, so a session cannot distinguish "this pull request is
+  stuck" from "the service is down for everything". This read-only
+  classifier supplies the shared, cross-pull-request verdict other
+  tracks may read.
+- Emits a `healthy | degraded | unavailable | unknown` verdict for each
+  of two services, `advisory-review` and `ci-actions`, aggregated from
+  already-observable per-pull-request evidence:
+  - `advisory-review`: a trusted `advisory-wait:` request marker with
+    neither a subsequent `review_requested` timeline event nor a
+    submitted review from the primary bot, anchored to the marker's own
+    embedded requested-at timestamp and gated by the same
+    `advisoryWait.settledWindowMinutes` grace period
+    `evaluateStaleRequestRecoveryAction` (#2327, `advisory-wait-state.mts`)
+    already applies for a single pull request -- reused here, read
+    across several, rather than re-derived.
+  - `ci-actions`: a completed workflow run whose every job executed zero
+    steps -- the documented account-level Actions billing/spend-limit
+    block shape (the run starts but no steps run, unlike an ordinary
+    step failure); an ordinary code-caused failure contributes no
+    evidence either way.
+- Corroboration is counted over **distinct pull-request identities**,
+  never observation count, per the configured
+  `providerHealth.minCorroboratingPrs` (default `2`): a single pull
+  request's failure burst always caps at `degraded`, never
+  `unavailable`. `unknown` is the floor for every insufficient,
+  contradictory, or unreadable evidence path -- never `unavailable`.
+- Read-only by construction: emits no marker, mutates no issue, pull
+  request, or check, and exposes no field named or shaped as a
+  merge-readiness or CI-gate result. Nothing in this repository's F2/F3
+  merge gate or `idd-advisory-convergence` check consumes this helper's
+  output -- see the provider outage declaration helper below for the
+  decoupling this implies for `providerOutage`.
+
+### Provider outage declaration helper
+
+- Command:
+  `node scripts/provider-outage-declaration.mjs --service <name>
+  [--declare | --record-advanced | --list-advanced] [options]`
+- Published bin: `idd-provider-outage-declaration`
+- Stable contract:
+  [`provider-outage-declaration.schema.json`][provider-outage-declaration-schema]
+- Purpose (#2320): substitute one repository-scoped, time-boxed
+  declaration for repeatedly posting a per-pull-request
+  external-check-waiver during a sustained provider outage, read from
+  the configured `providerOutage.declarationTarget` issue so no
+  repository file has to change while the outage is in progress.
+- Modes:
+  - default (resolve): reports whether an active, valid declaration
+    exists for `--service`, recomputed live on every call -- nothing is
+    cached, and an expired declaration reverts with no cleanup step.
+  - `--declare`: renders a new declaration marker; `--apply` posts it to
+    the declaration-target issue only after the acting GitHub user
+    passes the same `ciGate.externalCheckWaivers.authorityPolicy`
+    authority check the external-check-waiver helper's create path uses
+    (owner, Maintain, or Admin by default) -- reusing that resolver
+    rather than adding a second trust path. Requires exactly one of
+    `--expires` or `--expires-in`; the requested window is rejected when
+    it exceeds `providerOutage.maxValidity` (default `PT24H`).
+  - `--record-advanced --pr <n> --head-sha <40-hex>`: records that a
+    pull request was advanced under the currently active declaration,
+    so a post-recovery sweep can re-request its advisory review.
+    `--apply` refuses when no declaration is active for `--service`.
+  - `--list-advanced`: lists every recorded advancement from trusted
+    markers on the declaration-target issue. Entries are **HEAD-pinned**
+    -- a later push to the same pull request produces a distinct entry
+    rather than overwriting the earlier one, so the sweep re-requests
+    review per recorded HEAD.
+- Non-bypassing by construction: an active declaration alone never
+  relieves anything. The consuming caller must independently prove the
+  pull request's own terminal advisory-unavailable state (the same
+  per-pull-request proof the `idd-advisory-convergence` waiver
+  precondition already requires) before a declaration-relieved selector
+  applies, and relief is scoped to exactly the selectors listed in
+  `ciGate.externalChecks.waivable` -- it never relieves a CI conclusion,
+  branch freshness, claim state, or unresolved threads, which stay
+  evaluated exactly as they already are.
+- Decoupled from the provider-health classifier (#2319/#2327):
+  declaration validity is actor authority, service, timestamps, and
+  expiry only. An absent or `unknown` provider-health verdict never
+  invalidates an otherwise-valid declaration, and this helper accepts no
+  verdict input at all.
+- Consumed by both gates the `idd-advisory-convergence` waiver already
+  relieves
+  ([kurone-kito/idd-skill#2353](https://github.com/kurone-kito/idd-skill/issues/2353)):
+  `advisory-convergence.mjs`'s own CI-check verdict and
+  `pre-merge-readiness.mjs`'s F2/F3 merge gate each independently resolve
+  a declaration for service `idd-advisory-convergence` on the configured
+  `providerOutage.declarationTarget` issue, gated exactly as the
+  non-bypassing bullet above describes -- and both additionally require
+  `ciGate.externalCheckWaivers.mode` to be `maintainer-authorized`, the
+  same mode gate a direct per-pull-request waiver already requires.
+  Declare with that exact service name (`--service
+  idd-advisory-convergence`) for either gate to honor it; a declaration
+  for any other service name relieves nothing here.
+
+### Provider outage park helper
+
+- Command:
+  `node scripts/provider-outage-park.mjs [--park --pr <n> --issue <n>
+  --service <name> --blockers <name1,name2> --claim-id <id> --agent-id
+  <id>] [--apply]`
+- Published bin: `idd-provider-outage-park`
+- Stable contract (the posted `idd-provider-outage-park` marker payload,
+  not the list-mode stdout shape below):
+  [`provider-outage-park.schema.json`][provider-outage-park-schema]
+- Purpose (#2321): every current route for an unavailable external
+  service ends in a hold, which keeps the claim live until
+  `claimTiming.staleAge` elapses -- the session can neither continue nor
+  pick up different work, and the outage keeps producing more pull
+  requests stuck the same way. Parking releases the claim immediately
+  instead, at no cost to any quality gate: it never resolves a thread,
+  satisfies a gate, or merges.
+- Modes:
+  - default (list, read-only): lists every open pull request carrying a
+    trusted `idd-provider-outage-park` marker, each with its parked
+    service's current `provider-health` verdict and `resumable` (true
+    only once that verdict is `healthy`). Sorted by `parkedAt` then pull
+    request number for deterministic re-entry order. Reports `count` and
+    `boundReached` against `providerOutage.maxParkedChanges` (default
+    `10`) as information only -- this mode never blocks a park. The open
+    pull request read is bounded (default 50, most-recently-updated
+    first); `sampleTruncated` is `true` when more open pull requests may
+    exist beyond that sample, and `boundReached` fails closed to `true`
+    in that case regardless of the sampled `count`.
+  - `--park`: fetches the pull request's live head SHA, re-checks the
+    named service's live `provider-health` verdict is `unavailable`, and
+    requires every entry in `--blockers` (the caller's own fresh
+    `pre-merge-readiness` blocker-gate names) to map to that service --
+    `advisory-review` only for `advisory-wait` /
+    `copilot-terminal-unavailable`; `ci-actions` only for `ci` /
+    `discarded-required-check-siblings`. Any other blocker, or an empty
+    `--blockers`, refuses to park. `--apply` posts the marker (naming the
+    service and the full `--blockers` list, per the issue's own
+    acceptance criteria) to the pull request; releasing the originating
+    issue's claim is a separate, existing step the caller takes
+    afterward (`unclaimed-by`), not performed by this command.
+- Same claim-gating contract as `post-idd-marker.mjs`: this command
+  performs no claim/state gating itself -- the calling phase runs its
+  own claim-revalidation gate before `--apply`.
+- Read-only by construction in list mode: exposes no field named or
+  shaped as a merge-readiness or CI-gate result, mirroring the
+  provider-health helper above.
+
+### Local validation evidence helper
+
+- Command:
+  `node scripts/local-validation-evidence.mjs --pr <n> --head-sha <40-hex>
+  [--record] [options]`
+- Published bin: `idd-local-validation-evidence`
+- Stable contract:
+  [`local-validation-evidence.schema.json`][local-validation-evidence-schema]
+- Purpose (#2323): record that a local command set (typically
+  `pre-push-validate`) ran against a pull request's exact HEAD, as
+  HEAD-pinned, actor-trust-filtered, expiring evidence -- so a queue
+  caused by a required-check Actions outage recovers on a rerun rather
+  than a re-review.
+- Modes:
+  - default (resolve): reports whether unexpired, actor-trusted evidence
+    exists for `--head-sha` covering every `--required-checks` name,
+    **only while** an active provider-outage declaration
+    ([above](#provider-outage-declaration-helper)) exists for
+    `--service` (default `ci-actions`). Recency is measured from the
+    marker comment's own `created_at` against `localValidationEvidence.maxAge`
+    (default `PT4H`), never an embedded timestamp.
+  - `--record --covers <names> --outcome <pass|fail>`: renders and (with
+    `--apply`) posts the evidence marker to the pull request.
+- **Hide-at-post-time (#2755).** After a successful `--record --apply`
+  POST, this helper also hides (classifier `OUTDATED`) prior
+  `idd-local-validation-evidence:` comments whose embedded HEAD SHA
+  differs from the one just recorded, grouped by embedded HEAD SHA
+  mismatch mirroring the `advisory-wait` AW3-H rule -- see
+  [Comment minimization](idd-comment-minimization.md#timing). Best-effort:
+  any failure there never blocks or retries the marker post that already
+  succeeded. `--trusted-marker-logins a,b` gates that step's trusted-author
+  check (falls back to `IDD_TRUSTED_MARKER_ACTORS` /
+  `.github/idd/config.json`'s `trustedMarkerActors`, the same ladder as
+  every other `minimize-superseded-markers.mjs` caller).
+- **Never a merge gate.** `pre-merge-readiness.mts` reports this
+  helper's resolution as its own additive `localValidationEvidence`
+  field; `computePreMergeReadinessBlockers` (protocol-helpers.mts) has
+  no reference to that field, so it can never remove or downgrade a
+  required-check blocker. Evidence changes what is _known_, never what
+  is _green_ -- an unavailable required platform check stays listed as
+  a blocker regardless of evidence. Restoring the platform check rollup
+  is an out-of-band privileged operation outside the autonomous loop.
+- On recovery, drive re-verification from the evidence marker's own
+  `headSha` (`evaluateLocalValidationEvidenceRecovery`): a pull request
+  whose HEAD advanced past the recorded evidence is re-validated, never
+  merged on the stale record.
+
 ### A4 viability gate
 
 - Command: `node scripts/discover-viability-gate.mjs --issue <number>`
@@ -1062,6 +1901,12 @@ Interpretation rules:
 
 - Stable fields consumed by A4: `viable[].number`, `discarded[].number`,
   `discarded[].failedCriteria`, and `summary.viableCount`
+- `viable[]` entries also carry an optional `criteria` array (`#2767`,
+  same shape as `discarded[].criteria`) whenever structural evidence
+  demoted a criterion to a `warn`-annotated pass; omitted for an
+  ordinarily fully-passed issue, so this stays additive to the stable
+  two-field shape above -- see the Discover Viability Gate Contract
+  section for the full `criteria` shape and a worked example.
 - The helper evaluates the three A4 viability criteria (limited scope, clear
   verification, autonomous completion) against fetched issue bodies; it does
   not post claims or mutate any state
@@ -1140,6 +1985,14 @@ Interpretation rules:
   A `holder`
   snapshot of the previous occupant is reported on **both** a plain
   `collision` and an authorized takeover, not only on takeover.
+- `reacquired: true` also carries an optional `racedCreate: true` flag
+  (#2917 review, Codex): set when this exact
+  invocation's own first read found the lock absent and its own
+  exclusive-create attempt then lost a race to a concurrent same-`claim-id`
+  creator, so the eventual match came from a later retry, not the
+  invocation's first look. A caller trusting `reacquired: true` as
+  evidence the lock predates this call (as the backfill-tokens recovery
+  route does) must also require `racedCreate` to be absent/`false`.
 - The `--acquire` CLI exits `0` only for `acquired` and exits `2` for
   `collision`, so a hook can safely chain installation or another mutation
   with `&&`; `--check` remains read-only and exits `0` for a reported state.
@@ -1156,17 +2009,401 @@ Interpretation rules:
   `git worktree remove` at F4 deletes it together with the worktree
 - **`instructions-only` helper-free fallback** (no helper runtime
   available): resolve the private admin directory with
-  `git -C <worktree> rev-parse --absolute-git-dir`, then atomically
-  create an `idd-claim.lock` file there with an exclusive file-create
-  API (`open(..., O_CREAT|O_EXCL)` on POSIX, or the PowerShell
-  `FileMode.CreateNew` equivalent), writing the same JSON holder shape
-  (`agentId`, `claimId`, `acquiredAt`). A path that already exists is a
-  collision; a matching holder may re-acquire, and a missing,
-  malformed, or unreadable holder is also a collision. Never delete or
+  `git -C <worktree> rev-parse --absolute-git-dir`, then read the
+  `idd-claim.lock` path first, before writing anything. Present,
+  well-formed, and its holder matches (`agentId`, `claimId`) →
+  re-acquired without writing — this call's own first read found the
+  lock already there, mirroring the helper's `reacquired: true` with no
+  `racedCreate`. Absent → write the same JSON holder shape (`agentId`,
+  `claimId`, `acquiredAt`) to a same-directory temporary file with a
+  unique name (for example `idd-claim.lock.tmp-<pid>-<random>`); once
+  that temp file is fully written and closed, publish it into the
+  final `idd-claim.lock` path atomically: on POSIX, `link()` the temp
+  file into `idd-claim.lock` and then `unlink()` the temp file (never
+  `rename()`, which would silently replace an existing destination
+  instead of failing); on Windows/PowerShell, a no-overwrite move of
+  the fully-written temp file into the final path (for example
+  `[System.IO.File]::Move`, which throws when the destination already
+  exists). This mirrors `createLockFileExclusively` in
+  `src/scripts/claim-lock.mts`. Never create the final
+  `idd-claim.lock` path directly and write into it as two separate
+  steps — a concurrent same-claim-id reader could then observe a torn
+  or empty body at that path and misreport a collision (#2920). If the
+  publish step then fails because the final path now
+  exists (`EEXIST` on POSIX, or the platform-equivalent
+  already-exists failure on Windows), remove your own temporary file
+  and re-read the final path to confirm the holder matches, but treat
+  this outcome as a race, not as evidence the lock predates this call —
+  never equal it to a lock this same read already found present (the
+  helper's `racedCreate: true`, #2917 review, Codex). A path that
+  already exists with a non-matching, missing, malformed, or
+  unreadable holder is a collision either way. Never delete or
   override a different holder — enable a helper runtime for an
-  authorized takeover instead. Both profiles share the `idd-claim.lock`
-  namespace, so a helper-runtime session and an instructions-only
-  session see the same lock.
+  authorized takeover instead. Both profiles share the
+  `idd-claim.lock` namespace, so a helper-runtime session and an
+  instructions-only session see the same lock.
+
+### Worktree-local generated-tokens record
+
+- A sibling artifact to the worktree-local claim lock above, in the same
+  admin directory, answering a narrower question (#2719): not "does
+  anyone else hold this worktree" but "did _this_ session actually
+  generate the `{agent-id}`/`{claim-id}` it is about to trust, on disk,
+  independent of possibly-compacted conversation memory." Referenced by
+  the "Generated-tokens record" paragraph in
+  [`idd-claim.instructions.md`'s Worktree-local lock file section](../.github/instructions/idd-claim.instructions.md#worktree-local-lock-file-same-machine-collision).
+- Source repo / vendored-node commands:
+  `node scripts/claim-lock.mjs --record-tokens --worktree <path>
+  --agent-id <id> --claim-id <id> [--nonce <nonce>]`,
+  `node scripts/claim-lock.mjs --read-tokens --worktree <path>
+  --claim-id <id>`, and
+  `node scripts/claim-lock.mjs --backfill-tokens --worktree <path>
+  --claim-id <id>`
+- Package-manager / ephemeral-npx command: use the same profile-selected
+  `idd:claim-lock` command as the lock above; the literal invocations are:
+
+  ```sh
+  npx --yes --package <helper-package-spec> \
+    idd-claim-lock --record-tokens --worktree <path> --agent-id <id> \
+    --claim-id <id> [--nonce <nonce>]
+
+  npx --yes --package <helper-package-spec> \
+    idd-claim-lock --read-tokens --worktree <path> --claim-id <id>
+
+  npx --yes --package <helper-package-spec> \
+    idd-claim-lock --backfill-tokens --worktree <path> --claim-id <id>
+  ```
+
+- **When to call `--record-tokens`**: once at A5 claim time, right after
+  generating `{agent-id}`/`{claim-id}`, before posting the `claimed-by`
+  marker (the B1 worktree does not exist yet, so `<path>` is then the
+  _primary_ worktree); again with `--nonce` right before posting the
+  activation-nonce marker; a third time at B1 once the sibling worktree
+  exists, again with `--nonce` carried over from the A5 write --
+  mirroring the lock's own `--acquire` step, but into a distinct file in
+  the new worktree's own admin directory, so the earlier primary-worktree
+  write's `nonce` field must be copied forward rather than omitted (the
+  B1 write is not a re-read-then-rewrite of the same file). Keyed by
+  `--claim-id` (a content-hash-suffixed, sanitized filename), so two
+  sessions generating two different claim-ids resolve to different paths
+  (an astronomically unlikely, not provably impossible, chance of
+  collision from the truncated hash suffix) even while sharing the
+  primary worktree's admin directory. No collision or `--takeover`
+  concept: this is per-claim-id evidence, not a mutual-exclusion
+  primitive, so re-invoking for the same `--claim-id` is always a safe,
+  idempotent overwrite. Exits `0` unless a filesystem error occurs.
+  **Scope**: a `--read-tokens` hit against the **shared primary**
+  worktree path is bootstrap evidence only, not proof of current-session
+  ownership by itself — see `claim-lock.mts`'s own "Scope of the
+  ownership proof" header comment (#2879 review). Always resolve
+  `--read-tokens`/`--acquire` against the caller's own current cwd, never
+  an explicit different worktree's path.
+- **When to call `--read-tokens`**: alongside every later `--acquire`
+  re-run, before trusting a `{claim-id}` recalled only from context.
+  Reports `{ path, present, malformed?, record? }` read-only, mirroring
+  `--check`'s own shape: `present: true` with `record` means a
+  well-formed record for exactly this `--claim-id` exists; `present:
+  true, malformed: true` means a file exists at the resolved path but
+  cannot be trusted as this claim-id's record (corrupt content, or an
+  internal `claimId` field that disagrees with the path it was found
+  at); `present: false` means this claim-id was never recorded. Treat
+  `malformed` the same as absent for an ownership check — never trust a
+  claim-id this record does not affirmatively confirm.
+- **When to call `--backfill-tokens`** (#2884): the recovery route the
+  Claim revalidation gate's step 5 documents for an absent or malformed
+  `--read-tokens` result -- a worktree whose B1 predates this
+  generated-tokens-record feature (a rollout gap: PR #2879 review, Codex
+  P1) never gets a record written, so `--read-tokens` fails closed
+  forever with no recovery otherwise. Reads the existing `idd-claim.lock`
+  file at `<path>` (the same resolution `--check` uses) and writes only
+  when it is present and its own `claimId` matches the given
+  `--claim-id` exactly, using the lock's own `agentId` and no `--nonce`
+  (matching a fresh pre-nonce `--record-tokens` call) unless a
+  well-formed record for this `--claim-id` is already present, in which
+  case its own `nonce` is preserved rather than silently erased (the
+  documented recovery route only ever reaches this command when
+  `--read-tokens` reported absent/malformed -- meaning no well-formed
+  record exists yet -- but the CLI itself does not enforce that
+  precondition, so it guards against a direct out-of-band invocation
+  too, #2917 review): reports
+  `backfilled`. An absent lock reports `lock-absent`; an unparseable or
+  otherwise unreadable lock (for example a directory at the lock path)
+  reports `lock-malformed`; a lock present for a different `claimId`
+  reports `lock-mismatch` (naming the actual holder); a matching lock
+  whose own record path is a directory reports `record-blocked` instead
+  of deleting it -- the lock only authenticates the lock, not this
+  separate path, and the path's hash suffix is not collision-proof, so
+  lock authority alone never authorizes replacing it (#2917 review,
+  Copilot) -- all four write nothing. Exits `0` for `backfilled` and `2`
+  for the four failure statuses, mirroring `--acquire`'s own collision
+  exit-code contract so a
+  caller can chain `--backfill-tokens && --read-tokens`. Performs no
+  GitHub round-trip, matching `--acquire`'s own same-machine, no-network
+  design -- the caller is responsible for having already independently
+  confirmed the live claim-id via GitHub before ever reaching this
+  recovery step; this command only ever reconciles local worktree state,
+  never adjudicates claim ownership itself. Re-invoking after a
+  successful backfill is always a safe, idempotent overwrite (reports
+  `backfilled` again), matching `--record-tokens`'s own idempotency
+  contract -- there is no separate `already-present` status. The Claim
+  revalidation gate (step 5, `idd-overview-core.instructions.md`, and
+  the equivalent step in every lite guard) reaches this route only
+  through a chain in which **each step gates the next** -- proceed to
+  the next step only on the exact result shown, and stop fail-closed on
+  any other result:
+  0. The gate's own initial `--acquire` reports `reacquired: true` with
+  no `racedCreate` -- a fresh `acquired` (lock just created),
+  `forcedTakeover: true`, or `reacquired: true` with `racedCreate:
+     true` (this call itself raced a concurrent creator for the same
+  claim-id, so the match is not proof the lock predates this gate
+  pass) are never legitimate backfill evidence.
+  1. `--check` reports the lock `present`, holder matching
+     `{claim-id}`.
+  2. `--backfill-tokens` reports `backfilled`.
+  3. The retried `--read-tokens` reports `present: true` (no
+     `malformed`).
+  4. A final `--acquire`, run again immediately before the mutation,
+     reports `reacquired: true` with no `racedCreate` -- the same
+     requirement as step 0, applied again because a fresh `acquired`
+     here would mean the lock vanished mid-recovery (for example a
+     concurrent takeover) and this step would otherwise create a new
+     one and let the mutation proceed with no real token evidence.
+
+  This closes gaps three review rounds each found real: the window
+  between the initial acquire and the mutation that a concurrent
+  takeover could exploit; a literal reading of the sequence as an
+  unconditional run-these-in-order list rather than a chain each link
+  of which must actually succeed; and `reacquired: true` alone being
+  trusted as proof of pre-existence when a same-claim-id race can
+  produce it for a lock that is in fact only microseconds old
+  (`acquireClaimLock`'s own `EEXIST`-retry loop,
+  `src/scripts/claim-lock.mts`) (#2917 review, Codex and Copilot).
+  Residual, named rather than hidden: a _third_ process arriving after
+  such a race has already settled sees `reacquired: true` with no
+  `racedCreate` on its own first read, the same way it would for a
+  lock that is genuinely years old -- this mechanism only ever detects
+  a race this specific call itself observed, never a lock's true age;
+  the Claim revalidation gate's own GitHub-verified claim check (steps
+  1-4 before this one) is the actual authority this is defense in
+  depth for, not a replacement for it.
+- No explicit release verb, no cleanup across takeovers: like the lock
+  file, the record lives inside the worktree's own private git-admin
+  directory, so `git worktree remove` at F4 deletes it together with the
+  worktree. The _primary_-worktree copy written at A5 (before the B1
+  worktree exists) is not cleaned up by that removal — an accepted
+  residual, since giving this record cross-worktree, pre-acquisition
+  visibility is explicitly out of scope (see the lock file's own
+  cross-worktree-visibility note above). This is a deliberate choice,
+  not an oversight: the file is a few hundred bytes, untracked (never
+  shown by `git status`), and has no working-tree impact, so leaving it
+  in place is cheaper than adding narrowly-scoped cleanup machinery for
+  it. See issue `kurone-kito/idd-skill#2944` for the full reasoning
+  record and the cleanup-vs-document-intent tradeoff it considered —
+  qualified with the owner/repo here since this file is distributed
+  via `idd-template/`, where a bare `#2944` would resolve against
+  whichever repository copied it in.
+- **`instructions-only` helper-free fallback, write side** (no helper
+  runtime available — `instructions-only` is the distributed default
+  profile, see
+  [Helper Runtime Profile](customization.md#helper-runtime-profile) —
+  so this path is the common case, not an edge case): resolve the
+  private admin directory the same way as the lock file above, then
+  atomically create-or-replace a file there matching this pattern
+  (kept in a fenced block, not a prose code span, so a Markdown
+  reflow can't break the filename across a line -- #2879 review,
+  Codex P1):
+
+  ```text
+  idd-generated-tokens-<sanitized-claim-id>-<8-hex-char sha256 prefix>.json
+  ```
+
+  `<sanitized-claim-id>`: non-`[A-Za-z0-9._-]` characters replaced with
+  `_`, then truncated to 64 characters, so a long claim-id can't push
+  the filename past the filesystem's `NAME_MAX` -- #2879 review, Codex
+  P1. `<8-hex-char sha256 prefix>`: the first 8 hex characters of the
+  SHA-256 digest of the **original, pre-sanitize, pre-truncate**
+  `{claim-id}`, UTF-8-encoded -- not the sanitized or truncated form,
+  so a fallback and the CLI (or two fallback implementations) agree on
+  the same path for the same claim-id (#2879 review, Codex P2). Write
+  `{ agentId, claimId, nonce?, recordedAt }`. No exclusive-create
+  semantics needed for **this record file itself** (unlike the lock
+  file): a plain atomic replace is correct here since the record is
+  idempotent evidence, not a mutual-exclusion primitive -- except a
+  directory already occupying this exact path, which this fallback
+  never replaces or deletes either, matching
+  `recordGeneratedClaimTokens`'s own absolute invariant in
+  `src/scripts/claim-lock.mts` (PR #2879 regression test; #2917 review,
+  Copilot); stop fail-closed instead. **This is scoped to the record
+  file's own replace step only** -- it does not exempt the coordination
+  below: the separate `.writelock` guard the next bullet introduces
+  _does_ need an exclusive create, every time, even though the record
+  replace it wraps does not (#2922 review round 8, Copilot). Skipping
+  the guard because "no exclusive-create semantics needed" was read as
+  covering this whole write reopens the exact nonce-clobber race #2922
+  reported.
+- **`instructions-only` write-lock coordination** (#2922 -- applies to
+  this write side and to the backfill side below, which performs a
+  read-then-write of the same record): before writing, coordinate
+  against a concurrent writer for the same `{claim-id}` the way the
+  CLI's `recordGeneratedClaimTokens` and `backfillGeneratedClaimTokens`
+  do (`withGeneratedTokensWriteLock`, `src/scripts/claim-lock.mts`):
+  atomically create a same-directory `<resolved-path>.writelock` guard
+  file (exclusive create -- fails if it already exists), retrying
+  roughly every 5 ms for up to 5 seconds if it does, **writing a fresh,
+  unique per-attempt token as the guard's own body** (a random value,
+  or `pid:timestamp:random` -- any scheme unique per attempt is fine).
+  **Only once that create call itself has actually succeeded** -- never
+  before it, and never merely because this invocation _attempted_ one --
+  arm a cleanup handler (a shell `trap`, or the agent's own equivalent of
+  a `finally` block) that runs on **every exit path from this point
+  forward, success or failure alike**, then perform the write (or, for
+  the backfill side, the read that captures the existing `nonce` and the
+  write that follows it). Arming the handler any earlier (for example a
+  `trap` set up before the create attempt) is not ownership-safe: a
+  failed create -- whether from `EEXIST` or from exhausting the 5-second
+  wait budget below -- proves nothing was created by this invocation, so
+  a handler armed that early would remove a **different, possibly
+  concurrent, holder's own guard** instead, reopening the exact ABA race
+  #2922's CLI-side fix (`withGeneratedTokensWriteLock`'s own
+  `openSync`/`writeSync`/`closeSync` ownership tracking) exists to close
+  (#2922 review round 6, CodeRabbit). The cleanup handler itself must be
+  **token-verified, not unconditional** (#2922 review round 11,
+  Copilot): re-read the guard and remove it only if it still holds the
+  exact token this attempt wrote, mirroring the CLI's own
+  `releaseGeneratedTokensWriteLockIfOwned` (and, before it,
+  `releaseCloneLock` in `src/scripts/clone-lock.mts`) -- an operator can
+  legitimately remove a guard by hand per the fail-closed timeout
+  guidance below while this invocation's own write is still genuinely in
+  flight, and a new writer can recreate it before this invocation's
+  cleanup runs; an unconditional removal there would delete that new
+  writer's guard instead of its own, letting two writers proceed at
+  once. Treat a guard that is simply already gone (removed by hand, or
+  already released) the same as a token mismatch -- nothing left for
+  this cleanup to remove, not an error. This narrows rather than
+  eliminates the race (verifying the token and removing the guard are
+  still two separate steps, not one atomic operation), which is an
+  accepted limitation shared with the CLI's own implementation -- see
+  the doc comment on `withGeneratedTokensWriteLock` in
+  `src/scripts/claim-lock.mts` for the full rationale. An agent that
+  removes the guard solely after a successful write and skips cleanup
+  when that write itself fails leaves the same orphaned-guard problem
+  the CLI's own code was separately reviewed for (#2922 review round 4,
+  Copilot): every later writer for this exact `{claim-id}` then waits
+  the full 5 seconds and fails closed until an operator manually removes
+  it. Unlike the record file's own body, the guard file's content is
+  read back by this same cleanup handler to verify ownership before
+  removing it -- no other, contending reader ever needs to inspect it,
+  so no atomic-visibility trick is needed beyond the exclusive create
+  itself. If the 5-second wait budget is exhausted, stop fail-closed and
+  report the guard path for manual removal rather than writing anyway
+  (an earlier revision of the CLI's own lock self-reclaimed an aged
+  guard automatically; three independent reviewers found that unsafe --
+  see the doc comment on `withGeneratedTokensWriteLock` for why
+  fail-closed is the current answer) -- a pre-existing guard this
+  invocation did not itself create is never removed on any path, success
+  or failure. Skipping this coordination reopens the exact race #2922
+  reported for the CLI path: a concurrent writer's fresher `nonce` can be
+  silently lost, including between an `instructions-only` session and a
+  helper-runtime session sharing the same worktree.
+- **`instructions-only` helper-free fallback, read side** (#2879 review,
+  Codex P1 -- the mandatory `--read-tokens` check in the Claim
+  revalidation gate has no helper-free path without this): resolve the
+  same filename for the queried `{claim-id}`, using the same sanitize-
+  then-truncate rule as the write side, then reproduce the same three
+  outcomes as the CLI's own `--read-tokens` above: a missing file is
+  `present: false`; a file that exists but is unparseable JSON, or whose
+  parsed `claimId` field disagrees with the queried `{claim-id}`, is
+  `present: true, malformed: true`; only a well-formed record whose
+  `claimId` field matches is plain `present: true`. Treat `malformed`
+  the same as absent for the ownership check -- fail closed on both.
+- **`instructions-only` helper-free fallback, backfill side** (#2884 --
+  the same class of gap PR #2879's Codex P1 review flagged for
+  `--read-tokens` above: a mandatory gate-recovery step needs a
+  helper-free path too, and `instructions-only` is the distributed
+  default profile): resolve the worktree-local lock file the same way as
+  the lock section above and parse it the same way `--check` does --
+  but only when your own _first read_ in the acquire step above already
+  found the lock present and matching, never when it was absent there
+  and your own publish-into-place attempt then failed because the final
+  path already existed. That failure means a concurrent same-claim-id
+  writer landed between your read and your publish -- a race, not
+  evidence the lock predates this gate pass; the helper's own
+  `racedCreate: true` marks exactly this case (#2917 review, Codex).
+  Only when it parses as well-formed and its `claimId`
+  field equals the active `{claim-id}` exactly, apply the write-side
+  fallback above -- write-lock coordination included, wrapped around
+  this whole read-then-write, not just the write -- using the lock's
+  own `agentId`, carrying forward an existing well-formed record's own
+  `nonce` when present, otherwise no `nonce` (#2917 review, Copilot) --
+  except when the record's own
+  resolved path is already occupied by a directory: leave it and its
+  contents untouched and stop fail-closed instead, mirroring the CLI's
+  own `record-blocked` status (`backfillGeneratedClaimTokens`,
+  `src/scripts/claim-lock.mts`) -- a matching lock authenticates the
+  lock, not that separate path, and the path's hash suffix is not
+  collision-proof, so lock authority alone never authorizes replacing it
+  (#2917 review, Copilot). An absent lock, a lock that fails to parse, a
+  lock whose `claimId` differs, or a lock your own first read did not
+  already find present and matching all leave the existing fail-closed
+  stop unchanged -- write nothing.
+
+### Clone-scoped lock
+
+- Source repo / vendored-node commands:
+
+  ```sh
+  node scripts/clone-lock.mjs --exec --agent-id <id> [--repo <path>] \
+    [--timeout-ms <n>] -- <command> [args...]
+
+  node scripts/clone-lock.mjs --check [--repo <path>]
+  ```
+
+- Package-manager / ephemeral-npx command: use the profile-selected
+  `idd:clone-lock` command from the helper runtime manifest wiring
+  above; the literal invocations are:
+
+  ```sh
+  npx --yes --package <helper-package-spec> \
+    idd-clone-lock --exec --agent-id <id> [--repo <path>] \
+    [--timeout-ms <n>] -- <command> [args...]
+
+  npx --yes --package <helper-package-spec> \
+    idd-clone-lock --check [--repo <path>]
+  ```
+
+- A mutual-exclusion mutex around `git worktree add`/`remove` and
+  `git fetch` against the _shared_ primary clone — unlike the
+  worktree-local claim lock above, this blocks (retrying with backoff)
+  rather than reporting an immediate collision, and serializes
+  concurrent workers sharing one clone rather than guarding one
+  worktree's own claim identity. See the
+  [Orchestrator fan-out variant](idd-workflow.md#orchestrator-fan-out-variant)
+  for when to reach for it.
+- `--exec` acquires, runs `<command>` with stdio inherited and `cwd`
+  set to `--repo`, then releases the lock even if the command fails,
+  exiting with the command's own exit code; exits `3` if the lock
+  could not be acquired within `--timeout-ms` (default 120000).
+- `--check` reports `{ path, present, holder?, malformed?,
+  holderAlive? }` read-only; `holderAlive` (diagnostic only, from
+  `process.kill(pid, 0)`) reports whether the recorded holder still
+  appears to be running.
+- **No automatic stale-lock recovery**: a held lock is never taken
+  over, regardless of how long it has been held or whether its
+  recorded holder is still alive. `--exec` exits `3` on a
+  `--timeout-ms` timeout, naming the lock path and the recorded
+  holder's pid in the error message; once you have independently
+  confirmed that holder is gone, remove the lock file by hand and
+  retry — the same recovery git's own `index.lock` expects on a
+  stale-lock collision.
+- **`instructions-only` helper-free fallback (no helper runtime
+  available)**: this lock is a same-machine convenience for
+  parallel autonomous fan-out, not a correctness requirement — an
+  `instructions-only` session running one worker at a time never
+  contends for it. Where an `instructions-only` profile does run
+  concurrent workers sharing one clone, serialize `git worktree
+  add`/`remove`/`fetch` by giving each worker its own clone instead
+  (see the Orchestrator fan-out variant linked above), rather than
+  hand-rolling this lock's protocol.
 
 ### Canonical branch name
 
@@ -1564,15 +2801,31 @@ to post it is the consuming track's job.
   `runAttempt` already exhausted the `"rerun-once"` budget, withholds the
   corresponding plan entries with an explanatory `rerunPolicyHoldNotice`
   instead of silently omitting them
+- Also reports a `liveCoverageRecoveryPlan` (kurone-kito/idd-skill#2549):
+  a narrow, separately-bounded exception for an instance that is
+  BOTH the live-coverage-recovery case above AND itself
+  `rerun-budget-held` (its own `runAttempt` already exhausted the
+  `"rerun-once"` budget) AND has a sibling instance for the same check
+  that already classifies `pass` -- proof the rollup is otherwise
+  already resolved, so rerunning this one is bounded cleanup of a
+  redundant stale sibling on an already-covered HEAD, never a second
+  automated rerun-budget grant. Every other `rerun-budget-held`
+  instance (including the waiver-rebind case below) keeps the
+  unconditional withholding unchanged; each promoted instance's
+  original hold reason is named both in the plan document
+  (`originalHoldReason`) and in the `--apply` summary
 - Without `--apply`, it never calls `gh run rerun` (or any other mutating
   command) itself. Pass `--apply` (#1766) to execute the printed plan:
-  it reruns each rerun-eligible instance in order (recovery-refresh first
-  when one applies), waits for each to reach a genuinely new completed
-  attempt (polled via the actions/runs API, not `gh run watch`, to avoid
-  racing a just-issued rerun's stale pre-rerun status) before starting
-  the next, and stops early once the recomputed plan is fully resolved --
+  it reruns each rerun-eligible instance in order (recovery-refresh
+  first, then the sequential plan, then `liveCoverageRecoveryPlan`
+  last), waits for each to reach a genuinely new completed attempt
+  (polled via the actions/runs API, not `gh run watch`, to avoid racing
+  a just-issued rerun's stale pre-rerun status) before starting the
+  next, and stops early once the recomputed plan is fully resolved --
   a `bot-gated-skip`, `awaiting-fresh-review`, or rerun-budget-held
-  instance is never rerun
+  instance is never rerun outside the narrow `liveCoverageRecoveryPlan`
+  exception just above, and the same `MAX_APPLY_RERUNS` safety bound
+  covers all three plan sections together, not a second loop
 - `--check-name <name>` (#1935) overrides the check-run name searched for
   and reported, defaulting to `idd-advisory-convergence` when omitted
   (byte-identical output to before this flag existed). Use it when the
@@ -1592,7 +2845,12 @@ to post it is the consuming track's job.
 instance (see above) -- that withholding is correct and load-bearing
 on its own, and this section does not change it: the script keeps
 withholding these instances from its own plan, and gains no
-`--override-budget` flag or equivalent. A specific combination sits
+`--override-budget` flag or equivalent. `liveCoverageRecoveryPlan`
+above (#2549) is a separate, much narrower automated exception (a
+live-coverage-recovered instance with an already-passing sibling
+proving the rollup is otherwise resolved) -- it does not apply to the
+waiver-rebind case below, which still requires this manual procedure.
+A specific combination sits
 outside what the withholding alone can resolve: an
 `idd-advisory-convergence` instance already went `rerun-budget-held`
 from a genuinely-failed attempt, and only afterward does a maintainer
@@ -1693,9 +2951,11 @@ reflexively as any other CLI option.
   is a `branch-currency` merge-gate blocker (see below); `UNKNOWN` is the
   async-still-computing state F1 and the E-phase branch-sync check
   already re-poll, not a blocker here.
-- `ci.discardedNonPassingRequiredChecks` (#1745) surfaces a same-name/type/
-  workflowName required-check instance discarded by the latest-per-producer
-  dedup while the surviving representative is pass-equivalent -- e.g. a
+- `ci.discardedNonPassingRequiredChecks` (#1745) surfaces a same-producer
+  (name/type/workflowName/workflowPath -- kurone-kito/idd-skill#2919 widened
+  this from the original name/type/workflowName 3-tuple) required-check
+  instance discarded by the latest-per-producer dedup while the surviving
+  representative is pass-equivalent -- e.g. a
   `CANCELLED` bot-triggered instance sitting alongside the `SUCCESS`
   instance the dedup selected as "latest", the live PR #1741 divergence
   where `ci.status: "success"` disagreed with GitHub's own
@@ -1731,6 +2991,35 @@ reflexively as any other CLI option.
   `trustSourcePinnedRequiredChecks` opt-in never clears this cause, even
   when a separate, named-and-pinned check on the same required-check set
   would itself qualify.
+- `ci.identityUnresolvedRequiredCheckNames` (kurone-kito/idd-skill#2919,
+  round 2) mirrors `ci.sourcePinnedRequiredCheckNames`'s own shape for a
+  different unverifiable-producer case: required check names whose green
+  state was downgraded to `ci.status: "unknown"` because this collection
+  pass could not fully resolve their real workflow-file producer identity
+  (`workflowPath`) -- a parse failure on some but not all live instances, a
+  thrown `listCheckRunWorkflowPaths` call, an empty resolved path, a
+  run-id count exceeding the collector's own lookup ceiling, or a
+  `detailsUrl` that repeats -- either among the resolved
+  `checkSuite.workflowRun` associations or among the live rollup's own
+  matching instances -- and so cannot be joined back to a single instance
+  safely (kurone-kito/idd-skill#2926). Today this can only ever name
+  `idd-advisory-convergence`, the one check name `pre-merge-readiness`
+  attempts `workflowPath` resolution for. Evidence only (empty array, never
+  omitted, when no such downgrade occurred) -- `computePreMergeReadinessBlockers`
+  uses it (alongside `ci.preDowngradeStatus` below) to name the
+  identity-unresolved cause in the `ci` blocker detail.
+- `ci.preDowngradeStatus` (kurone-kito/idd-skill#2919, round 5) is the
+  dedup+waiver-adjusted `ci.status` classification captured BEFORE either
+  the source-pinned or identity-unresolved downgrade above could narrow
+  it -- `"success"` here means every OTHER required check was already
+  fully resolved as passing, so any non-success final `ci.status` can only
+  be attributed to those two named downgrades. `computePreMergeReadinessBlockers`
+  reads this to decide whether a genuinely separate, concurrent CI failure
+  (an unrelated required check that is actually failing/pending/missing)
+  also needs naming in the `ci` blocker detail, rather than letting a
+  pinned/identity-unresolved cause's own detail text silently replace it.
+  `"unknown"` when no required checks are configured, mirroring
+  `ci.status`'s own initial default in that case.
 - Authoritative phase role: the live `pre-merge-readiness` run on the
   current HEAD is the **authoritative source for the final-merge CI and
   activity fields** at F2/F3. The `review-activity-snapshot` helper builds
@@ -1878,6 +3167,16 @@ reflexively as any other CLI option.
   does not match this exact shape — a different error, an ineligible
   topology, or the opt-in `hold-and-report` policy — falls through
   unchanged to the pre-#1521 hold-and-report path.
+- **Local-head-drift warning (#2453).** In both dry-run and `--apply`,
+  the helper best-effort reads the invoking process's local git branch
+  and HEAD. When that local branch equals the PR's own `headRefName`
+  and the local HEAD differs from `prHeadSha`, the verdict's
+  `localHeadDrift` field is set to `{ localHeadSha, remoteHeadSha }` and
+  a warning is also printed on stderr — the signature of an unpushed
+  commit about to be silently left behind. It is advisory only: `null`
+  whenever the check cannot run (no git repo, a different or detached
+  branch, or an unreadable local/remote read) or finds no divergence,
+  and it never gates `ready` or blocks the merge.
 - Fail closed: if helper execution fails, output is invalid JSON,
   required fields are missing, or helper evidence conflicts with live
   GitHub state, discard helper output and run the manual F3 gate +
@@ -1908,7 +3207,11 @@ reflexively as any other CLI option.
   Without `--assert` it always exits `0` (report-only). With `--assert` it
   exits non-zero unless `ready` is `true` (`ready = not_applicable ||
   converged || ((deadline passed || terminal-unavailable) && validly
-  waived)`).
+  waived) || autoWaiverValid`, the last disjunct added by
+  kurone-kito/idd-skill#2657 -- see the self-referential-bootstrap-auto
+  waiver section above; `waiver.autoWaiverValid` in the verdict reports
+  it directly, since every other `waiver.*` field stays gated behind the
+  deadline/terminal precondition this new disjunct is not).
 - **Structured `nextActions` (`#2143`)**: the verdict also reports a
   `nextActions` array populated from the same catalog the `--assert`
   failure stderr block uses (`collectAssertNextActions`). Each item
@@ -1941,8 +3244,24 @@ reflexively as any other CLI option.
   `DEFAULT_COPILOT_REVIEW_POLL_INTERVAL_MS`, default 7.5s, up to
   `DEFAULT_COPILOT_REVIEW_POLL_MAX_WAIT_MS`, default 60s) before its real
   `--assert`-driven exit, absorbing the common race where the hosting
-  workflow's `pull_request` `synchronize` trigger fires before the
-  separate `pull_request_review` trigger's review has landed. Every other
+  workflow's `pull_request`/`pull_request_target` `synchronize` trigger
+  fires before the primary bot's own review has landed. (Through
+  Phase 1 of the shipped `idd-advisory-convergence.yml` template's own
+  trigger topology, `#2764`, a review landing refreshed this same run
+  via a direct `pull_request_review` trigger on the hosting workflow
+  itself; that trigger now lives on the non-required companion
+  `idd-advisory-convergence-comment.yml` instead, which reruns the
+  existing required run via
+  `rerun-advisory-convergence.mjs --refresh-latest --apply` (not the
+  budget-gated plain `--apply` the two comment-family triggers share) --
+  see that flag's own doc comment in `rerun-advisory-convergence.mts`
+  for why a review submission needs the stronger mode. This move keeps
+  the required workflow's own trigger list free of a same-repository
+  PR's ability to disable or reshape a review-triggered rerun of its
+  required check, though the companion itself stays exactly as
+  PR-editable as that former direct trigger was; the push-triggered
+  gate (via `pull_request_target`, also `#2764`) is what actually stays
+  trusted.) Every other
   not-ready reason (an off-HEAD review, unresolved threads, an
   indeterminate claim scope, a deadline/terminal reason, etc.) still fails
   immediately with no wait, exactly as before this addition — the
@@ -1956,12 +3275,14 @@ reflexively as any other CLI option.
   120s for a paginated call, `#1675`), not by `maxWaitMs` — closing that
   gap would mean threading a remaining-budget deadline into every `gh`
   call inside `collectFromGitHub`, out of scope for this narrow poll
-  wrapper; (2) a review that lands while this poll is asleep can still
-  start a fresh `pull_request_review`-triggered run in the hosting
-  workflow's own PR-scoped `cancel-in-progress` concurrency group,
-  cancelling this run before it observes the review — a narrower win than
-  "never needs an external rerun again"; see the full analysis in
-  `runAdvisoryConvergenceWithPoll`'s doc comment
+  wrapper; (2) as of `#2764` Phase 1, a review landing while this poll
+  is asleep no longer starts a fresh trigger directly in the hosting
+  workflow's own PR-scoped `cancel-in-progress` concurrency group (see
+  the parenthetical above) — it instead reaches this run only
+  indirectly, via the companion's `gh run rerun` on an already-terminal
+  instance. Whether that indirect path can still race and cancel a
+  still-polling sibling is not re-derived here; see the full poll
+  analysis in `runAdvisoryConvergenceWithPoll`'s doc comment
   (`src/scripts/advisory-convergence.mts`).
 - **Deadlock / deadline policy**: while the primary bot has not reviewed
   the current HEAD, `pending` is `true` and the gate is not ready. After
@@ -1986,7 +3307,9 @@ reflexively as any other CLI option.
   ordinary deadline has passed — but `ready` still requires a valid
   waiver in addition (`ready = not_applicable || converged ||
   ((deadline.passed || terminal.state == "COPILOT_UNAVAILABLE") &&
-  waived)`); the terminal state alone never sets `ready: true`. A
+  waived) || autoWaiverValid`, the last disjunct unaffected by this
+  section — kurone-kito/idd-skill#2657's self-referential-bootstrap-auto
+  waiver above); the terminal state alone never sets `ready: true`. A
   `not_applicable` applicability (including `reviewPolicy`
   `human-required` / `no-advisory`) is an independent ready path and
   does not change this waiver rule. Observed incident:
@@ -2113,14 +3436,14 @@ the same order the `eligible` conjunction is written in
 structurally unable to disagree.
 
 <!-- dprint-ignore-start -->
-| Token | Fires when... |
+| Token                                    | Fires when...                                                                                                                                          |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `scope-not-applicable` | `applicability.status` is `not_applicable` OR `indeterminate` (#1686) -- either `advisoryWait.convergenceScope: "idd-claimed"` and this PR has no verified linked claim/branch or has a broken/ambiguous claim linkage, or (#1906) `advisoryWait.exemptBotAuthoredPrs: true` under `"all-prs"` scope exempted a Bot-authored PR with no claim history. Offering a same-HEAD reroll is pointless in any of these cases. |
-| `review-pending` | The primary bot has not yet reviewed current HEAD (`pending: true`). Always co-occurs with `review-item-count-unknown` below, since an off-HEAD review reports no usable item count. |
-| `unresolved-copilot-threads` | `threads.satisfied` is `false` -- at least one Copilot-authored thread is neither resolved nor validly dispositioned. |
-| `missing-regular-comment-disposition` | `dispositionEvidence.missingRegularCommentCount` is non-zero -- an outstanding regular (non-thread) PR comment still lacks a fresh disposition marker. |
-| `review-item-count-unknown` | The latest review's comment count is unavailable -- either the review is off-HEAD (co-firing with `review-pending` above, since `resolveLatestCopilotReviewClause` reports `itemCount: null` for any non-matching-HEAD review), or it is on current HEAD but the count itself is unavailable (a GraphQL nullable-field edge case). |
-| `review-item-count-not-positive` | The latest review's `itemCount` is a known `0` AND `suppressedCount` (#1880) is also `0` -- already fully converged, nothing (posted or suppressed) to reroll for. |
+| `scope-not-applicable`                    | `applicability.status` is `not_applicable` OR `indeterminate` (#1686) -- either `advisoryWait.convergenceScope: "idd-claimed"` and this PR has no verified linked claim/branch or has a broken/ambiguous claim linkage, or (#1906) `advisoryWait.exemptBotAuthoredPrs: true` under `"all-prs"` scope exempted a Bot-authored PR with no claim history. Offering a same-HEAD reroll is pointless in any of these cases. |
+| `review-pending`                          | The primary bot has not yet reviewed current HEAD (`pending: true`). Always co-occurs with `review-item-count-unknown` below, since an off-HEAD review reports no usable item count. |
+| `unresolved-copilot-threads`              | `threads.satisfied` is `false` -- at least one Copilot-authored thread is neither resolved nor validly dispositioned.                                   |
+| `missing-regular-comment-disposition`     | `dispositionEvidence.missingRegularCommentCount` is non-zero -- an outstanding regular (non-thread) PR comment still lacks a fresh disposition marker.  |
+| `review-item-count-unknown`               | The latest review's comment count is unavailable -- either the review is off-HEAD (co-firing with `review-pending` above, since `resolveLatestCopilotReviewClause` reports `itemCount: null` for any non-matching-HEAD review), or it is on current HEAD but the count itself is unavailable (a GraphQL nullable-field edge case). |
+| `review-item-count-not-positive`          | The latest review's `itemCount` is a known `0` AND `suppressedCount` (#1880) is also `0` -- already fully converged, nothing (posted or suppressed) to reroll for.                        |
 <!-- dprint-ignore-end -->
 
 **Updated by kurone-kito/idd-skill#2050** (revised after PR #2054 review --
@@ -2387,7 +3710,7 @@ same as `AW4`/`AW5`.
   `dirty`, `force-push-exception`, `computing`, `unknown` (`computing` is the
   transient still-computing mergeability that callers re-poll; `unknown` stays
   terminal)
-- `syncRecommendation` values: `none`, `merge-main`, `policy-required-update`,
+- `syncRecommendation` values: `none`, `merge-base`, `policy-required-update`,
   `force-push-exception`, `recheck`, `hold-unknown` (`recheck` pairs with
   `computing`)
 - `baseAdvancedSinceMergeBase` (boolean): `true` when the base ref has moved
@@ -2412,6 +3735,112 @@ same as `AW4`/`AW5`.
 - Fail closed: if execution fails, output is invalid JSON, or required
   fields are missing, discard helper output and apply written D4/E-phase
   branch-sync checks directly.
+
+### Effective C1 critique delegate
+
+- Preferred command when helper runtime is enabled:
+  `idd-critique-delegate [--policy <path>] [--no-user-global]`
+- Source repository equivalent:
+  `node scripts/idd-critique-delegate.mjs [--policy <path>] [--no-user-global]`
+- Output schema (stable fields):
+
+  ```json
+  {
+    "usable": true,
+    "source": "repository-local",
+    "command": "my-local-reviewer --diff",
+    "mode": "fallback",
+    "reason": null
+  }
+  ```
+
+- `source` values: `repository-local`, `user-global`, `none`
+- `reason` values (only when `usable` is `false`):
+  `repository-local-explicit-disable` (repo-local `critiqueLoop.delegate`
+  is the JSON `null` sentinel), `invalid-repository-local-delegate` (a
+  malformed repo-local value, which fails closed and never inherits a
+  user-global delegate), `not-configured` (absent at every layer)
+- `usable: true` always carries a non-null `command`/`mode` and a null
+  `reason`; `usable: false` always carries null `command`/`mode` and a
+  non-null `reason`
+- Resolution order matches
+  [User-global critique delegate default](idd-workflow.md#user-global-critique-delegate-default)
+  exactly: a configured, disabled (`null`), or malformed repository-local
+  `critiqueLoop.delegate` always wins outright and never inherits the
+  user-global layer; only when repository-local is entirely absent does
+  an optional `$XDG_CONFIG_HOME/idd-skill/config.json` (or
+  `$HOME/.config/idd-skill/config.json`) fragment apply
+- Under `GITHUB_ACTIONS=true` the user-global layer is always skipped
+  (repository-local resolution is unaffected), matching the documented
+  invariant that a GitHub-hosted or other remote agent surface never
+  consults it; `--no-user-global` skips it explicitly on any other
+  remote surface the caller recognizes but this helper cannot
+  auto-detect from a single provider variable
+- Deterministic and network-free; delegates entirely to the existing
+  exported resolvers (`resolveEffectiveCritiqueLoopDelegateFromEnv` in
+  `idd-config.mts`, `resolveEffectiveCritiqueLoopDelegate` /
+  `parseCritiqueLoopDelegate` in `policy-helpers.mts`) with no
+  reimplemented validation rule (referenced in
+  [kurone-kito/idd-skill#2329](https://github.com/kurone-kito/idd-skill/issues/2329))
+
+### Effective C-phase critique telemetry hook
+
+- Preferred command when helper runtime is enabled:
+  `idd-critique-telemetry-hook [--policy <path>] [--no-user-global]`
+- Source repository equivalent:
+  `node scripts/idd-critique-telemetry-hook.mjs [--policy <path>] [--no-user-global]`
+- Output schema (stable fields):
+
+  ```json
+  {
+    "usable": true,
+    "source": "repository-local",
+    "command": "notify-critique-telemetry --json",
+    "reason": null
+  }
+  ```
+
+- `source` values: `repository-local`, `user-global`, `none`
+- `reason` values (only when `usable` is `false`):
+  `repository-local-explicit-disable` (repo-local
+  `critiqueLoop.telemetryHook` is the JSON `null` sentinel),
+  `invalid-repository-local-telemetry-hook` (a malformed repo-local
+  value, which fails closed and never inherits a user-global hook),
+  `not-configured` (absent at every layer)
+- `usable: true` always carries a non-null `command` and a null
+  `reason`; `usable: false` always carries a null `command` and a
+  non-null `reason`
+- Resolution order matches
+  [User-global critique telemetry hook default](idd-workflow.md#user-global-critique-telemetry-hook-default)
+  exactly: a configured, disabled (`null`), or malformed repository-local
+  `critiqueLoop.telemetryHook` always wins outright and never inherits
+  the user-global layer; only when repository-local is entirely absent
+  does an optional `$XDG_CONFIG_HOME/idd-skill/config.json` (or
+  `$HOME/.config/idd-skill/config.json`) fragment apply
+- Under `GITHUB_ACTIONS=true` the user-global layer is always skipped
+  (repository-local resolution is unaffected), matching the documented
+  invariant that a GitHub-hosted or other remote agent surface never
+  consults it; `--no-user-global` skips it explicitly on any other
+  remote surface the caller recognizes but this helper cannot
+  auto-detect from a single provider variable
+- `--invoke` reads a JSON payload from stdin (see
+  [Repository-configurable critique telemetry hook](idd-workflow.md#repository-configurable-critique-telemetry-hook)
+  for the payload shape) and, only if a hook resolved as usable,
+  invokes its command with that payload on the child's stdin.
+  Fire-and-forget: a missing command, non-zero exit, timeout, or any
+  other failure is silently ignored; this mode always exits `0` and
+  never writes to stdout/stderr, unlike the plain resolution mode above
+  -- the whole point is that a caller never has to inspect this
+  process's own result
+- Deterministic and network-free for resolution; `--invoke` is the one
+  exception (it spawns the resolved command) and is bounded by a
+  default 5-second timeout plus a forced kill, so it can never block or
+  delay its caller; delegates resolution entirely to the existing
+  exported resolvers (`resolveEffectiveCritiqueLoopTelemetryHookFromEnv`
+  in `idd-config.mts`, `resolveEffectiveCritiqueLoopTelemetryHook` /
+  `inspectCritiqueLoopTelemetryHookLayer` in `policy-helpers.mts`) with
+  no reimplemented validation rule (referenced in
+  [kurone-kito/idd-skill#2679](https://github.com/kurone-kito/idd-skill/issues/2679))
 
 ### S2 quiet-window evidence
 
@@ -2557,6 +3986,62 @@ same as `AW4`/`AW5`.
     universal adopter policy — this sweep is a detection aid only: never
     an automatic recovery path or a retroactive merge gate.
 
+### Untrusted-labeler login sweep
+
+- Source repo / vendored-node command:
+
+  ```sh
+  node scripts/idd-suggest-untrusted-labelers.mjs [--owner <owner>] [--repo <repo>] [--format table|json]
+  ```
+
+- Package-manager / ephemeral-npx command: use the profile-selected
+  `idd:suggest-untrusted-labelers` command from the helper runtime
+  manifest wiring above; the literal invocation is:
+
+  ```sh
+  npx --yes --package <helper-package-spec> \
+    idd-suggest-untrusted-labelers [--owner <owner>] [--repo <repo>] [--format table|json]
+  ```
+
+- Automates the full-history sweep technique the
+  [Reserved-label guard recipe](customization.md#reserved-label-guard-recipe)
+  already documents in prose: paginates `GET
+  /repos/{owner}/{repo}/issues/events` to completion, keeping only
+  entries where `event == "labeled"` and the actor's `type == "Bot"`
+  (the REST Issue Event object's `actor` field — a nullable simple-user
+  object — not the webhook payload's `sender` field), deduplicates by
+  `actor.login`, and prints each distinct bot login with a count of
+  `labeled` events attributed to it (`--format table`, the default) or
+  the full result as JSON (`--format json`, including `scannedEventCount`
+  and `pageCount` completeness evidence). `--owner`/`--repo` default to
+  the current repository via `gh repo view` auto-detection.
+- Pages manually (`page=1,2,...` with `per_page=100`), not via `gh api
+  --paginate` in one subprocess call: the repository-level endpoint
+  embeds the full parent `issue` object in every event, and `gh`'s
+  synchronous execution path this repository's helpers share exposes no
+  `maxBuffer` override, so an unbounded repository-wide sweep pages one
+  request at a time instead of risking a single oversized buffered
+  response.
+- **Read-only, unconditionally**: performs no write operation of any
+  kind — no `.github/idd/config.json` edit, no GitHub mutation (no
+  label change, no comment, no other write call). It only proposes
+  candidates for a human to review; recording an accepted candidate's
+  login stays a manual, adopter-owned edit after judging each
+  candidate's event count. Add it to `labels.untrustedLabelerLogins` in
+  `.github/idd/config.json` and (re-)run the `idd-onboard` CLI's
+  `--substitute` stage to generate `strip-untrusted-labels.yml` (see the
+  [Reserved-label guard recipe](customization.md#reserved-label-guard-recipe)'s
+  "Preferred: generated guard" path for the exact invocation), or add it
+  as one of that recipe's `<labeler-bot-login-N>` placeholders when
+  following that recipe's manual fallback instead — see that recipe for
+  when each path applies.
+  Not a phase step in any
+  `idd-*.instructions.md` file — like the Merged-PR feedback sweep
+  above, this is a manually-invoked, operator-run spot-check, run once
+  when first building the reserved-label guard's bot-login list and
+  again after enabling new automation or after a long gap (a bot with
+  no history yet can still start labeling later).
+
 ## Signed-Commit Merge Wrapper (Shared Git Procedure)
 
 `idd-review-triage.instructions.md`'s E-phase sync path and
@@ -2590,6 +4075,17 @@ commit reverts to the stalling primary signer. This is the normal-path
 complement to the recovery-path re-signing in
 `idd-pr-submit.instructions.md` (Post-rebase verification) and
 `idd-overview-core.instructions.md` (cwd-vs-claim cherry-pick recovery).
+
+This wrapper also applies to an ordinary per-commit `git commit` in B3
+(`idd-work.instructions.md`), not only a merge or rebase continuation:
+
+```sh
+git -c gpg.format=ssh -c user.signingkey=<abs-path> -c commit.gpgsign=true commit -F <message-file>
+```
+
+Unlike the merge case above, a commit-only alias such as `git
+commit-ssh` is sufficient here — a single `commit` invocation needs no
+`--continue` step to re-sign.
 
 ### Everyday `git commit` (and `git commit --amend`) fallback
 
@@ -2654,6 +4150,186 @@ form) or the `--no-gpg-sign` last resort — per
 `idd-overview-appendix.instructions.md`'s "Commit signing" section,
 which already limits that reporting duty to non-default outcomes; the
 default configured primary signer needs no separate report.
+
+**Bounded timeout for every invocation** (commit, merge, or rebase): if
+the wrapper has not completed within 2 minutes, treat it as stuck
+rather than a signing failure worth retrying — a whole-command,
+root-cause-agnostic bound (it deliberately does not try to isolate the
+signer subprocess) that applies even to an invocation still producing
+output: an inactivity-only trigger would leave a merge or rebase that
+keeps emitting output free to run indefinitely without ever completing,
+which is not actually bounded (preventive; no observed incident yet —
+raised in PR #2906 review). First check whether the process **tree** —
+the wrapper's git invocation and any descendants such as the signer
+subprocess, not just the top-level command — is still running: per
+`idd-ci.instructions.md`'s "Wake-up discipline" guidance on a heavy
+local command that auto-backgrounds past a tool's default timeout, do
+not start a second wrapper invocation alongside it. This whole
+recovery procedure depends on being able to snapshot and signal the
+process tree — if `pgrep`/`ps` (or an equivalent process-listing and
+signaling mechanism) are not available on the host, that dependency
+cannot be met: stop and post a hold note rather than falling back
+without the cleanup guarantee, the same fail-closed treatment the
+`lsof` case below already gets. It also depends on already knowing
+which process is this invocation's own: "the git PID" below is the PID
+recorded when this wrapper invocation itself was launched, never one
+recovered afterward by searching the process table — launch the
+wrapper (the original invocation and every fallback or continuation
+alike) as `<wrapper command> & echo "wrapper-pid=$!"; wait "$!"` so the
+PID lands in the tool's own output at launch, an unambiguous launch
+record that survives a later timeout, since shell state such as a bare
+`$!` does not itself persist between separate tool calls. B1's
+sibling-worktree model already puts several concurrent workers on one
+host, so a generic `pgrep`/`ps` pattern match (for example, on the
+command name `git commit`) can just as easily match another worker's
+unrelated git invocation, and signaling that tree would terminate
+someone else's in-progress work instead of this one's (preventive; no
+observed incident yet — raised in PR #2906 review). If no such
+launch-time handle was recorded, that dependency is unmet too: hold,
+the same as the missing-`pgrep`/`ps` case above, rather than search for
+a substitute. Otherwise, snapshot the whole set to signal: the git PID
+itself **and** its descendants, found by walking from the git PID (for
+example, recursively via `pgrep -P`) — a
+"descendant" walk alone omits the root git process, leaving it able to
+keep running (and keep `index.lock` held) after only its children are
+signaled. Immediately send SIGTERM to every recorded PID in that
+whole set, not `-9` — git's own signal handler cleans up `index.lock`,
+and a descendant such as the signer subprocess can outlive a `kill`
+scoped to only the git parent (reproduced 2026-09-11 in PR #2906
+review). Snapshot and signal back-to-back, with nothing in between:
+that is what keeps a bare recorded PID number trustworthy without
+needing a separate identity check, since the gap in which an exited
+PID could be reused by an unrelated process stays sub-second on any
+real host. Then wait up to 30 seconds for each recorded PID
+individually to exit (not a fresh tree walk); SIGTERM is asynchronous,
+so checking state immediately can race git's own unwind (still
+removing `index.lock`) or observe stale state.
+
+Even a PID snapshot is best-effort, not a guarantee: a child that gets
+reparented (commonly to init) before the snapshot is taken is never
+recorded at all, so it survives untouched no matter how promptly the
+recorded PIDs are signaled. The same is true of a recorded PID that
+simply outlasts the 30-second wait — for example a process stuck in
+uninterruptible I/O, which cannot receive a signal until it leaves
+that state (preventive; no observed incident yet). Whether either kind
+of survivor is safe to proceed past depends on what it can be: a
+signer subprocess is only a resource leak to report, since the
+unsigned fallback below never invokes one and so cannot race it — but
+the whole-command timeout this section opens with is root-cause-
+agnostic (it can equally fire on a hung hook, not only a stalled
+signer), and a hook process that survives could still be reading or
+writing the working tree or index. Proceeding with the fallback while
+an unidentified or non-signer descendant might still be touching
+repository state risks the fallback's own git operation racing it, so
+treat that case as blocking: stop and post a hold note documenting the
+surviving PID(s) rather than falling back, reserving the
+resource-leak-and-continue treatment for a descendant identifiable as
+the signer itself.
+
+Separately, the lock-ownership check keeps its original (round-6)
+purpose: a leftover `index.lock` after the tree is confirmed gone does
+not prove it belongs to this invocation — a hook, another command, or
+the signer itself could hold it instead, the same ambiguity the
+clone-scoped lock's own "no automatic stale-lock recovery" convention
+already treats as unsafe to guess past. Confirm no other process
+still has the lock file open — a hook or the signer subprocess itself
+could hold it, not only another `git` command, and not necessarily
+one running from this worktree's directory (an absolute-path or
+`git -C` invocation holds the same lock without it) — with `lsof` on
+the `--git-path index.lock` path; where `lsof` is not available,
+ownership cannot be reliably confirmed at all, so treat it as
+unconfirmed rather than substituting a weaker check — before removing
+it yourself
+(`rm -f "$(git rev-parse --git-path index.lock)"`, not a literal
+`.git/index.lock` path, the same linked-worktree rule the rebase-state
+check below uses); if ownership cannot be confirmed, leave the lock in
+place and stop with a hold note instead of forcing the removal.
+
+Either way — the tree exited on its own, was terminated with nothing
+left but an identified signer leak, or the checks above otherwise
+allow proceeding — verify what actually happened before falling back;
+a killed or already-exited process can leave the operation completed,
+mid-progress, or never started at all:
+
+- **Plain commit**: compare `git rev-parse HEAD` before/after the
+  wrapper call, the same check B3's "Verify a commit actually landed"
+  paragraph already prescribes. Landed → stop, do not re-commit.
+  Otherwise, before falling back to `--no-gpg-sign`, also compare the
+  index's tree hash — from running `git write-tree` before the wrapper
+  call and again now — rather than comparing `git status --porcelain`
+  and `git diff --cached --stat` output: `git commit -F` commits the
+  index, so this content-addressed hash is what actually proves it
+  unchanged, whereas status/diff-stat output only shows that a hook
+  mutated the index without moving `HEAD` (reproduced 2026-09-11 in PR
+  #2906 review, via a hook that staged an extra file and slept) — it
+  cannot also catch a hook that swaps one tracked line's content for
+  another of the same shape, leaving both reports unchanged
+  (preventive; no observed incident yet). Unstaged working-tree
+  changes are intentionally excluded from this check: `git commit -F`
+  alone never commits them, so they cannot reach the fallback commit
+  regardless of what changed there. Unchanged → fall back to
+  `--no-gpg-sign`
+  (`idd-overview-appendix.instructions.md`'s "Commit signing" section).
+  Changed → stop and post a hold note for review instead of falling
+  back.
+- **Merge or rebase, state still present**: name the state via git, not
+  a literal path — in a linked worktree (every B1 sibling worktree)
+  `.git` at the worktree root is a _file_ pointing elsewhere, so a
+  hardcoded `.git/rebase-merge` check silently never matches. Use
+  `git rev-parse -q --verify MERGE_HEAD` for a merge, or
+  `test -d "$(git rev-parse --git-path rebase-merge)"` (or
+  `rebase-apply`) for a rebase. Either succeeding means the operation is
+  mid-progress: complete it with `-c commit.gpgsign=false` on the
+  `--continue` form — a plain `--continue` re-signs through the stalled
+  primary signer, and `--no-gpg-sign` itself is not a `--continue` flag.
+- **Merge or rebase, no state present**: absent state alone does not
+  prove the operation succeeded — the timeout can equally fire before
+  Git ever creates that state (nothing to `--continue`), or, for a
+  rebase specifically, leave `HEAD` detached at the upstream tip
+  without replaying the local commit, the same sibling-worktree failure
+  mode `idd-pr-submit.instructions.md`'s D1 "Post-rebase verification"
+  already documents and defines the same predicate for: current branch
+  non-empty (not detached) and the expected local commit present in
+  `origin/{development-branch}..HEAD` for a rebase; for a merge, either
+  `HEAD` advanced past its pre-call value or
+  `git merge-base --is-ancestor origin/{development-branch} HEAD`
+  already succeeds — an already-current merge exits `0` having created
+  neither a new `HEAD` nor `MERGE_HEAD`, and is success, not a failed
+  attempt. For a rebase specifically, D1's two checks alone are not
+  enough here: D1 verifies a rebase that already completed, but a
+  timeout that fires **before** the rebase ever starts leaves the
+  untouched, still-behind branch passing both checks trivially (it was
+  never detached, and its own feature commit was already present in
+  `origin/{development-branch}..HEAD` before this attempt began) —
+  require `git merge-base --is-ancestor origin/{development-branch}
+  HEAD` to succeed too, the same upstream-incorporated check the merge
+  case above already uses, so a rebase that never actually ran is not
+  mistaken for one that did. Verified → stop. Not verified → re-attach
+  to the branch if
+  detached (`git checkout {branch-name}`; the commit is preserved on
+  the branch ref) and rerun the original merge or rebase command
+  **unsigned** (`git -c commit.gpgsign=false merge …` / `rebase …`, not
+  the SSH-signing wrapper), exactly once, under this same 2-minute
+  bound — mirroring D1's own bounded auto-recovery. If that rerun times
+  out or still fails the same verification, post a hold note
+  documenting the branch state and stop, the same as D1's own recovery
+  does when it is exhausted.
+
+No step in this recovery procedure waits indefinitely: the original
+wrapper invocation and every fallback or continuation share the same
+2-minute bound, and the termination wait above has its own 30-second
+bound — every step that exceeds its bound routes to the same
+terminate-and-verify-or-hold outcome, not a fresh unbounded wait. A
+hook or other non-signing cause can hang the plain-commit
+`--no-gpg-sign` fallback or the `--continue` completion just as it
+hung the original attempt; if either does not itself complete within
+2 minutes, apply the same terminate-and-verify procedure to it, and if
+it still does not resolve, post a hold note and stop rather than
+retrying further.
+
+Observed hanging with no output for an extended, unbounded period on
+2026-09-10 (issue #2844 / PR #2870, commit `7be8acc9`, later confirmed
+unsigned).
 
 ## Friction Inventory
 
@@ -2768,6 +4444,10 @@ replace the written decision tables.
 [disposition-non-review-notices-schema]: https://kurone-kito.github.io/idd-skill/schemas/disposition-non-review-notices.schema.json
 [forced-handoff-marker-schema]: https://kurone-kito.github.io/idd-skill/schemas/forced-handoff-marker.schema.json
 [idd-merge-execute-schema]: https://kurone-kito.github.io/idd-skill/schemas/idd-merge-execute.schema.json
+[local-validation-evidence-schema]: https://kurone-kito.github.io/idd-skill/schemas/local-validation-evidence.schema.json
 [post-idd-marker-schema]: https://kurone-kito.github.io/idd-skill/schemas/post-idd-marker.schema.json
 [pre-merge-readiness-schema]: https://kurone-kito.github.io/idd-skill/schemas/pre-merge-readiness.schema.json
+[provider-health-schema]: https://kurone-kito.github.io/idd-skill/schemas/provider-health.schema.json
+[provider-outage-declaration-schema]: https://kurone-kito.github.io/idd-skill/schemas/provider-outage-declaration.schema.json
+[provider-outage-park-schema]: https://kurone-kito.github.io/idd-skill/schemas/provider-outage-park.schema.json
 [resolve-review-thread-schema]: https://kurone-kito.github.io/idd-skill/schemas/resolve-review-thread.schema.json
