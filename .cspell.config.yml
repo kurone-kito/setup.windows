@@ -93,6 +93,7 @@ words:
   - pytest
   - qwen
   - remediations
+  - resynced
   - toctou
   - undispositioned
   - unioned

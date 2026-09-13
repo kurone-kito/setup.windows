@@ -257,14 +257,47 @@ npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f9
 ### Issue-Authoring Companion
 
 **Status**: `installed` at
-[`.claude/skills/issue-authoring/`](../.claude/skills/issue-authoring/SKILL.md)
-(copied from the pinned upstream commit's `skills/issue-authoring/`,
-with bundle-internal maintenance-doc links relinked to upstream URLs —
-see the in-file note in `SKILL.md`).
+[`.claude/skills/issue-authoring/`](../.claude/skills/issue-authoring/SKILL.md),
+resynced to the current
+[Upstream pin](#upstream-pin) commit
+`1f90787ebf4021673ce6e5eb69741df331fd2037` (v0.11.0, 2026-09-12; #153),
+up from the v0.7.0 commit this bundle was still pinned to before this
+resync. Bundle-internal maintenance-doc links stay relinked to upstream
+URLs — see the in-file note in `SKILL.md` — and the local-only
+`agents/openai.yaml` file (no upstream counterpart) is untouched.
+
+Adopts the **author-and-publish / hold-release** approval model the
+bundle redesigned around in upstream v0.8.0: a drafted `ready` issue now
+publishes immediately under a suppressing `status:authoring` label
+(Discover skips issues carrying it) instead of waiting for a
+per-issue publish approval; release still normally needs a later,
+explicit **hold-release** (removing the label and handing the authored
+set to the IDD execution loop) — the one documented exception is a
+narrow, single-target, provenance-gated auto-release for a follow-up
+issue explicitly marked `review-fix-loop-cutoff` at Stage 1 publication
+time, which may complete release without waiting for that explicit
+request. This repository adopts the new model as-is rather than
+keeping the older per-issue pre-publish approval flow as a local
+divergence.
+
+This resync also fixes a known bug in the previously-pinned bundle
+version (upstream `kurone-kito/idd-skill#2931`): `post-idd-marker` now
+posts this bundle's `authoring-owner`/`authoring-publication-intent`
+markers through the same trusted, byte-exact JSON path every other
+operational marker uses, instead of a hand-computed `body-sha256` that
+could silently mismatch and hide an acquire marker from the
+hide-on-supersede sweep permanently. The companion
+`sweep-authoring-markers` helper (upstream `kurone-kito/idd-skill#2935`;
+see [IDD helper scripts](idd-helper-scripts.md)) replaces the former
+8-step manual hide-on-supersede procedure with a single command.
 
 - **`issueAuthoring.maxClarificationRounds`**: no override recorded in
   `.github/idd/config.json`; the bundle's distributed default of `3`
   rounds applies
+- **`issueAuthoring.journalIssue`** / **`issueAuthoring.heartbeatCoalesceWindow`**
+  (added v0.10.0): out of this resync's scope — see
+  [Optional `policy.schema.json` Fields — Intentionally Unset](#optional-policyschemajson-fields--intentionally-unset)
+  above (#155).
 
 ### IDD Spec Audit Companion
 
@@ -329,25 +362,28 @@ by #152 and related issues. Adopted here (recorded in
   been set. Its schema description treats an absent value as
   behaving like `en` (fail-safe default), yet this repository's own
   issue/PR history has consistently drifted to Japanese in practice —
-  because PR-submit (the one consumer confirmed to read it in this
-  repository's *currently installed* bundle) sits downstream of the
-  interactive agent session's own conversational-language-match
-  instruction (this repository's and the operator's global `CLAUDE.md`
-  guidance), which overrides the undocumented/unset default at
-  runtime. Setting it explicitly to `"en"` removes that ambiguity for
-  that consumer and matches the `language: en` already configured in
-  this repository's `.coderabbit.yaml` (the two settings are
-  independently wired to nothing in common, but keeping them aligned
-  is desirable for an open-source project). The installed
-  `.claude/skills/issue-authoring/` bundle does **not** currently read
-  this field (its workflow delegates to `references/contract.md`
-  only) — that consumer only starts applying it once #153's
-  issue-authoring skill resync lands, so this setting's *immediate*
-  effect is PR-submit prose only, not drafted issue prose. This does
-  not retroactively change any already-published issue/PR, nor the
-  fixed English wording the autopilot-suitability/effort footer
-  visible-line mirror uses regardless of this setting, nor the
-  discover/claim runtime (documented as not yet reading this field).
+  because, while the field stayed unset, PR-submit (the consumer that
+  existed before #153) sat downstream of the interactive agent
+  session's own conversational-language-match instruction (this
+  repository's and the operator's global `CLAUDE.md` guidance), which
+  filled the ambiguity the undocumented/unset default left open.
+  Setting it explicitly to `"en"` (a fixed BCP-47 tag, not the literal
+  `match-source`) removes that ambiguity for both current consumers
+  going forward: PR-submit, and — since #153's resync — the
+  `.claude/skills/issue-authoring/` bundle's `references/contract.md`
+  for drafted issue bodies. With a fixed tag configured, drafted issue
+  prose is governed deterministically by this field and is **not**
+  overridden by the operator's live conversational language (that
+  override only applies to the separate literal `match-source`
+  setting, which this repository does not use). This also matches the
+  `language: en` already configured in this repository's
+  `.coderabbit.yaml` (the two settings are independently wired to
+  nothing in common, but keeping them
+  aligned is desirable for an open-source project). This does not
+  retroactively change any already-published issue/PR, nor the fixed
+  English wording the autopilot-suitability/effort footer visible-line
+  mirror uses regardless of this setting, nor the discover/claim
+  runtime (documented as not yet reading this field).
 - **`mergePolicyAck`**: `"fully_autonomous_merge"` (an enum string
   matching `mergePolicy`'s own value, **not** a boolean). Diagnostics
   only — silences an `idd-doctor` warning confirming the maintainer

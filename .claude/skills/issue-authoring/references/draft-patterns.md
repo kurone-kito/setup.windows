@@ -16,10 +16,12 @@ chooser for output shapes.
 ## Output chooser
 
 Draft an orphan issue only when one autonomous task can finish the work
-and the target repository is discoverable through `issue-scope:
-orphan-first`. If the repository uses `orphan-first-policy:
+and the target repository discovers orphans (`issue-scope:
+roadmap-first`, the default, via the orphan fallback, or
+`orphan-first`). If the repository uses `orphan-first-policy:
 maintainer-approved`, include a post-publication approval step after the
-final issue content is stable. If a public repository uses
+final issue content is stable. If the repository sets `issue-scope:
+roadmap` (roadmap-only) or a public repository uses
 `orphan-first-policy: public-disabled`, draft a roadmap package instead.
 
 If the repository keeps the broader secure-by-default issue-author
@@ -98,10 +100,8 @@ Before you publish a ready issue, confirm:
 
 ## Mechanical pre-publish gate
 
-Before you publish a drafted **ready orphan, roadmap, or child** body
-(scoped to those ready shapes — non-ready buckets like
-`blocked-by-human` are not audited by this gate), run the
-`audit-authored-issue` linter against it when a helper runtime
+Before you publish a drafted **ready orphan, roadmap, or child** body,
+run the `audit-authored-issue` linter against it when a helper runtime
 is available. It mechanically catches shape and marker mistakes — a
 missing or duplicated autopilot-suitability footer, a wrong
 markerPrefix, a missing required heading for the declared shape, a
@@ -111,6 +111,23 @@ mask:
 ```sh
 node scripts/audit-authored-issue.mjs --shape orphan \
   --marker-prefix <resolved-target-prefix> --body-file draft.md
+```
+
+Before newly publishing a body into the `needs-decision` or
+`blocked-by-human` bucket instead, also run it, adding
+`--expect-bucket <needs-decision|blocked-by-human>` (choose the one
+matching value) — without it, the marker/label checks that key off
+`authoring-bucket` never fire, since a non-ready body is otherwise
+never run through this gate at all. Passing `--expect-bucket` also
+skips the ready-shape-only checks (the suitability footer and required
+headings) that a bucket body like `#431` below is never expected to
+carry:
+
+```sh
+node scripts/audit-authored-issue.mjs --shape orphan \
+  --marker-prefix <resolved-target-prefix> --body-file draft.md \
+  --expect-bucket needs-decision \
+  --label status:needs-decision
 ```
 
 **Always pass `--marker-prefix`** with the prefix resolved under
@@ -125,12 +142,16 @@ Use `--shape roadmap` or `--shape child` for those shapes, `--stdin`
 instead of `--body-file` when the draft is not yet on disk, and
 `--label <name>` (repeatable) to pass proposed labels for the check
 that a suitability score of `1` carries the configured
-`blocked-by-human` label (default `status:blocked-by-human`; use
-`--config <path>` to point at a policy that overrides the label name —
-this check is also one-directional, it does not flag the reverse, a
-non-`1` score paired with the label). Fix every reported finding and
-re-run before publishing; a `passed: false` report means the draft is
-not ready yet, regardless of how complete the narrative reads.
+`blocked-by-human` label (default `status:blocked-by-human`), unless an
+`authoring-bucket: needs-decision` marker substitutes the configured
+needs-decision label instead (see
+[Authoring-bucket marker](contract.md#authoring-bucket-marker));
+use `--config <path>` to point at a policy that overrides the label
+name — this check is also one-directional, it does not flag the
+reverse, a non-`1` score paired with the label. Fix every reported
+finding and re-run before publishing; a `passed: false` report means
+the draft is not ready yet, regardless of how complete the narrative
+reads.
 
 **No helper runtime available (`instructions-only` profile):** the
 linter cannot run. `instructions-only` is a first-class supported
@@ -159,7 +180,9 @@ Before you publish a `ready` issue, confirm:
 
 - when the issue reuses an existing identifier or field name, the
   specified value matches that name's established semantics in the
-  codebase — it does not overload a name with a new shape or source
+  codebase — it does not overload a name with a new shape or source;
+  remedy: mint a new, distinctly named field instead (see
+  [contract.md's worked example](contract.md#codebase-fidelity-validation))
 - values that are mutable at runtime are flagged to specify a live read
   at the point of use rather than a one-time capture at construction
 
@@ -168,7 +191,9 @@ Before you publish a `ready` issue, confirm:
 - `## Background` or `## Goal`
 - `## Proposed change`
 - `## Acceptance criteria`
-- optional `## Candidate files`
+- optional `## Candidate files` — see
+  [contract.md's Candidate files format](contract.md#candidate-files-format)
+  for the exact parse contract before populating it
 - an autopilot-suitability footer at the end of the body (visible
   line + `<!-- <marker-prefix>-autopilot-suitability: N -->` marker)
 
@@ -196,6 +221,7 @@ Child issue:
 - `## Background`
 - `## Proposed change`
 - `## Acceptance criteria`
+- `## Candidate files`
 - optional dependency line or sequential roadmap marker when needed
 - an autopilot-suitability footer at the end of the body
 
@@ -245,6 +271,19 @@ This is the preferred shape for sibling tasks that can be reviewed and
 verified independently. The roadmap keeps both tasks visible in its task
 list, and the short note explains the safe parallelism without adding a
 fake `Blocked by` edge.
+
+**Caveat — shared CI check definitions.** File-disjoint tracks are not
+automatically execution-order-independent: if one track edits a shared
+CI check's own workflow _definition_ (e.g. a `.yml` file), any other
+in-flight track whose CI run relies on that check inherits a hidden
+ordering dependency, even though the tracks' own edited files never
+overlap. `gh run rerun` re-resolves against the PR branch's own copy
+of the workflow file, so a fix merged to `main` on a sibling track
+stays invisible until the dependent branch pulls it in (see
+`.github/instructions/idd-ci.instructions.md`'s Rerun mechanics). Note
+this dependency in
+the roadmap's parallel note rather than assuming disjoint files always
+mean safe parallelism.
 
 ### Artificial decomposition
 
@@ -388,6 +427,8 @@ secret in CI so automated tests can verify the signature check.
 ## Ready signal
 
 Close this issue after confirming the secret is available in CI.
+
+<!-- {marker-prefix}-authoring-bucket: blocked-by-human -->
 ```
 
 `#432` — autonomous execution issue (Blocked by #431):
@@ -408,6 +449,10 @@ and dispatches known event types.
 - Handler validates the webhook secret sourced from CI `STRIPE_WEBHOOK_SECRET`.
 - Tests use the Stripe test-mode fixture and pass without manual setup.
 - `pnpm test` and `pnpm run lint` pass in CI.
+
+## Candidate files
+
+- `src/routes/webhooks/stripe.ts`
 ```
 
 The autonomous issue is fully verifiable in CI once the credential
@@ -462,6 +507,10 @@ Add a "Human-dependency isolation examples" section to
 - Examples warn against hiding credentials or product decisions in a
   ready issue.
 - `pnpm run lint:minimum` passes.
+
+## Candidate files
+
+- `skills/issue-authoring/references/draft-patterns.md`
 ```
 
 The website publication decision stays separate. It is not in the
@@ -588,9 +637,15 @@ verification shape, not a rigid edit order.
 
 ## Publication boundary
 
-If the user asked for drafts only, stop after reporting the issue set,
-assumptions, and non-ready buckets.
+Publish each `ready` body directly under the authoring hold once it
+passes the mechanical gate and the critique pass — this is the default
+outcome of drafting, and it needs no separate publish approval. Stop
+after publishing (and applying/creating the authoring label) unless
+the user also separately requests release from the authoring hold —
+release is what authorizes starting the IDD execution loop, so a
+request phrased as "start the IDD execution loop" counts as that same
+release request, not a separate path around it.
 
-If the user explicitly asked to publish issues, create or update them
-and then stop unless they also separately asked to start the IDD
-execution loop.
+If the user asked for drafts only (a preview before anything is
+created), honor that instead: stop after reporting the issue set,
+assumptions, and non-ready buckets, without publishing.
