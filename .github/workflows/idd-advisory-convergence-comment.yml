@@ -54,14 +54,17 @@
 #     above, so the rerun step would 403 there; checkout/setup-node/
 #     classify would be wasted CI minutes on every review comment or
 #     review submission for a fork PR that can never succeed anyway.
-#     `issue_comment` carries no equivalent same-repository signal
-#     without an extra API call (`github.event.issue.pull_request` is
-#     only a stub URL, not the full PR object), so this job does not
-#     attempt to guard that trigger family the same way -- a fork PR's
-#     `issue_comment`-triggered run instead fails visibly at the rerun
-#     step (a 403), matching upstream's own accepted posture for
-#     `pull_request_review` (kurone-kito/idd-skill#2855 review). The
-#     required check itself still runs fine on fork PRs (its own
+#     `issue_comment` needs no such guard at all: its own `GITHUB_SHA`/
+#     `GITHUB_REF` always resolve to the default branch regardless of
+#     which issue or PR was commented on (per GitHub's own documented
+#     event-trigger table), so it is never classified as "a pull
+#     request from a forked repository" for token-permission purposes
+#     the way `pull_request`/`pull_request_review`/
+#     `pull_request_review_comment` are -- this job's `GITHUB_TOKEN`
+#     keeps this workflow's own configured `permissions:` (including
+#     `actions: write`) for an `issue_comment`-triggered run
+#     regardless of whether the commented-on PR is fork-originated.
+#     The required check itself still runs fine on fork PRs (its own
 #     permissions are all read-only); only this automatic refresh is
 #     unavailable there -- the manual `gh run rerun` fallback in
 #     docs/idd-policy.md's CI Gate (External Checks) section still

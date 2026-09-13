@@ -65,14 +65,15 @@ recorded in `.github/idd/config.json`)
   human chatter like "LGTM" is not) does it rerun the existing
   `idd-advisory-convergence` required-check run for the PR's current
   HEAD SHA; a `pull_request_review` submission always reruns it
-  unconditionally. `pull_request_review_comment` and
-  `pull_request_review` are for same-repository PRs only — a
-  fork-originated PR falls back to the manual `gh run rerun` step
-  below, since GitHub forces a read-only `GITHUB_TOKEN` for these
-  triggers on fork PRs regardless of the workflow's own `permissions:`
-  (`issue_comment` has no equivalent same-repository signal to guard
-  on cheaply, so a fork PR's `issue_comment`-triggered run instead
-  fails visibly at the rerun step). The companion has a different job
+  unconditionally. `issue_comment` works for any PR, fork-originated or
+  not: it always resolves to the default branch regardless of which
+  issue or PR was commented on, so GitHub does not restrict its
+  `GITHUB_TOKEN` to read-only the way it does for `pull_request`-family
+  events. `pull_request_review_comment` and `pull_request_review` are
+  for same-repository PRs only — a fork-originated PR falls back to the
+  manual `gh run rerun` step below for those two, since GitHub does
+  force a read-only `GITHUB_TOKEN` for them on fork PRs regardless of
+  the workflow's own `permissions:`. The companion has a different job
   id and concurrency group from the required check itself, so it can
   never create or cancel that check-run directly (#2136,
   kurone-kito/setup.windows#124). This now also automates the

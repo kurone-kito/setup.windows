@@ -230,10 +230,11 @@ IDD-originated (via the companion's `issue_comment` trigger).
 
 **If rerunning the passing non-bot instance alone does not clear the
 rollup (`#1745`)**: a HEAD can carry several `idd-advisory-convergence`
-check-run instances (the check fires on `pull_request` directly, plus
-reruns triggered indirectly via the companion's
-`pull_request_review`/`pull_request_review_comment`/`issue_comment`
-events, and `cancel-in-progress` cancels most of them), and GitHub's own required-check
+check-run instances (the check fires directly on both `pull_request`
+and `pull_request_target`, plus reruns triggered indirectly via the
+companion's `pull_request_review`/`pull_request_review_comment`/
+`issue_comment` events, and `cancel-in-progress` cancels most of them),
+and GitHub's own required-check
 rollup can stay pinned to a bot-triggered instance whose **conclusion** is
 `CANCELLED`. Unlike `action_required`, a `CANCELLED`-conclusion
 bot-triggered instance is **not** gated: rerunning it completes
@@ -297,10 +298,13 @@ actor, or check.
 
 **This repository's own status**: `.github/workflows/idd-advisory-convergence.yml`
 hosts this self-waiver job (reconciled to the v0.11.0 pin in #163), so
-this automated path is live here whenever a PR's own diff touches the
-committed trigger-file allowlist. The manual maintainer-authorized
-waiver flow above remains available for every other reason token,
-actor, or check.
+this automated path is live here for a same-repository PR whenever its
+diff touches the committed trigger-file allowlist. The posting step is
+gated on `github.event.pull_request.head.repo.full_name ==
+github.repository`, so a fork-originated PR editing the allowlist does
+not receive this automatic waiver -- the manual maintainer-authorized
+waiver flow above remains the path for that case, and for every other
+reason token, actor, or check.
 
 **Stale workflow definition on the PR branch.** `gh run rerun`
 re-resolves the failing check against the workflow **definition

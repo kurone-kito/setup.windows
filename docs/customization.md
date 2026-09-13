@@ -473,17 +473,27 @@ events) in that split design. This repository hosts that companion
 workflow (added via
 [#124](https://github.com/kurone-kito/setup.windows/issues/124),
 reconciled to the same pin as the required workflow in #163): a
-review-thread comment or a regular PR comment (`issue_comment`)
-classified as IDD-originated (an E6/E13 disposition reply,
-reply-identity stamp, or other operational marker the required check
-already honors — including a posted maintainer-authorized waiver
-comment) re-runs the existing HEAD-associated required run, and a
-review submission (`pull_request_review`) always does so
-unconditionally, regardless of classification; an ordinary human reply
-does not. The manual `gh run rerun` recovery path described
-below remains the deliberate, direct way to force a recheck without
-waiting on one of these triggers — and the only path available for a
-comment that does not classify as IDD-originated.
+regular PR comment (`issue_comment`) classified as IDD-originated (an
+E6/E13 disposition reply, reply-identity stamp, or other operational
+marker the required check already honors — including a posted
+maintainer-authorized waiver comment) re-runs the existing
+HEAD-associated required run for any PR, fork-originated or not —
+`issue_comment` always resolves to the default branch regardless of
+which issue or PR was commented on, so GitHub does not restrict its
+`GITHUB_TOKEN` to read-only the way it does for
+`pull_request`/`pull_request_review`/`pull_request_review_comment`
+from a fork. A review-thread comment (`pull_request_review_comment`)
+does the same, and a review submission (`pull_request_review`) always
+reruns it unconditionally regardless of classification, but both are
+same-repository-PR only: the companion job skips a fork-originated PR
+entirely for those two triggers, since GitHub does restrict their
+`GITHUB_TOKEN` to read-only there. An ordinary human reply does not
+trigger a rerun through any of these. The manual `gh run rerun`
+recovery path described below remains the deliberate, direct way to
+force a recheck without waiting on one of these triggers — and the
+only path available for a fork-originated PR's review-thread comment
+or review submission, or for a comment that does not classify as
+IDD-originated.
 This is `idd-advisory-convergence`, not
 `lint.yml`.
 Repositories that want human-led or gradual IDD adoption should not
