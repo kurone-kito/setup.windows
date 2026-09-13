@@ -10,10 +10,19 @@ body:
         Before you continue filling out this report, please take a moment to check that your feature request has not been [already reported on GitHub](https://github.com/kurone-kito/setup.windows/search?q=is%3Aissue&type=issues) 🙌
 
   - type: textarea
-    id: overview
+    id: problem
     attributes:
-      label: Feature Overview
-      description: A clear and concise description of what the feature request is.
+      label: Problem or motivation
+      description: What problem are you trying to solve? Why does this matter?
+      placeholder: I'm always frustrated when "X" because "Y".
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: A clear and concise description of what you'd like to happen.
       placeholder: I would like this project to be able to do "X".
     validations:
       required: true
@@ -21,13 +30,31 @@ body:
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternatives Considered
+      label: Alternatives considered
       description: Detail any potential alternative solutions/workarounds you've used or considered.
       placeholder: I have done/might be able to do "X" in this project by doing "Y".
+    validations:
+      required: false
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      options:
+        - winget configuration (`packages.dsc.yaml`)
+        - Chocolatey packages
+        - Boxstarter orchestration (`boxstarter.ps1`/`libs/`)
+        - post-install scripts
+        - documentation
+        - CI/tooling
+        - other
+    validations:
+      required: false
 
   - type: textarea
-    id: context
+    id: verification
     attributes:
-      label: Additional Context
-      description: Add any other context about the problem here.
-      placeholder: Feel free to add any other context/information/screenshots/etc... that you think might be relevant to this feature request here.
+      label: How would you verify this is done?
+      description: What would need to be true for this feature request to be considered complete?
+    validations:
+      required: true

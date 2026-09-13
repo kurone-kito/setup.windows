@@ -1,0 +1,31 @@
+name: 📚 Documentation issue
+description: Report a mistake, ambiguity, or gap in the documentation
+labels: documentation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to help improve the documentation!
+
+  - type: input
+    id: location
+    attributes:
+      label: Document path or URL
+      placeholder: e.g. README.md, or https://github.com/kurone-kito/setup.windows/blob/master/README.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong, unclear, or out of date?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed fix
+      description: If you already have a suggested wording or fix, share it here.
+    validations:
+      required: false
