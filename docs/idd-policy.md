@@ -56,20 +56,31 @@ recorded in `.github/idd/config.json`)
   below (#61).
 - **Comment-triggered rerun (non-required companion)**:
   `.github/workflows/idd-advisory-convergence-comment.yml` listens for
-  `pull_request_review_comment` events and, only when the comment is
-  classified IDD-originated (an E6/E13 disposition reply, reply-identity
-  stamp, or other operational marker `scripts/review-comment-origin.mjs`
-  already recognizes — ordinary human chatter like "LGTM" is not),
-  reruns the existing `idd-advisory-convergence` required-check run for
-  the PR's current HEAD SHA, for same-repository PRs only — a
-  fork-originated PR falls back to the manual `gh run rerun` step below,
-  since GitHub forces a read-only `GITHUB_TOKEN` for this trigger on
-  fork PRs regardless of the workflow's own `permissions:`. It has a
-  different job id and concurrency group from the required check
-  itself, so it can never create or cancel that check-run directly
-  (#2136, kurone-kito/setup.windows#124). This automates only the
-  reply-triggered case; it is unrelated to the waiver-comment rerun
-  case below, which still requires the manual `gh run rerun` step.
+  `pull_request_review_comment`, `issue_comment`, and
+  `pull_request_review` events. For the two comment-family triggers,
+  only when the comment is classified IDD-originated (an E6/E13
+  disposition reply, reply-identity stamp, a posted maintainer-
+  authorized waiver comment, or other operational marker
+  `scripts/review-comment-origin.mjs` already recognizes — ordinary
+  human chatter like "LGTM" is not) does it rerun the existing
+  `idd-advisory-convergence` required-check run for the PR's current
+  HEAD SHA; a `pull_request_review` submission always reruns it
+  unconditionally. `issue_comment` works for any PR, fork-originated or
+  not: it always resolves to the default branch regardless of which
+  issue or PR was commented on, so GitHub does not restrict its
+  `GITHUB_TOKEN` to read-only the way it does for `pull_request`-family
+  events. `pull_request_review_comment` and `pull_request_review` are
+  for same-repository PRs only — a fork-originated PR falls back to the
+  manual `gh run rerun` step below for those two, since GitHub does
+  force a read-only `GITHUB_TOKEN` for them on fork PRs regardless of
+  the workflow's own `permissions:`. The companion has a different job
+  id and concurrency group from the required check itself, so it can
+  never create or cancel that check-run directly (#2136,
+  kurone-kito/setup.windows#124). This now also automates the
+  waiver-comment rerun case: a maintainer-authorized waiver comment
+  classifies as an operational marker, so posting one on a repository
+  that hosts this companion no longer requires a separate manual
+  `gh run rerun` step to take effect.
 - **`ciGate.externalChecks.waivable`**: `[{ "selector":
   "idd-advisory-convergence" }]` — this repository's only waivable
   external check.
@@ -90,10 +101,17 @@ recorded in `.github/idd/config.json`)
     --apply --yes
   ```
 
-  **Posting a waiver comment alone does not turn the check green.** A PR
-  comment is not one of `idd-advisory-convergence.yml`'s trigger events,
-  and a completed run's conclusion never changes on its own — after
-  posting a valid waiver, re-run the check via
+  **Posting a waiver comment no longer requires a separate manual rerun
+  step on its own.** A PR comment is not one of
+  `idd-advisory-convergence.yml`'s own trigger events, and a completed
+  run's conclusion never changes on its own — but the repository also
+  hosts the companion `idd-advisory-convergence-comment.yml` workflow
+  (#163 reconciliation), which listens for `issue_comment` and, since a
+  posted maintainer-authorized waiver comment classifies as an
+  operational marker (IDD-originated), automatically reruns the
+  existing `idd-advisory-convergence` run for the current HEAD SHA. If
+  that automatic rerun does not land (e.g. the companion is disabled, or
+  the fallback is faster), re-run the check manually instead via
   `gh run rerun <run-id>` on the existing `pull_request`-family run for
   the current HEAD SHA (found via `gh run list
   --workflow=idd-advisory-convergence.yml --json
@@ -328,11 +346,11 @@ the v0.7.0 → v0.11.0 pin resync (#152 and related issues).
 (v0.11.0, 2026-09-12). This was a fresh install with no prior local
 copy to keep in lockstep, so it was pinned independently of the
 repository-wide pin bump (#152 and related issues) rather than blocked
-on it; that pin bump has since landed at the same commit, so this
-companion and the rest of the repository's `idd-template/`-derived
-files now agree — except the three CI workflow YAML files tracked
-separately in #163, which remain at the older pin until that issue
-lands; see [Upstream pin](#upstream-pin) below for the authoritative,
+on it; that pin bump has since landed at the same commit, and the
+three CI workflow YAML files (reconciled separately in #163) now agree
+too, so this companion and the rest of the repository's
+`idd-template/`-derived files are all at the same pin; see
+[Upstream pin](#upstream-pin) below for the authoritative,
 currently-landed repo-wide pin record.
 
 ### IDD Label Names
@@ -543,15 +561,29 @@ kurone-kito/idd-skill @ 1f90787ebf4021673ce6e5eb69741df331fd2037 (v0.11.0, 2026-
 
 This repository additionally hosts the following template workflow
 files as dogfooded copies, kept in sync manually on each pin bump.
-**These three files intentionally remain pinned to the previous
-commit** (`f51a8bb73a47452eff5799e8a27251b660ba4ae0`, v0.7.0) until
-issue #163 lands, so that this pin bump's own reconciliation and
-the CI workflow reconciliation each stay internally coherent as
-separate, independently reviewable changes:
+All three are pinned to the same commit as above (issue #163
+reconciled them up from the previous v0.7.0 pin):
 
-- `.github/workflows/idd-advisory-convergence.yml`
-- `.github/workflows/idd-advisory-convergence-comment.yml`
-- `.github/workflows/post-merge-cleanup.yml`
+- `.github/workflows/idd-advisory-convergence.yml` — also adds the
+  `pull_request_target` trigger and the
+  `idd-advisory-convergence-self-waiver` job (`kurone-kito/idd-skill#2657`)
+  alongside the pre-existing `pull_request` trigger, per upstream's own
+  documented transitional dual-trigger migration; `pull_request` stays
+  active until `pull_request_target` has run cleanly on production PRs
+  for a period, matching upstream's own stance
+- `.github/workflows/idd-advisory-convergence-comment.yml` — also adds
+  the `issue_comment` trigger and the debounced rerun logic
+  (`kurone-kito/idd-skill#1381`/`#2638`), and the `pull_request_review`
+  trigger moved here from the required workflow above; its
+  "Classify review comment" step now uses the standard
+  `npx --package <pin> idd-review-comment-origin` form now that
+  upstream ships a published bin entry for it
+  (`kurone-kito/idd-skill#2214`/`#2260`), replacing the previous
+  runner-temp `npm install --prefix` workaround
+- `.github/workflows/post-merge-cleanup.yml` — also adopts the
+  duplicate-evidence-comment fix requiring both the prior recorded
+  status and the current run's own outcome to be converged
+  (`kurone-kito/idd-skill#2213`) before skipping a repeat post
 
 When a future change bumps this pin, treat it as a **named-gap
 import**, not a blind resync: reconcile only the specific files that

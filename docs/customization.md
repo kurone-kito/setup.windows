@@ -465,22 +465,35 @@ Ruleset; this is a GitHub-settings action taken outside of IDD
 automation, not something an agent applies on its own. Once
 registered, a repository hosting the companion
 `idd-advisory-convergence-comment.yml` workflow scopes refresh to
-IDD-originated review-thread comments only — an ordinary human reply
-does **not** re-trigger the required check there, since the required
-workflow itself no longer listens for `pull_request_review_comment` in
-that split design. This repository hosts that companion workflow
-(added via
-[#124](https://github.com/kurone-kito/setup.windows/issues/124)): only
-a comment classified as IDD-originated (an E6/E13 disposition reply,
-reply-identity stamp, or other operational marker the required check
-already honors) re-runs the existing HEAD-associated required run,
-through the companion; an ordinary human reply does not. The companion
-itself stays pinned to the pre-v0.11.0 commit (tracked in #163) like
-the required workflow it refreshes, but the split-trigger design is
-already in effect. The manual `gh run rerun` recovery path described
-below remains the deliberate, direct way to force a recheck without
-waiting on a reply — and the only path available for a comment that
-does not classify as IDD-originated.
+IDD-originated comments and review submissions only — an ordinary
+human reply does **not** re-trigger the required check there, since
+the required workflow itself no longer listens for
+`pull_request_review_comment` (or the other companion-owned trigger
+events) in that split design. This repository hosts that companion
+workflow (added via
+[#124](https://github.com/kurone-kito/setup.windows/issues/124),
+reconciled to the same pin as the required workflow in #163): a
+regular PR comment (`issue_comment`) classified as IDD-originated (an
+E6/E13 disposition reply, reply-identity stamp, or other operational
+marker the required check already honors — including a posted
+maintainer-authorized waiver comment) re-runs the existing
+HEAD-associated required run for any PR, fork-originated or not —
+`issue_comment` always resolves to the default branch regardless of
+which issue or PR was commented on, so GitHub does not restrict its
+`GITHUB_TOKEN` to read-only the way it does for
+`pull_request`/`pull_request_review`/`pull_request_review_comment`
+from a fork. A review-thread comment (`pull_request_review_comment`)
+does the same, and a review submission (`pull_request_review`) always
+reruns it unconditionally regardless of classification, but both are
+same-repository-PR only: the companion job skips a fork-originated PR
+entirely for those two triggers, since GitHub does restrict their
+`GITHUB_TOKEN` to read-only there. An ordinary human reply does not
+trigger a rerun through any of these. The manual `gh run rerun`
+recovery path described below remains the deliberate, direct way to
+force a recheck without waiting on one of these triggers — and the
+only path available for a fork-originated PR's review-thread comment
+or review submission, or for a comment that does not classify as
+IDD-originated.
 This is `idd-advisory-convergence`, not
 `lint.yml`.
 Repositories that want human-led or gradual IDD adoption should not
@@ -499,22 +512,25 @@ the selector `idd-advisory-convergence`. That waiver path only exists
 once `ciGate.externalCheckWaivers.mode` is `maintainer-authorized`
 **and** `idd-advisory-convergence` is itself listed under
 `ciGate.externalChecks.waivable` — enabling waiver mode for some other
-external check never silently makes this one waivable too. **Posting a
-waiver comment does not by itself turn the check green**: a waiver is
+external check never silently makes this one waivable too. A waiver is
 a regular PR conversation comment, which is not one of the required
 workflow's triggers (`pull_request`/`pull_request_target` push --
 `pull_request_review` submission is not one either, since #2764 Phase
-1 moved it to the non-required companion), so after posting a waiver
-a maintainer must also
-**re-run the existing** PR-linked check run **for the current HEAD
-SHA** — the Actions UI "Re-run jobs" button, or
-`gh run rerun <run-id>` — for the required check to actually
-reflect it. This repository hosts the companion
-`idd-advisory-convergence-comment.yml` workflow (added via
-[#124](https://github.com/kurone-kito/setup.windows/issues/124)), so
-only an IDD-originated review-thread comment refreshes that same HEAD
-run through the companion; an ordinary human reply does not. The
-manual `gh run rerun` step above remains the deliberate way to force
+1 moved it to the non-required companion), so a completed run's
+conclusion never changes on its own when a waiver is posted. This
+repository hosts the companion `idd-advisory-convergence-comment.yml`
+workflow (added via
+[#124](https://github.com/kurone-kito/setup.windows/issues/124),
+reconciled to add the `issue_comment` trigger in #163): since a posted
+maintainer-authorized waiver comment classifies as an operational
+marker (IDD-originated), it now automatically reruns the existing HEAD
+run through the companion, the same as any other IDD-originated
+regular PR comment or review-thread reply; an ordinary human reply
+does not. If that automatic rerun does not land, **re-run the existing**
+PR-linked check run **for the current HEAD SHA** manually instead —
+the Actions UI "Re-run jobs" button, or `gh run rerun <run-id>` — to
+force it to reflect the waiver.
+The manual `gh run rerun` step above remains the deliberate way to force
 that recheck without posting a reply first, and the only way to
 refresh from a reply that doesn't classify as IDD-originated.
 `workflow_dispatch` does
@@ -2054,8 +2070,8 @@ same way for your own workflows. A branch-name filter alone can include an
 unrelated run -- a reused branch name, or a same-repository `push` /
 `workflow_dispatch` run against that branch outside this pull request --
 so also restrict to `pull_request`/`pull_request_target`/
-`pull_request_review`/`pull_request_review_comment`-triggered runs and
-check each run's own
+`pull_request_review`/`pull_request_review_comment`/`issue_comment`-triggered
+runs and check each run's own
 `pull_requests[].number` against the target pull request (empty for a
 fork-originated pull request, where GitHub never populates that field).
 

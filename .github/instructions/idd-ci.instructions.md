@@ -217,22 +217,26 @@ ships). For a stuck or stale rollup entry, rerun the _existing_
 PR-linked run (`gh run rerun <run-id>`) instead of `workflow_dispatch`.
 
 A second cause: GitHub gates a bot-triggered run (e.g. Copilot's
-`pull_request_review`/`pull_request_review_comment` event) to
-`action_required`, and the bot event alone never refreshes the check.
-Recover by rerunning the _existing_ non-bot `pull_request`-triggered
-run for this HEAD (subject to `ciWait.rerunPolicy`) — never the gated
-bot run itself, which keeps the original actor's privileges and
-re-enters `action_required` (approve via `POST
-/repos/{owner}/{repo}/actions/runs/{run_id}/approve` if it must run).
-The check also self-heals on the next non-bot trigger — a push or a
-**review-thread** reply, not a regular PR comment (no `issue_comment`
-subscription).
+`pull_request_review`/`pull_request_review_comment`/`issue_comment`
+event) to `action_required`, and the bot event alone never refreshes
+the check. Recover by rerunning the _existing_ non-bot instance for
+this HEAD — a `pull_request`- or `pull_request_target`-triggered run,
+whichever direct trigger produced it (subject to `ciWait.rerunPolicy`)
+— never the gated bot run itself, which keeps the original actor's
+privileges and re-enters `action_required` (approve via
+`POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve` if it must
+run). The check also self-heals on the next non-bot trigger — a push
+(on either direct trigger), a review-thread reply, or a regular PR
+comment classified IDD-originated (via the companion's `issue_comment`
+trigger).
 
 **If rerunning the passing non-bot instance alone does not clear the
 rollup (`#1745`)**: a HEAD can carry several `idd-advisory-convergence`
-check-run instances (the check fires on `pull_request` plus
-`pull_request_review`/`pull_request_review_comment`, and
-`cancel-in-progress` cancels most of them), and GitHub's own required-check
+check-run instances (the check fires directly on both `pull_request`
+and `pull_request_target`, plus reruns triggered indirectly via the
+companion's `pull_request_review`/`pull_request_review_comment`/
+`issue_comment` events, and `cancel-in-progress` cancels most of them),
+and GitHub's own required-check
 rollup can stay pinned to a bot-triggered instance whose **conclusion** is
 `CANCELLED`. Unlike `action_required`, a `CANCELLED`-conclusion
 bot-triggered instance is **not** gated: rerunning it completes
@@ -294,12 +298,15 @@ waiver kind is evaluated independent of the deadline/terminal-unavailable
 gate. This does not replace the manual flow for any other reason token,
 actor, or check.
 
-**This repository's own status**: the currently-hosted
-`.github/workflows/idd-advisory-convergence.yml` predates this
-self-waiver job (it stays pinned to the pre-v0.11.0 commit, tracked
-separately in #163). Until that lands, this automated path does not
-exist here regardless of `ciGate` configuration — use the manual
-maintainer-authorized waiver flow above.
+**This repository's own status**: `.github/workflows/idd-advisory-convergence.yml`
+hosts this self-waiver job (reconciled to the v0.11.0 pin in #163), so
+this automated path is live here for a same-repository PR whenever its
+diff touches the committed trigger-file allowlist. The posting step is
+gated on `github.event.pull_request.head.repo.full_name ==
+github.repository`, so a fork-originated PR editing the allowlist does
+not receive this automatic waiver -- the manual maintainer-authorized
+waiver flow above remains the path for that case, and for every other
+reason token, actor, or check.
 
 **Stale workflow definition on the PR branch.** `gh run rerun`
 re-resolves the failing check against the workflow **definition
