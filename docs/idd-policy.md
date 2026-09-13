@@ -227,9 +227,18 @@ added (#132).
 
 **Profile**: `ephemeral-npx`
 
-Helper scripts run via `npx` against the pinned upstream package spec
-(see [Upstream pin](#upstream-pin) below) rather than being vendored
-into this repository or installed as a project dependency:
+**`helperRuntime.packageSpec`**:
+`https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037`
+(repository override; distributed default is the mutable `main`
+archive URL). Recorded explicitly so every helper-emitted
+`ephemeral-npx` invocation string — not only a hand-typed one-shot
+`--package-spec` flag — reflects this repository's actual reviewed
+pin (matching [Upstream pin](#upstream-pin) below), rather than
+silently resolving to a moving target.
+
+Helper scripts run via `npx` against this pinned upstream package spec
+rather than being vendored into this repository or installed as a
+project dependency:
 
 ```sh
 npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 <idd-command>
@@ -295,12 +304,179 @@ currently-landed repo-wide pin record.
 
 ### IDD Label Names
 
-Distribution defaults, no `labels.*` override recorded in
-`.github/idd/config.json`:
+Distribution defaults, no `labels.roadmapLabelName` /
+`labels.blockedByHumanLabelName` / `labels.needsDecisionLabelName`
+override recorded in `.github/idd/config.json` (see
+[Optional `policy.schema.json` Fields — Adopted](#optional-policyschemajson-fields--adopted)
+below for the separate `labels.untrustedLabelerLogins` override that
+*is* recorded):
 
 - roadmap label: `roadmap`
 - blocked-by-human label: `status:blocked-by-human`
 - needs-decision label: `status:needs-decision`
+
+### Optional `policy.schema.json` Fields — Adopted
+
+This section records, per field, the maintainer decision on the
+optional fields upstream (`kurone-kito/idd-skill`) added to
+`schemas/policy.schema.json` between this repository's previous pin
+(v0.7.0) and its current one (v0.11.0), following the resync tracked
+by #152 and related issues. Adopted here (recorded in
+`.github/idd/config.json`):
+
+- **`authoringLanguage`**: `"en"`. This field predates the v0.7.0 →
+  v0.11.0 pin gap itself (it already existed at v0.7.0) but had never
+  been set. Its schema description treats an absent value as
+  behaving like `en` (fail-safe default), yet this repository's own
+  issue/PR history has consistently drifted to Japanese in practice —
+  because PR-submit (the one consumer confirmed to read it in this
+  repository's *currently installed* bundle) sits downstream of the
+  interactive agent session's own conversational-language-match
+  instruction (this repository's and the operator's global `CLAUDE.md`
+  guidance), which overrides the undocumented/unset default at
+  runtime. Setting it explicitly to `"en"` removes that ambiguity for
+  that consumer and matches the `language: en` already configured in
+  this repository's `.coderabbit.yaml` (the two settings are
+  independently wired to nothing in common, but keeping them aligned
+  is desirable for an open-source project). The installed
+  `.claude/skills/issue-authoring/` bundle does **not** currently read
+  this field (its workflow delegates to `references/contract.md`
+  only) — that consumer only starts applying it once #153's
+  issue-authoring skill resync lands, so this setting's *immediate*
+  effect is PR-submit prose only, not drafted issue prose. This does
+  not retroactively change any already-published issue/PR, nor the
+  fixed English wording the autopilot-suitability/effort footer
+  visible-line mirror uses regardless of this setting, nor the
+  discover/claim runtime (documented as not yet reading this field).
+- **`mergePolicyAck`**: `"fully_autonomous_merge"` (an enum string
+  matching `mergePolicy`'s own value, **not** a boolean). Diagnostics
+  only — silences an `idd-doctor` warning confirming the maintainer
+  has re-reviewed `mergePolicy: fully_autonomous_merge` without
+  changing any merge-authority behavior.
+- **`provider`**: `"github"`. GitHub is the only implemented and fully
+  exercised provider — this repository's helpers use `gh`, `jq`, and
+  `curl` for GitHub operations; non-GitHub adapters remain future
+  work. Recording the selection carries zero behavioral risk.
+- **`providerHealth`**: `{ minCorroboratingPrs: 2, samplingWindow:
+  "PT24H" }`. Both values match the read-only provider-health
+  classifier's own distributed defaults — recorded here for
+  self-documentation, not to change behavior.
+- **`localValidationEvidence`**: `{ maxAge: "PT4H" }`. Matches the
+  existing default freshness window for an `idd-local-validation-evidence`
+  marker — recorded for self-documentation.
+- **`advisoryConvergence`**: `{ copilotReviewPollMaxWait: "PT60S" }`.
+  This is the genuine pre-existing default (documented as matching the
+  pre-`kurone-kito/idd-skill#2333` hardcoded 60000ms ceiling) —
+  recording it changes nothing.
+  `copilotReviewPollInterval` is deliberately left unset; see below.
+- **`upstreamEscalation`**: `{ enabled: true }`. Opt-in toggle allowing
+  a session to flag a high-confidence `idd-skill` upstream defect as a
+  local `status:upstream-candidate` issue. The maintainer enabled this
+  (2026-09-12) given this repository's ongoing upstream-tracking work
+  (the v0.7.0 → v0.11.0 resync and its follow-ups) makes this kind of
+  discovery routine going forward.
+- **`critiqueLoop.delegate`**: `{ command: "npx -y markdownlint-cli2
+  \"**/*.md\" && npx -y cspell lint \"**\" --no-progress && pwsh -c
+  \"Invoke-ScriptAnalyzer -Path . -Recurse -Settings
+  ./PSScriptAnalyzerSettings.psd1 -EnableExit\" && pwsh -c
+  \"Invoke-Pester -Path ./tests/powershell -CI\"", mode: "combined" }`
+  — the literal current `commands.pre-push-validate` value (keep this
+  copy in sync if that command ever changes). This repository already
+  runs this same command locally as `pre-push-validate` (markdownlint,
+  cspell, PSScriptAnalyzer, Pester); pointing the C1 critique delegate
+  at it surfaces those findings during self-review as well, not only
+  at pre-push time. `pre-push-validate` is **not itself** one of the
+  registered required CI checks — `.github/workflows/lint.yml`
+  registers separate `lint`, `powershell-analyzer`, and `pester` jobs,
+  and `configuration-drift` (a distinct check this command does not
+  run) is also required — it only mirrors a subset of what those jobs
+  cover, run locally under one umbrella name. `mode: "combined"` keeps
+  the existing per-agent critique pass running unconditionally
+  alongside the delegate — this only adds a signal, never removes
+  one. The maintainer explicitly recorded this exact `command`/`mode`
+  pairing in #155's own acceptance criteria, accepting the added
+  per-round cost of running the full PSScriptAnalyzer/Pester suite on
+  every C1/E10 pass in exchange for that self-review signal; revisit
+  this trade-off as a separate decision if round-count data later
+  shows it is not worth the cost, rather than silently swapping in a
+  lighter delegate command here.
+- **`labels.untrustedLabelerLogins`**: `["coderabbitai[bot]",
+  "reviewpad[bot]"]`. This repository's `.coderabbit.yaml` sets
+  `issue_enrichment.labeling.auto_apply_labels: true` with
+  `labeling_instructions` covering only `bug`/`documentation`/
+  `enhancement`/`question` — none of this repository's three reserved
+  IDD labels (`roadmap`, `status:blocked-by-human`,
+  `status:needs-decision`). Per the documented risk (see
+  [Reserved-label guard recipe](customization.md#reserved-label-guard-recipe)),
+  omitting a label from a semantic auto-labeler's own instructions does
+  **not** restrict which labels it may actually apply — a real,
+  previously unguarded risk, not a hypothetical one: a full-history
+  sweep (`idd-suggest-untrusted-labelers`) confirmed `coderabbitai[bot]`
+  has applied 11 labels historically in this repository, and
+  `reviewpad[bot]` (an actor with no current configuration or workflow
+  in this repository, so not affirmatively trusted) has applied 4. The
+  sweep also surfaced `github-actions[bot]` (6 labeled events), which
+  this list deliberately **excludes**: cross-checked against
+  `.github/workflows/stale.yml`, the only workflow in this repository
+  that applies labels via that identity, and confirmed it only ever
+  applies the `stale` label — never one of the three reserved names —
+  so it is this repository's own trusted automation, exactly the
+  exclusion the recipe's guidance calls for. Guarded by the new
+  [`.github/workflows/strip-untrusted-labels.yml`](../.github/workflows/strip-untrusted-labels.yml),
+  hand-copied from the recipe's manual path (no local `idd-skill` clone
+  is available in this environment for the generated-guard path via
+  `idd-onboard --substitute`).
+
+### Optional `policy.schema.json` Fields — Intentionally Unset
+
+Recorded here so a later session does not "fix" these as an oversight:
+
+- **`developmentBranch`** — this repository has a single long-lived
+  branch (`master`); the field's purpose (distinguishing a
+  feature-integration branch from a trusted default branch) does not
+  apply.
+- **`discover.milestoneScope`** — this repository does not use GitHub
+  milestones; this field's tie-break only has an effect when a
+  matching-title OPEN milestone exists.
+- **`advisoryConvergence.copilotReviewPollInterval`** — its own schema
+  description states that the genuine existing default (a hardcoded
+  7500ms interval) has no exact equivalent expressible in this field's
+  required ISO 8601 duration format; recording an approximate value
+  (e.g. `PT7S` or `PT8S`) would be an actual behavior change, not a
+  restatement of the default, so it stays unset.
+- **`providerOutage.*`** (`declarationTarget`, `maxValidity`,
+  `maxParkedChanges`) — upstream's own customization guidance scopes
+  this feature to repositories that have experienced a multi-hour
+  advisory-review or Actions outage; this repository has no such
+  history, and `declarationTarget` has no meaningful default (it must
+  name a real issue). Fabricating one now would add an unused process
+  with no benefit.
+- **`advisoryWait.secondaryQuietWindow`** /
+  **`advisoryWait.providerOutage.terminalWindow`** — both only take
+  effect when `advisoryWait.secondaryBotLogin` is configured or an
+  outage declaration is active; this repository configures no
+  secondary advisory bot (`advisoryBotLogins` lists Copilot and
+  CodeRabbit as advisory reviewers, not a separate `secondaryBotLogin`
+  supplement) and has no outage-declaration history, so both remain
+  no-ops either way.
+- **`critiqueLoop.deferAfterRounds`** — the distributed default (`15`)
+  is documented upstream as a provisional starting point pending real
+  usage data; this repository has none yet to justify overriding it.
+- **`critiqueLoop.telemetryHook`** — this repository has no external
+  notification system to receive per-round critique telemetry.
+- **`worktreeGuard.refuseBaseBranchCommits`** — a no-op as long as
+  `developmentBranch` stays unset (the schema itself documents that
+  this pure-POSIX-sh hook has no network access to resolve the live
+  GitHub default branch, so it stays inert without `developmentBranch`
+  set); kept unset in lockstep with that field.
+- **`issueAuthoring.heartbeatCoalesceWindow`** — no operational data
+  justifies overriding the distributed default (`PT2M`).
+- **`issueAuthoring.journalIssue`** — only needed for a standalone
+  authoring set with no pre-existing anchor issue; absent falls back
+  to the fail-safe `blocked-by-human` hold. This repository has always
+  cross-referenced flat orphan issues via `Blocked by #NNN` and has
+  never needed a standalone authoring set, so reserving a journal issue
+  number now would be premature.
 
 ## Worktree guard: local activation
 

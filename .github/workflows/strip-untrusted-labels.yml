@@ -1,0 +1,58 @@
+name: Strip untrusted reserved IDD labels
+on:
+  issues:
+    types:
+      - labeled
+  pull_request_target:
+    types:
+      - labeled
+permissions:
+  issues: write
+  pull-requests: write
+concurrency:
+  group: strip-untrusted-labels-${{ github.event.issue.number || github.event.pull_request.number }}-${{ github.event.label.name }}
+  cancel-in-progress: true
+jobs:
+  strip-label:
+    # Reserved set: this repository's three *configured* policy-decision
+    # IDD label names (this repository uses the distributed defaults --
+    # labels.roadmapLabelName/blockedByHumanLabelName/needsDecisionLabelName
+    # are unset in .github/idd/config.json), plus the installed
+    # issue-authoring skill's own authoring-hold label
+    # (issueAuthoring.authoringLabelName, also unset -- default
+    # `status:authoring`; idd-discover.instructions.md's Authoring label
+    # guard skips A0/A3 for any issue carrying it, the same
+    # semantic-labeler risk this workflow otherwise guards). See
+    # docs/customization.md's "Reserved-label guard recipe" for the full
+    # rationale.
+    if: |-
+      contains(fromJSON('["coderabbitai[bot]", "reviewpad[bot]"]'), github.event.sender.login) && (github.event.label.name == 'roadmap' || github.event.label.name == 'status:blocked-by-human' || github.event.label.name == 'status:needs-decision' || github.event.label.name == 'status:authoring')
+    # ubuntu-latest here for maximum portability across time and
+    # adopters. ubuntu-slim -- GitHub's own leaner hosted Ubuntu image,
+    # not a runner private to this source repository -- is a valid
+    # alternative for this recipe's single `gh` CLI call. Verify this
+    # job's actual tool needs against the target image's published
+    # toolchain before switching:
+    # https://github.com/actions/runner-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Remove reserved label applied by an untrusted labeler
+        env:
+          # This repository is hosted on github.com, not GHES, matching
+          # every other workflow in this repository (none of which sets
+          # GH_ENTERPRISE_TOKEN or GH_HOST) -- GH_TOKEN alone resolves
+          # correctly for `gh` here. Porting this recipe to a GHES
+          # adopter needs both GH_ENTERPRISE_TOKEN and GH_HOST set to
+          # that host's actual hostname; do not add just one without the
+          # other.
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          LABEL_NAME: ${{ github.event.label.name }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request_target" ]; then
+            gh pr edit "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label "$LABEL_NAME"
+          else
+            gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --remove-label "$LABEL_NAME"
+          fi

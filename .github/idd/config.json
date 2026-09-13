@@ -3,13 +3,19 @@
   "iddVersion": "0.11.0",
   "markerPrefix": "setup-windows",
   "mergePolicy": "fully_autonomous_merge",
+  "mergePolicyAck": "fully_autonomous_merge",
   "reviewPolicy": "copilot-advisory",
   "threadResolutionPolicy": "fast-agent-resolve",
+  "authoringLanguage": "en",
+  "provider": "github",
   "claimTiming": {
     "staleAge": "PT12H",
     "heartbeatInterval": "PT6H"
   },
   "trustedMarkerActors": ["kurone-kito", "github-actions[bot]"],
+  "labels": {
+    "untrustedLabelerLogins": ["coderabbitai[bot]", "reviewpad[bot]"]
+  },
   "advisoryBotLogins": [
     "copilot-pull-request-reviewer[bot]",
     "coderabbitai[bot]"
@@ -24,7 +30,8 @@
     "post-fix-validate": "npx -y markdownlint-cli2 --fix \"**/*.md\" && npx -y markdownlint-cli2 \"**/*.md\" && npx -y cspell lint \"**\" --no-progress && pwsh -c \"Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit\" && pwsh -c \"Invoke-Pester -Path ./tests/powershell -CI\""
   },
   "helperRuntime": {
-    "profile": "ephemeral-npx"
+    "profile": "ephemeral-npx",
+    "packageSpec": "https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037"
   },
   "issueScope": "roadmap-first",
   "orphanFirstPolicy": "none",
@@ -32,6 +39,9 @@
   "maintainerApprovalActorPolicy": "owners-and-maintainers-only",
   "advisoryWait": {
     "convergenceScope": "all-prs"
+  },
+  "advisoryConvergence": {
+    "copilotReviewPollMaxWait": "PT60S"
   },
   "ciWait": {
     "runningTimeout": "PT10M",
@@ -50,5 +60,21 @@
     },
     "externalCheckWaivers": { "mode": "maintainer-authorized" },
     "trustEmptyProtectionReads": true
+  },
+  "providerHealth": {
+    "minCorroboratingPrs": 2,
+    "samplingWindow": "PT24H"
+  },
+  "localValidationEvidence": {
+    "maxAge": "PT4H"
+  },
+  "upstreamEscalation": {
+    "enabled": true
+  },
+  "critiqueLoop": {
+    "delegate": {
+      "command": "npx -y markdownlint-cli2 \"**/*.md\" && npx -y cspell lint \"**\" --no-progress && pwsh -c \"Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit\" && pwsh -c \"Invoke-Pester -Path ./tests/powershell -CI\"",
+      "mode": "combined"
+    }
   }
 }
