@@ -475,9 +475,11 @@ a comment classified as IDD-originated (an E6/E13 disposition reply,
 reply-identity stamp, or other operational marker the required check
 already honors) re-runs the existing HEAD-associated required run,
 through the companion; an ordinary human reply does not. The companion
-itself stays pinned to the pre-v0.11.0 commit (tracked in #163) like
-the required workflow it refreshes, but the split-trigger design is
-already in effect. The manual `gh run rerun` recovery path described
+is pinned to the same commit as the required workflow it refreshes
+(reconciled together in #163), and also now refreshes on regular PR
+comments (`issue_comment`) and review submissions
+(`pull_request_review`), not only inline review-thread comments. The
+manual `gh run rerun` recovery path described
 below remains the deliberate, direct way to force a recheck without
 waiting on a reply — and the only path available for a comment that
 does not classify as IDD-originated.

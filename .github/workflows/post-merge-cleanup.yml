@@ -97,7 +97,7 @@ jobs:
             echo "::error::PR_NUMBER is empty"
             exit 1
           fi
-          JSON=$(npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0 \
+          JSON=$(npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
             idd-audit-pr-cleanup \
             --pr "$PR_NUMBER" \
             --apply \
@@ -164,12 +164,18 @@ jobs:
           # this workflow's own runs; an agent F4 (or a maintainer
           # rerunning workflow_dispatch on the same PR) can still have
           # posted an evidence comment outside this run. Skip only when
-          # the latest trusted <!-- idd-cleanup-evidence: {status} ... -->
-          # comment already records `applied` or `clean` -- a trusted
-          # comment recording any other status (`failed`, `incomplete`,
-          # `rescan-failed`, `permission-blocked`) invites a retry, so a
-          # rerun must post fresh evidence for its own outcome instead of
-          # leaving stale non-success evidence as the PR's only record.
+          # BOTH the latest trusted <!-- idd-cleanup-evidence: {status}
+          # ... --> comment already records `applied`/`clean` AND this
+          # run's own outcome is also `applied`/`clean`
+          # (kurone-kito/idd-skill#2213) -- a prior success alone must
+          # never suppress this run's own non-success evidence (masking
+          # a later failure), and a prior non-success alone must never
+          # suppress this run's own success evidence (masking a later
+          # recovery). Only a run that is ALSO converged when the prior
+          # record was already converged gets skipped -- `applied` <->
+          # `clean` between two already-converged runs stays silent, but
+          # any transition between a converged and a non-converged state
+          # always posts fresh evidence.
           # "Trusted" scoping: this workflow's own posts are authored by
           # `github-actions[bot]` (the GITHUB_TOKEN actor), and an agent's
           # local F4 post is authored by a configured `trustedMarkerActors`
@@ -211,8 +217,10 @@ jobs:
                 | sed -n 's/^<!-- idd-cleanup-evidence: \([^ ]*\) .*/\1/p')
             fi
           done <<< "$COMMENTS_TSV"
-          if [ -n "$EXISTING" ] && { [ "$EXISTING_STATUS" = "applied" ] || [ "$EXISTING_STATUS" = "clean" ]; }; then
-            echo "::notice::PR #${PR_NUMBER} already has a trusted-author idd-cleanup-evidence comment recording '${EXISTING_STATUS}' (id: ${EXISTING}); skipping workflow post."
+          if [ -n "$EXISTING" ] \
+            && { [ "$EXISTING_STATUS" = "applied" ] || [ "$EXISTING_STATUS" = "clean" ]; } \
+            && { [ "$STATUS" = "applied" ] || [ "$STATUS" = "clean" ]; }; then
+            echo "::notice::PR #${PR_NUMBER} already has a trusted-author idd-cleanup-evidence comment recording '${EXISTING_STATUS}', and this run's own outcome '${STATUS}' is also converged (id: ${EXISTING}); skipping workflow post."
             exit 0
           fi
           BODY=$(printf '%s\n\n%s\n\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n' \

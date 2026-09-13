@@ -294,12 +294,12 @@ waiver kind is evaluated independent of the deadline/terminal-unavailable
 gate. This does not replace the manual flow for any other reason token,
 actor, or check.
 
-**This repository's own status**: the currently-hosted
-`.github/workflows/idd-advisory-convergence.yml` predates this
-self-waiver job (it stays pinned to the pre-v0.11.0 commit, tracked
-separately in #163). Until that lands, this automated path does not
-exist here regardless of `ciGate` configuration — use the manual
-maintainer-authorized waiver flow above.
+**This repository's own status**: `.github/workflows/idd-advisory-convergence.yml`
+hosts this self-waiver job (reconciled to the v0.11.0 pin in #163), so
+this automated path is live here whenever a PR's own diff touches the
+committed trigger-file allowlist. The manual maintainer-authorized
+waiver flow above remains available for every other reason token,
+actor, or check.
 
 **Stale workflow definition on the PR branch.** `gh run rerun`
 re-resolves the failing check against the workflow **definition

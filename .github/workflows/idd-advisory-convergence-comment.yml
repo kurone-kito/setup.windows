@@ -4,19 +4,21 @@
 # the idd-advisory-convergence required check-run itself -- different
 # name, job id, and concurrency group -- it can only ask
 # rerun-advisory-convergence.mjs to re-run the EXISTING pull_request-
-# family run for the current HEAD SHA, and only for a comment
+# family run for the current HEAD SHA, and only for a comment or review
 # classified as IDD-originated (an E6/E13 disposition reply, reply-
-# identity stamp, or other operational marker the required check
-# already honors -- see scripts/review-comment-origin.mjs at the pin
-# below). Ordinary human review-thread chatter (a plain "LGTM",
-# "thanks") never triggers a rerun.
+# identity stamp, other operational marker the required check already
+# honors, or -- for `pull_request_review` -- unconditionally, since a
+# human review submission always deserves a fresh evaluation; see
+# scripts/review-comment-origin.mjs at the pin below). Ordinary human
+# review-thread/PR chatter (a plain "LGTM", "thanks") never triggers a
+# rerun for the two comment-family triggers.
 #   - `ref: master` on the checkout step means a PR cannot substitute
 #     its own edited `.github/idd/config.json` to widen which comments
 #     count as IDD-originated.
-#   - `${{ github.event.comment.body }}` is passed only via `env:` and
-#     read from `$COMMENT_BODY` inside the classifier -- never
-#     interpolated into a shell command -- so PR-authored comment text
-#     is never executed.
+#   - `${{ github.event.comment.body }}` / `${{ github.event.review.body }}`
+#     are passed only via `env:` and read from `$COMMENT_BODY` inside
+#     the classifier -- never interpolated into a shell command -- so
+#     PR-authored text is never executed.
 #   - `actions: write` is scoped to re-running an EXISTING check-run
 #     for this PR's own current HEAD SHA; neither the classifier nor
 #     the rerun helper accepts an attacker-chosen target or command.
@@ -24,41 +26,78 @@
 #     bounded CI re-run, not code execution or privilege escalation
 #     (accepted risk; see kurone-kito/setup.windows#124's Trust/Safety
 #     analysis).
-#   - The classify step below has no published `idd-*` CLI command at
-#     this pin (scripts/review-comment-origin.mjs carries no `bin`
-#     entry), so it cannot use this repository's usual
-#     `npx --yes --package <tarball> idd-<command>` form. It instead
-#     installs the same pinned tarball into a runner-temp prefix
-#     (`npm install --prefix`, the same mechanism `npx --package`
-#     itself uses internally) and calls the script by its resolved
-#     path -- still sourced only from the pinned tarball, nothing
-#     vendored into this repository. The rerun step below has a
-#     published bin and uses the ordinary form. `--ignore-scripts
-#     --no-audit --no-fund` on the install: this step only needs the
-#     plain .mjs file, so lifecycle scripts the tarball's package.json
-#     might define (e.g. a `prepare` hook) never need to run.
-#   - The whole job is skipped for a fork-origin PR (local addition,
-#     absent from the pinned template): GitHub forces `GITHUB_TOKEN` to
-#     read-only for `pull_request_review_comment` on a fork-originated
-#     PR regardless of `permissions:` above, so the rerun step would
-#     403 there -- checkout/setup-node/npm install would be wasted CI
-#     minutes on every review-thread comment for a fork PR that can
-#     never succeed anyway. The required check itself still runs fine
-#     on fork PRs (its own permissions are all read-only); only this
-#     automatic refresh is unavailable there -- the manual
-#     `gh run rerun` fallback in docs/idd-policy.md's CI Gate (External
-#     Checks) section still applies.
+#   - The classify step below uses this repository's usual
+#     `npx --yes --package <tarball> idd-<command>` form -- upstream
+#     added a published `idd-review-comment-origin` bin entry
+#     (kurone-kito/idd-skill#2214/#2260) at this pin, so the
+#     runner-temp `npm install --prefix` workaround this repository
+#     previously needed is no longer necessary.
+#
+# Three trigger families land here: `pull_request_review_comment`
+# (inline review-thread comments), `issue_comment` (regular PR
+# comments -- where post-idd-marker.mjs and
+# disposition-non-review-notices.mjs actually post every marker/
+# disposition type, since both use the issues-comments API), and
+# `pull_request_review` (review submissions -- moved here from
+# idd-advisory-convergence.yml's own trigger list, kurone-kito/idd-skill#2657).
+# `issue_comment` also fires for a comment on a plain issue, not only a
+# PR; this job's own `if:` below skips those
+# (`github.event.issue.pull_request` is only present when the
+# commented-on issue is a PR).
+#
+#   - Fork-origin guard: `pull_request_review_comment` and
+#     `pull_request_review` both carry `github.event.pull_request`, so
+#     this job's own `if:` below skips a fork-originated PR entirely for
+#     those two triggers (local addition, absent from the pinned
+#     template) -- GitHub forces `GITHUB_TOKEN` to read-only for both
+#     event types on a fork-originated PR regardless of `permissions:`
+#     above, so the rerun step would 403 there; checkout/setup-node/
+#     classify would be wasted CI minutes on every review comment or
+#     review submission for a fork PR that can never succeed anyway.
+#     `issue_comment` carries no equivalent same-repository signal
+#     without an extra API call (`github.event.issue.pull_request` is
+#     only a stub URL, not the full PR object), so this job does not
+#     attempt to guard that trigger family the same way -- a fork PR's
+#     `issue_comment`-triggered run instead fails visibly at the rerun
+#     step (a 403), matching upstream's own accepted posture for
+#     `pull_request_review` (kurone-kito/idd-skill#2855 review). The
+#     required check itself still runs fine on fork PRs (its own
+#     permissions are all read-only); only this automatic refresh is
+#     unavailable there -- the manual `gh run rerun` fallback in
+#     docs/idd-policy.md's CI Gate (External Checks) section still
+#     applies.
+#
+# Debounce (kurone-kito/idd-skill#1381, #2023, #2638): a burst of
+# IDD-originated comments fires `rerun-advisory-convergence.mjs --apply`
+# once per comment, exhausting the same-HEAD instance's one-time rerun
+# budget mid-burst. The "Check for newer qualifying event" step below
+# waits a short quiet window, then re-queries whether a newer
+# IDD-originated comment has since landed on the same PR; if so, this
+# run skips its own `--apply` call and leaves it to the later-triggered
+# run. `pull_request_review` deliberately skips debounce entirely
+# (Codex P1, PR #2855 review): its own `--refresh-latest` is a STRONGER
+# request a superseding comment-triggered run cannot answer on its
+# behalf (comment-triggered runs never carry `--refresh-latest`), so
+# "Rerun required HEAD check" below always proceeds for a review
+# submission instead of consulting the debounce step's output.
+#
 # If a future change adds a `ref:` override that resolves to the PR
 # head, vendors either script into this repository, or widens
 # `permissions:` below, re-review this trust model before merging that
 # change.
 name: IDD advisory-convergence comment refresh
 on:
+  pull_request_review:
+    types:
+      - submitted
   pull_request_review_comment:
     types:
       - created
       - edited
       - deleted
+  issue_comment:
+    types:
+      - created
 permissions:
   contents: read
   issues: read
@@ -66,11 +105,11 @@ permissions:
   actions: write
 concurrency:
   # Different job id and group from idd-advisory-convergence.yml
-  # (#2136) so a human review-thread reply here can never create or
+  # (#2136) so a human review-thread/PR reply here can never create or
   # cancel that required check-run. Does not cancel an in-flight
   # refresh: a later human reply on the same PR must not abort an
   # in-progress IDD-originated rerun.
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
   cancel-in-progress: false
 defaults:
   run:
@@ -85,19 +124,25 @@ jobs:
   # workflow's own check-run can never be mistaken for -- or overwrite
   # -- the required check's rollup.
   refresh-if-idd-originated:
-    # Fork-origin PRs are skipped for the whole job (local addition,
-    # absent from the pinned template): the rerun step below can never
-    # succeed there (GitHub forces GITHUB_TOKEN to read-only for
-    # pull_request_review_comment on a fork-originated PR regardless of
-    # permissions: above), so checkout/setup-node/npm install would be
-    # wasted CI minutes on every review-thread comment. The required
-    # check itself still runs fine on fork PRs (its own permissions are
-    # all read-only); only this automatic refresh is unavailable there
-    # -- the manual `gh run rerun` fallback in docs/idd-policy.md's CI
-    # Gate (External Checks) section still applies.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: |
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null) ||
+      (github.event_name != 'issue_comment' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 55, not the required gate's own 10 (kurone-kito/idd-skill#2855
+    # review): a `pull_request_review` submission can land while the
+    # required gate's own run is still mid-flight, and
+    # `--refresh-latest --apply` then blocks waiting for it, each wait
+    # bounded by `rerun-advisory-convergence.mts`'s own internal
+    # 15-minute safety bound -- not this job's shorter former 10-minute
+    # timeout that internal bound deliberately exceeds as its own
+    # margin. GitHub kills this job outright at its own timeout
+    # regardless of what step is running, so a bound smaller than the
+    # sum of the internal waits it wraps would silently drop a deferred
+    # rerun before those internal waits ever gave up gracefully. 55 = 15
+    # (waiting out the original run, if still pending) + 2x15 (the
+    # typical case of two sequential reruns) + 10 headroom for
+    # setup/checkout and the steps preceding this wait.
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v7
         with:
@@ -110,17 +155,88 @@ jobs:
       - name: Classify review comment
         id: origin
         env:
-          COMMENT_BODY: ${{ github.event.comment.body }}
+          # A pull_request_review event carries its free-text summary at
+          # github.event.review.body, not github.event.comment.body (no
+          # `comment` object exists for that event). Feeding it through
+          # the same classifier costs nothing -- a review body can
+          # itself carry an IDD marker -- but a review submission always
+          # qualifies for a rerun regardless of this classifier's
+          # verdict; see the `if:` conditions below, which OR in
+          # `pull_request_review` explicitly rather than relying on
+          # content classification.
+          COMMENT_BODY: ${{ github.event.review.body || github.event.comment.body }}
         run: |
-          npm install --no-save --ignore-scripts --no-audit --no-fund \
-            --prefix "$RUNNER_TEMP/idd-skill" \
-            https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0
-          node "$RUNNER_TEMP/idd-skill/node_modules/@kurone-kito/idd-skill/scripts/review-comment-origin.mjs"
-      - name: Rerun required HEAD check
-        if: steps.origin.outputs.idd_originated == 'true'
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
+            idd-review-comment-origin
+      - name: Check for newer qualifying event
+        id: debounce
+        # `pull_request_review` deliberately excluded -- see the
+        # Debounce module-header paragraph above for why a review must
+        # not be debounced in favor of a later comment-triggered run.
+        # Depending on `steps.origin.outputs.idd_originated` at all
+        # already excludes `pull_request_review` in practice (that
+        # trigger never needs this step to have run), but the explicit
+        # `github.event_name != 'pull_request_review'` conjunct is
+        # load-bearing (Copilot + Codex P1, PR #2855 review): a review
+        # body that happens to classify as IDD-originated would
+        # otherwise still satisfy `idd_originated == 'true'` and run
+        # this step for a review -- and if this step's own live-data
+        # collection then failed, the job would stop here, never
+        # reaching "Rerun required HEAD check" at all for that review.
+        if: steps.origin.outputs.idd_originated == 'true' && github.event_name != 'pull_request_review'
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # pull_request_review_comment carries
+          # github.event.pull_request.number; issue_comment carries
+          # github.event.issue.number instead.
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          # Both pull_request_review_comment and issue_comment carry the
+          # triggering comment's own timestamps at github.event.comment.
+          # Prefer updated_at: pull_request_review_comment also fires on
+          # edited/deleted, and created_at would then still name the
+          # comment's original post time, not this edit -- making every
+          # comment posted between the original post and the edit look
+          # "newer than the trigger" and wrongly skip this run.
+          # updated_at equals created_at for a never-edited comment, so
+          # this is safe for the created-event case too.
+          TRIGGERED_AT: ${{ github.event.comment.updated_at || github.event.comment.created_at }}
         run: |
-          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/f51a8bb73a47452eff5799e8a27251b660ba4ae0 \
-            idd-rerun-advisory-convergence --pr "$PR_NUMBER" --apply
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
+            idd-advisory-comment-debounce --pr "$PR_NUMBER" --triggered-at "$TRIGGERED_AT"
+      - name: Rerun required HEAD check
+        # The explicit `success() &&` on the comment-family branch is
+        # load-bearing, not redundant (Codex P1, kurone-kito/idd-skill#2855
+        # review): GitHub Actions implicitly prepends `success()` to a
+        # step's own `if:` UNLESS the expression itself already calls
+        # one of success()/failure()/always() -- so without an explicit
+        # call here, a failure in "Classify review comment" above would
+        # implicitly skip this ENTIRE step, silently defeating the
+        # review branch's own "always proceeds" guarantee for the exact
+        # trigger that guarantee exists to protect.
+        if: github.event_name == 'pull_request_review' || (success() && steps.origin.outputs.idd_originated == 'true' && steps.debounce.outputs.skip != 'true')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # pull_request_review and pull_request_review_comment carry
+          # the PR number at github.event.pull_request.number;
+          # issue_comment carries it at github.event.issue.number
+          # instead.
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          # A review submission reruns unconditionally (module header
+          # above) when this job itself runs, including when the gate is
+          # already `pass` or its rerun-once budget is already spent --
+          # neither of the two comment families needs that: they are
+          # already filtered to IDD-originated content and share the
+          # ordinary rerun-once budget deliberately (comment-burst
+          # protection). Single word, no spaces -- safe to expand
+          # unquoted below (omitted entirely, not an empty-string
+          # argument, when empty).
+          REFRESH_FLAG: ${{ github.event_name == 'pull_request_review' && '--refresh-latest' || '' }}
+        run: |
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::error::PR_NUMBER is empty"
+            exit 1
+          fi
+          # shellcheck disable=SC2086 # REFRESH_FLAG is a single trusted
+          # word ("--refresh-latest" or empty); see env: above.
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
+            idd-rerun-advisory-convergence --pr "$PR_NUMBER" $REFRESH_FLAG --apply
