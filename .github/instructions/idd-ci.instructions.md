@@ -219,14 +219,16 @@ PR-linked run (`gh run rerun <run-id>`) instead of `workflow_dispatch`.
 A second cause: GitHub gates a bot-triggered run (e.g. Copilot's
 `pull_request_review`/`pull_request_review_comment`/`issue_comment`
 event) to `action_required`, and the bot event alone never refreshes
-the check. Recover by rerunning the _existing_ non-bot
-`pull_request`-triggered run for this HEAD (subject to
-`ciWait.rerunPolicy`) — never the gated bot run itself, which keeps the
-original actor's privileges and re-enters `action_required` (approve
-via `POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve` if it
-must run). The check also self-heals on the next non-bot trigger — a
-push, a review-thread reply, or a regular PR comment classified
-IDD-originated (via the companion's `issue_comment` trigger).
+the check. Recover by rerunning the _existing_ non-bot instance for
+this HEAD — a `pull_request`- or `pull_request_target`-triggered run,
+whichever direct trigger produced it (subject to `ciWait.rerunPolicy`)
+— never the gated bot run itself, which keeps the original actor's
+privileges and re-enters `action_required` (approve via
+`POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve` if it must
+run). The check also self-heals on the next non-bot trigger — a push
+(on either direct trigger), a review-thread reply, or a regular PR
+comment classified IDD-originated (via the companion's `issue_comment`
+trigger).
 
 **If rerunning the passing non-bot instance alone does not clear the
 rollup (`#1745`)**: a HEAD can carry several `idd-advisory-convergence`
