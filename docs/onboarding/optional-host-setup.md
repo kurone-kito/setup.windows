@@ -747,16 +747,16 @@ completed run's conclusion never changes on its own. A repository that
 also hosts the companion `idd-advisory-convergence-comment.yml`
 workflow (with its `issue_comment` trigger — as this repository does;
 the workflow itself was added via #124, reconciled to add that trigger
-in #163) gets this refreshed automatically instead: a posted
+in #163) gets the check refreshed automatically instead: a posted
 maintainer-authorized waiver comment classifies as an IDD-originated
 operational marker and reruns the existing HEAD-associated required
 run through that companion, the same as any other IDD-originated
 regular PR comment or review-thread reply. If that automatic rerun
 does not land, a maintainer must trigger a new run manually instead —
 push, a fresh review, the Actions UI "Re-run jobs" button on the
-_existing_ PR-linked run for the **current HEAD SHA**, or `gh run
-rerun <run-id>` on that same run — for the required check to actually
-reflect it.
+_existing_ PR-linked run for the **current HEAD SHA**, or
+`gh run rerun <run-id>` on that same run — for the required check to
+actually reflect it.
 `workflow_dispatch` does **not** reliably do this: a dispatched run has
 no `pull_request` context of its own, so GitHub associates it with the
 dispatch ref rather than the PR's HEAD SHA, and the resulting run's
