@@ -752,16 +752,13 @@ the check refreshed automatically instead: a posted
 maintainer-authorized waiver comment classifies as an IDD-originated
 operational marker and reruns the existing HEAD-associated required
 run through that companion, the same as any other IDD-originated
-regular PR comment — or, for a same-repository PR, a review-thread
-reply (the companion skips that trigger for fork-originated PRs). If
-that automatic rerun does not land, a maintainer must trigger a new
-run manually instead —
-push, a fresh review (same-repository PRs only — the companion also
-skips `pull_request_review` for fork-originated PRs), the Actions UI
-"Re-run jobs" button on the _existing_ PR-linked run for the
-**current HEAD SHA**, or
-`gh run rerun <run-id>` on that same run — for the required check to
-actually reflect it.
+regular PR comment — or, for a same-repository PR, an IDD-originated
+review-thread reply (the companion skips that trigger for
+fork-originated PRs, and an ordinary human reply is never
+IDD-originated). If that automatic rerun does not land, re-run the
+**existing** PR-linked required run **for the current HEAD SHA**
+manually instead — the Actions UI "Re-run jobs" button, or
+`gh run rerun <run-id>` — to force it to reflect the waiver.
 `workflow_dispatch` does **not** reliably do this: a dispatched run has
 no `pull_request` context of its own, so GitHub associates it with the
 dispatch ref rather than the PR's HEAD SHA, and the resulting run's
