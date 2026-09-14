@@ -751,8 +751,10 @@ in #163) gets the check refreshed automatically instead: a posted
 maintainer-authorized waiver comment classifies as an IDD-originated
 operational marker and reruns the existing HEAD-associated required
 run through that companion, the same as any other IDD-originated
-regular PR comment or review-thread reply. If that automatic rerun
-does not land, a maintainer must trigger a new run manually instead —
+regular PR comment — or, for a same-repository PR, a review-thread
+reply (the companion skips that trigger for fork-originated PRs). If
+that automatic rerun does not land, a maintainer must trigger a new
+run manually instead —
 push, a fresh review, the Actions UI "Re-run jobs" button on the
 _existing_ PR-linked run for the **current HEAD SHA**, or
 `gh run rerun <run-id>` on that same run — for the required check to
