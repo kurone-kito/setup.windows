@@ -746,8 +746,9 @@ check green**: a PR comment is not one of the **required**
 completed run's conclusion never changes on its own. A repository that
 also hosts the companion `idd-advisory-convergence-comment.yml`
 workflow (with its `issue_comment` trigger — as this repository does;
-the workflow itself was added via #124, reconciled to add that trigger
-in #163) gets the check refreshed automatically instead: a posted
+the workflow itself was added via kurone-kito/setup.windows#124,
+reconciled to add that trigger in kurone-kito/setup.windows#163) gets
+the check refreshed automatically instead: a posted
 maintainer-authorized waiver comment classifies as an IDD-originated
 operational marker and reruns the existing HEAD-associated required
 run through that companion, the same as any other IDD-originated
@@ -755,8 +756,10 @@ regular PR comment — or, for a same-repository PR, a review-thread
 reply (the companion skips that trigger for fork-originated PRs). If
 that automatic rerun does not land, a maintainer must trigger a new
 run manually instead —
-push, a fresh review, the Actions UI "Re-run jobs" button on the
-_existing_ PR-linked run for the **current HEAD SHA**, or
+push, a fresh review (same-repository PRs only — the companion also
+skips `pull_request_review` for fork-originated PRs), the Actions UI
+"Re-run jobs" button on the _existing_ PR-linked run for the
+**current HEAD SHA**, or
 `gh run rerun <run-id>` on that same run — for the required check to
 actually reflect it.
 `workflow_dispatch` does **not** reliably do this: a dispatched run has
