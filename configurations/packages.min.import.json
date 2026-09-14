@@ -33,7 +33,6 @@
         { "PackageIdentifier": "max-sixty.worktrunk" },
         { "PackageIdentifier": "Amazon.AWSCLI" },
         { "PackageIdentifier": "JesseDuffield.lazygit" },
-        { "PackageIdentifier": "marlocarlo.psmux" },
         { "PackageIdentifier": "Zellij.Zellij" },
         { "PackageIdentifier": "Starship.Starship" },
         { "PackageIdentifier": "dandavison.delta" },

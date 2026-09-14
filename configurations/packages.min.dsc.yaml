@@ -291,13 +291,6 @@ properties:
     # =======================================================================
     # Install the CLI session management tools
     - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: psmux-tmux-for-windows
-      directives:
-        description: psmux (tmux for Windows)
-      settings:
-        id: marlocarlo.psmux
-        source: winget
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: zellij
       directives:
         description: Zellij
