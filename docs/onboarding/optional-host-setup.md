@@ -740,13 +740,25 @@ That path only exists once `ciGate.externalCheckWaivers.mode` is
 `maintainer-authorized` **and** `idd-advisory-convergence` is itself
 registered under `ciGate.externalChecks.waivable`; enabling waiver mode
 for some other external check never silently makes this one waivable
-too. **Posting the waiver comment does not by itself turn the check
-green**: a PR comment is not one of this workflow's trigger events and
-a completed run's conclusion never changes on its own, so after
-posting the waiver a maintainer must also trigger a new run — push, a
-fresh review, the Actions UI "Re-run jobs" button on the _existing_
-PR-linked run for the **current HEAD SHA**, or `gh run rerun <run-id>`
-on that same run — for the required check to actually reflect it.
+too. **Posting the waiver comment alone does not always turn the
+check green**: a PR comment is not one of the **required**
+`idd-advisory-convergence` workflow's own trigger events, and a
+completed run's conclusion never changes on its own. A repository that
+also hosts the companion `idd-advisory-convergence-comment.yml`
+workflow (with its `issue_comment` trigger — as this repository does;
+the workflow itself was added via kurone-kito/setup.windows#124,
+reconciled to add that trigger in kurone-kito/setup.windows#163) gets
+the check refreshed automatically instead: a posted
+maintainer-authorized waiver comment classifies as an IDD-originated
+operational marker and reruns the existing HEAD-associated required
+run through that companion, the same as any other IDD-originated
+regular PR comment — or, for a same-repository PR, an IDD-originated
+review-thread reply (the companion skips that trigger for
+fork-originated PRs, and an ordinary human reply is never
+IDD-originated). If that automatic rerun does not land, re-run the
+**existing** PR-linked required run **for the current HEAD SHA**
+manually instead — the Actions UI "Re-run jobs" button, or
+`gh run rerun <run-id>` — to force it to reflect the waiver.
 `workflow_dispatch` does **not** reliably do this: a dispatched run has
 no `pull_request` context of its own, so GitHub associates it with the
 dispatch ref rather than the PR's HEAD SHA, and the resulting run's
