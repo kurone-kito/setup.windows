@@ -76,5 +76,8 @@
       "command": "npx -y markdownlint-cli2 \"**/*.md\" && npx -y cspell lint \"**\" --no-progress && pwsh -c \"Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit\" && pwsh -c \"Invoke-Pester -Path ./tests/powershell -CI\"",
       "mode": "combined"
     }
+  },
+  "issueAuthoring": {
+    "journalIssue": "kurone-kito/setup.windows#175"
   }
 }

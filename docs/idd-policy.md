@@ -312,10 +312,29 @@ see [IDD helper scripts](idd-helper-scripts.md)) replaces the former
 - **`issueAuthoring.maxClarificationRounds`**: no override recorded in
   `.github/idd/config.json`; the bundle's distributed default of `3`
   rounds applies
-- **`issueAuthoring.journalIssue`** / **`issueAuthoring.heartbeatCoalesceWindow`**
-  (added v0.10.0): out of this resync's scope — see
-  [Optional `policy.schema.json` Fields — Intentionally Unset](#optional-policyschemajson-fields--intentionally-unset)
-  above (#155).
+- **`issueAuthoring.heartbeatCoalesceWindow`** (added v0.10.0): no
+  override recorded; the bundle's distributed default (`PT2M`) applies
+  (#155).
+- **`issueAuthoring.journalIssue`** (added v0.10.0): set to
+  `"kurone-kito/setup.windows#175"` (#172). #155 originally left this
+  unset on the premise that this repository "has always
+  cross-referenced flat orphan issues via `Blocked by #NNN` and has
+  never needed a standalone authoring set" — that premise did not
+  survive contact with the actual v0.11.0 authoring-hold model: any
+  standalone Stage 1 set with no existing roadmap/anchor issue requires
+  a configured journal, and #172 confirmed this repository's normal
+  authoring pattern (flat orphan issues with no pre-existing anchor)
+  is exactly that standalone-set case, so leaving the field unset would
+  have permanently blocked this skill from ever drafting a fresh
+  standalone issue. The rejected alternative — accept the limitation
+  and restrict this skill to extending existing Stage-1-held sets only,
+  falling back to plain `gh issue create` for genuinely new orphans —
+  was set aside because it would make the skill's stated purpose
+  (preparing IDD-ready orphan issues, this repository's dominant
+  pattern) inapplicable to that pattern's own common case. #175 is a
+  new issue created solely to serve as this durable, comment-only
+  journal target; it carries no other content and must not be closed
+  or repurposed.
 
 ### IDD Spec Audit Companion
 
@@ -480,6 +499,9 @@ by #152 and related issues. Adopted here (recorded in
   hand-copied from the recipe's manual path (no local `idd-skill` clone
   is available in this environment for the generated-guard path via
   `idd-onboard --substitute`).
+- **`issueAuthoring.journalIssue`**: `"kurone-kito/setup.windows#175"`
+  — see the [Issue-Authoring Companion](#issue-authoring-companion)
+  section above for the full rationale (#172).
 
 ### Optional `policy.schema.json` Fields — Intentionally Unset
 
@@ -525,12 +547,6 @@ Recorded here so a later session does not "fix" these as an oversight:
   set); kept unset in lockstep with that field.
 - **`issueAuthoring.heartbeatCoalesceWindow`** — no operational data
   justifies overriding the distributed default (`PT2M`).
-- **`issueAuthoring.journalIssue`** — only needed for a standalone
-  authoring set with no pre-existing anchor issue; absent falls back
-  to the fail-safe `blocked-by-human` hold. This repository has always
-  cross-referenced flat orphan issues via `Blocked by #NNN` and has
-  never needed a standalone authoring set, so reserving a journal issue
-  number now would be premature.
 
 ## Worktree guard: local activation
 
