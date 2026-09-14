@@ -333,8 +333,17 @@ see [IDD helper scripts](idd-helper-scripts.md)) replaces the former
   (preparing IDD-ready orphan issues, this repository's dominant
   pattern) inapplicable to that pattern's own common case. #175 is a
   new issue created solely to serve as this durable, comment-only
-  journal target; it carries no other content and must not be closed
-  or repurposed.
+  journal target and carries no other content.
+  **Discovery-exclusion invariant** (Copilot review, PR #176): #175
+  carries no `setup-windows-roadmap-id`/`setup-windows-blocked-by`
+  marker and only the generic `enhancement` label, so nothing would
+  otherwise stop A0-O from surfacing and claiming it as ordinary
+  orphan work. It is kept permanently **closed** instead — A0-O's own
+  candidate scan is scoped to open issues only
+  (`idd-discover.instructions.md`'s "Search all open issues" step), so
+  a closed #175 is never a Discover candidate, while GitHub still
+  accepts comments on a closed issue (the journal's only actual use).
+  Never reopen #175 or repurpose it as a work item.
 
 ### IDD Spec Audit Companion
 
