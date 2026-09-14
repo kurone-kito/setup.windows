@@ -1195,14 +1195,6 @@ properties:
     # GUI — IDE / Editors
     # ================================================================
     - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.sublimeText
-      directives:
-        description: Sublime Text 4
-      settings:
-        id: SublimeHQ.SublimeText.4
-        source: winget
-
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: pkg.vscode
       directives:
         description: Visual Studio Code
