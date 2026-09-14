@@ -95,7 +95,7 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 - **ランタイム:** .NET SDK 8/10, Rust, Visual C++ 再頒布可能パッケージ
 - **開発:** Git, Android Studio
 - **VRChat:** Unity Hub, VRChat Creator Companion, VRCX
-- **エディタ:** VS Code, Sublime Text 4, Vim, Neovim
+- **エディタ:** VS Code, Vim, Neovim
 - **CLI ツール:** 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
 - **ブラウザ:** Chrome, Firefox ESR, Tor Browser
 - **ゲーミング:** Steam, Epic Games, EA Desktop, Minecraft, StepMania

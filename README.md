@@ -95,7 +95,7 @@ the full list. Key categories:
 - **Runtimes:** .NET SDK 8/10, Rust, Visual C++ Redistributable
 - **Development:** Git, Android Studio
 - **VRChat:** Unity Hub, VRChat Creator Companion, VRCX
-- **Editors:** VS Code, Sublime Text 4, Vim, Neovim
+- **Editors:** VS Code, Vim, Neovim
 - **CLI Tools:** 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
 - **Browsers:** Chrome, Firefox ESR, Tor Browser
 - **Gaming:** Steam, Epic Games, EA Desktop, Minecraft, StepMania
