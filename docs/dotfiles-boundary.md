@@ -363,7 +363,7 @@ methodology gap, not a real provisioning gap.
 `Zellij.Zellij`, and `JesseDuffield.lazygit` are
 genuinely absent from full and present only in min — but this is
 **not** a coherent "CLI shell tools" category split. In
-`packages.min.dsc.yaml`, these three packages sit under two different
+`packages.min.dsc.yaml`, these packages sit under two different
 section comments (`lazygit`: "CLI SCM utilities"; `Zellij`:
 "CLI session management tools"), neither of which is "CLI shell
 tools". Full and min now both install `Starship.Starship` directly as
