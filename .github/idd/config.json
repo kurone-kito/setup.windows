@@ -73,7 +73,7 @@
   },
   "critiqueLoop": {
     "delegate": {
-      "command": "changed_files=\"$(git diff --name-only HEAD --; git diff --name-only origin/master...HEAD --)\" || exit $?; if printf '%s\\n' \"$changed_files\" | grep -Eqi '\\.(ps1|psd1|psm1)$'; then npx -y markdownlint-cli2 \"**/*.md\" && npx -y cspell lint \"**\" --no-progress && pwsh -c \"Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit\" && pwsh -c \"Invoke-Pester -Path ./tests/powershell -CI\"; else npx -y markdownlint-cli2 \"**/*.md\" && npx -y cspell lint \"**\" --no-progress; fi",
+      "command": "node .github/idd/critique-delegate.mjs",
       "mode": "combined"
     }
   },

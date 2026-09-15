@@ -471,16 +471,22 @@ by #152 and related issues. Adopted here (recorded in
   (2026-09-12) given this repository's ongoing upstream-tracking work
   (the v0.7.0 → v0.11.0 resync and its follow-ups) makes this kind of
   discovery routine going forward.
-- **`critiqueLoop.delegate`**: the `command` is a diff-aware shell
-  conditional and `mode` remains `"combined"`. It always runs
-  markdownlint and cspell, then runs PSScriptAnalyzer and Pester only
-  when the combined changed-path list contains a case-insensitive
-  `.ps1`, `.psd1`, or `.psm1` path. The changed-path list covers both
-  the current worktree/index (`git diff --name-only HEAD --`) and the
-  committed branch diff against this repository's `master` base
-  (`git diff --name-only origin/master...HEAD`). This keeps a review
-  round from losing a PowerShell change merely because an earlier
-  round committed it.
+- **`critiqueLoop.delegate`**: the `command` invokes the repository-local
+  Node wrapper `node .github/idd/critique-delegate.mjs`, and `mode` remains
+  `"combined"`. The wrapper invokes each executable without relying on the
+  caller's shell grammar, so the delegate works when IDD launches it through
+  Windows `cmd.exe`, PowerShell, or a POSIX shell. It always runs markdownlint
+  and cspell, then runs PSScriptAnalyzer and Pester only when the combined
+  changed-path list contains a case-insensitive `.ps1`, `.psd1`, or `.psm1`
+  path. The changed-path list covers the current worktree/index with
+  `git diff --no-renames --name-only HEAD --`, the committed branch diff
+  against this repository's `master` base with
+  `git diff --no-renames --name-only origin/master...HEAD`, and non-ignored
+  untracked files with `git ls-files --others --exclude-standard`. Each Git
+  command must succeed before its paths are used; disabling rename detection
+  retains both sides of a PowerShell-to-non-PowerShell rename, and untracked
+  PowerShell paths remain covered. This keeps a review round from losing a
+  PowerShell change merely because an earlier round committed it.
 
   This decision revisits the full delegate recorded in #155, which
   PR #170 shipped as part of the v0.11.0 optional-field adoption. The
