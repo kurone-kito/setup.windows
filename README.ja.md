@@ -67,7 +67,7 @@ setup.cmd                        ← 唯一のエントリーポイント
 
 1. **Chocolatey** と **Boxstarter** が未インストールならインストール
 2. `Install-BoxstarterPackage` 経由で `boxstarter.ps1` を起動（再起動耐性あり）
-3. **WinGet Configuration (DSC)** で 98 個のパッケージを宣言的にインストール
+3. **WinGet Configuration (DSC)** で 93 個のパッケージを宣言的にインストール
    （利用できない場合は **`winget import`**（縮退モード）にフォール
    バックし、適用できなかったリソースを報告）
 4. Chocolatey で残りのパッケージ（フォント、オーディオドライバ）をインストール
@@ -95,8 +95,8 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 - **ランタイム:** .NET SDK 8/10, Rust, Visual C++ 再頒布可能パッケージ
 - **開発:** Git, Android Studio
 - **VRChat:** Unity Hub, VRChat Creator Companion, VRCX
-- **エディタ:** VS Code, Vim, Neovim
-- **CLI ツール:** 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
+- **エディタ:** VS Code, Vim
+- **CLI ツール:** FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
 - **ブラウザ:** Chrome, Firefox ESR, Tor Browser
 - **ゲーミング:** Steam, Epic Games, EA Desktop, Minecraft, StepMania
 - **コミュニケーション:** Discord, Slack, Zoom
@@ -105,6 +105,11 @@ Boxstarter が自動的に再起動を処理します。再起動により処理
 > **注意:** GitHub CLI（`gh`）はこのリポジトリではインストールしなくなりました。
 > [dotfiles](https://github.com/kurone-kito/dotfiles) が `mise` 経由で
 > 管理します。
+>
+> **注意:** 7-Zip、Neovim、Ollama、Starship は、フルプロファイルの
+> WinGet 設定ではインストールされません。CLI 版は `chezmoi apply` 後に
+> [dotfiles](https://github.com/kurone-kito/dotfiles) が `mise` 経由で導入します。
+> 最小プロファイルでは 7-Zip、Neovim、Starship の WinGet 宣言が残っています。
 
 ### Chocolatey 経由（winget にないもの）
 
@@ -159,17 +164,18 @@ dotfiles は別プロジェクト
 
 | 層 | 所有 | 例 |
 | ------------------------ | --------------------------------------- | ---------------------------------------------------------------- |
-| winget / DSC（本リポジトリ） | GUI アプリ、MSI・Inno・WiX・burn 系インストーラ、OS 設定 | Git, 7-Zip, GnuPG, Neovim, .NET SDK, Steam, Unity Hub |
-| dotfiles（mise） | 委譲済みの CLI ツール、言語ランタイム | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc |
+| winget / DSC（本リポジトリ） | GUI アプリ、MSI・Inno・WiX・burn 系インストーラ、OS 設定 | Git, GnuPG, .NET SDK, Steam, Unity Hub |
+| dotfiles（mise） | 委譲済みの CLI ツール、言語ランタイム | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc, 7-Zip, Neovim, Ollama, Starship |
 | dotfiles（管理対象 User PATH） | Windows の User PATH | `mise\shims`, `WinGet\Links`, `data.wingetUserPath.packages` 宣言分 |
 | Chocolatey（本リポジトリ） | フォント、オーディオドライバ | HackGen, VB-CABLE |
 
 すべての CLI ツールが dotfiles 側へ移ったわけではありません —
-上表「例」列にある第 1 波の委譲対象 5 つのみです。本リポジトリは
-他にも多くの CLI ツールを winget から直接インストールしています
+上表「例」列にある第 1 波の委譲対象 5 つと、フルプロファイルで
+追加された 4 つが対象です。最小プロファイルでは 7-Zip、Neovim、Starship の
+WinGet 宣言が残っています。本リポジトリは他にも多くの CLI ツールを winget から直接インストールしています
 （前述の[インストールされるもの](#インストールされるもの)の
-「CLI ツール」を参照。例: 7-Zip, FFmpeg, fzf, jq, yq, chezmoi,
-tealdeer, mkcert）。
+「CLI ツール」を参照。例: FFmpeg, fzf, jq, yq, chezmoi, tealdeer,
+mkcert）。
 
 本リポジトリ自身のスクリプトは Windows の User PATH を管理・書き込み
 しません。例外は 3 つ、サードパーティ製の Unity CLI インストーラ、
@@ -189,8 +195,9 @@ dotfiles の
 ### `setup.cmd` の後に `chezmoi apply` が必要
 
 `setup.cmd` 単体では、もう Node.js・GitHub CLI・ghq・GitHub Copilot CLI・
-git-vrc のいずれもインストールされません — この 5 つはすべて dotfiles の
-`mise` 設定から入るようになりました。本リポジトリは `chezmoi` バイナリ
+git-vrc、およびフルプロファイルの 7-Zip・Neovim・Ollama・Starship は
+インストールされません — これらはすべて dotfiles の `mise` 設定から入るようになりました。
+本リポジトリは `chezmoi` バイナリ
 自体は導入します（前述の[インストールされるもの](#インストールされるもの)
 参照）が、`chezmoi apply` を自動実行することはありません。`mise` が
 `PATH` に反映された状態の新しいシェルで、`setup.cmd` 完了後に自分で

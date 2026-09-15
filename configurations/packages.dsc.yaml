@@ -691,14 +691,6 @@ properties:
         id: vim.vim
         source: winget
 
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.neovim
-      directives:
-        description: Neovim
-      settings:
-        id: Neovim.Neovim
-        source: winget
-
     # ================================================================
     # CLI — Benchmark
     # ================================================================
@@ -713,14 +705,6 @@ properties:
     # ================================================================
     # CLI — Binary tools
     # ================================================================
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.7zip
-      directives:
-        description: 7-Zip
-      settings:
-        id: 7zip.7zip
-        source: winget
-
     - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: pkg.ffmpeg
       directives:
@@ -872,14 +856,6 @@ properties:
     # See docs/dsc-migration-notes.md (issue #147) for the full
     # rationale.
 
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.starship
-      directives:
-        description: Starship
-      settings:
-        id: Starship.Starship
-        source: winget
-
     # ================================================================
     # CLI — Virtualization
     # ================================================================
@@ -937,14 +913,6 @@ properties:
     # ================================================================
     # GUI — AI
     # ================================================================
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.ollama
-      directives:
-        description: Ollama
-      settings:
-        id: Ollama.Ollama
-        source: winget
-
     # ================================================================
     # GUI — Audio & Broadcasting
     # ================================================================
