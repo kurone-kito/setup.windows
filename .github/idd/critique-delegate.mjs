@@ -44,10 +44,17 @@ function collectChangedPaths(args) {
 }
 
 function run(command, args) {
-  const result = spawnSync(command, args, {
+  const isWindowsBatchShim = process.platform === "win32" && command === "npx.cmd";
+  const actualCommand = isWindowsBatchShim
+    ? process.env.ComSpec ?? "cmd.exe"
+    : command;
+  const actualArgs = isWindowsBatchShim
+    ? ["/d", "/s", "/c", command, ...args]
+    : args;
+  const result = spawnSync(actualCommand, actualArgs, {
     stdio: "inherit",
   });
-  exitForResult(result, `${command} ${args.join(" ")}`);
+  exitForResult(result, `${actualCommand} ${actualArgs.join(" ")}`);
 }
 
 const changedPaths = [
