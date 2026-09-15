@@ -479,14 +479,17 @@ by #152 and related issues. Adopted here (recorded in
   and cspell, then runs PSScriptAnalyzer and Pester only when the combined
   changed-path list contains a case-insensitive `.ps1`, `.psd1`, or `.psm1`
   path. The changed-path list covers the current worktree/index with
-  `git diff --no-renames --name-only HEAD --`, the committed branch diff
+  `git diff --no-renames --name-only -z HEAD --`, the committed branch diff
   against this repository's `master` base with
-  `git diff --no-renames --name-only origin/master...HEAD`, and non-ignored
-  untracked files with `git ls-files --others --exclude-standard`. Each Git
-  command must succeed before its paths are used; disabling rename detection
-  retains both sides of a PowerShell-to-non-PowerShell rename, and untracked
-  PowerShell paths remain covered. This keeps a review round from losing a
-  PowerShell change merely because an earlier round committed it.
+  `git diff --no-renames --name-only -z origin/master...HEAD`, and non-ignored
+  untracked files with `git ls-files --others --exclude-standard -z`. The
+  wrapper splits these NUL-delimited results rather than parsing Git's
+  human-readable quoting, so non-ASCII filenames still match their real
+  extensions. Each Git command must succeed before its paths are used;
+  disabling rename detection retains both sides of a
+  PowerShell-to-non-PowerShell rename, and untracked PowerShell paths remain
+  covered. This keeps a review round from losing a PowerShell change merely
+  because an earlier round committed it.
 
   This decision revisits the full delegate recorded in #155, which
   PR #170 shipped as part of the v0.11.0 optional-field adoption. The

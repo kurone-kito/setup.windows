@@ -31,15 +31,22 @@ function exitForResult(result, command) {
 }
 
 function collectChangedPaths(args) {
-  const result = spawnSync(git, args, {
+  const separatorIndex = args.indexOf("--");
+  const nulArgs = separatorIndex === -1
+    ? [...args, "-z"]
+    : [
+        ...args.slice(0, separatorIndex),
+        "-z",
+        ...args.slice(separatorIndex),
+      ];
+  const result = spawnSync(git, nulArgs, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
-  exitForResult(result, `${git} ${args.join(" ")}`);
+  exitForResult(result, `${git} ${nulArgs.join(" ")}`);
 
   return result.stdout
-    .split(/\r?\n/)
-    .map((path) => path.trim())
+    .split("\0")
     .filter(Boolean);
 }
 
