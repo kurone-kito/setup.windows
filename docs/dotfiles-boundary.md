@@ -259,6 +259,21 @@ against `kurone-kito/dotfiles` on 2026-08-14). Since #105 already
 shipped, git-vrc's `chezmoi apply` dependency is a present-day
 condition, not a future one — see [§4](#4-operations-gated-on-chezmoi-apply).
 
+### Full-profile delegation wave (#179)
+
+Issue #179 removes the full profile's `pkg.7zip`, `pkg.neovim`,
+`pkg.ollama`, and `pkg.starship` WinGet/DSC resources and their generated
+`PackageIdentifier` entries. The full profile now relies on dotfiles'
+mise configuration for the CLI builds of all four tools after `chezmoi
+apply`. The repository owner accepted the loss of the official GUI
+installers and background integrations for 7-Zip and Ollama in favor of
+the SSH-reachable, CLI-only builds described by the delegation issue.
+
+This change is scoped to the full profile. The minimal profile still
+declares 7-Zip, Neovim, and Starship through WinGet; Ollama is not part
+of that profile. The user-facing full-profile inventory and ownership
+boundary are kept in sync in `README.md` and `README.ja.md`.
+
 ## 2. Tooling required by `install-deps` / `fix-validate` / `pre-push-validate`
 
 `.github/idd/config.json`'s `commands` block:
@@ -366,14 +381,16 @@ genuinely absent from full and present only in min — but this is
 `packages.min.dsc.yaml`, these packages sit under two different
 section comments (`lazygit`: "CLI SCM utilities"; `Zellij`:
 "CLI session management tools"), neither of which is "CLI shell
-tools". Full and min now both install `Starship.Starship` directly as
-their prompt-theme engine (full's `pkg.starship`, min's own `starship`
-resource) — full previously carried `pkg.ohMyPosh` (Oh My Posh,
+tools". The full profile no longer installs `Starship.Starship` directly:
+issue #179 removed its `pkg.starship` resource because dotfiles now owns
+the CLI build. The min profile still has its own `starship` resource, so
+the profiles intentionally differ here. Full previously carried
+`pkg.ohMyPosh` (Oh My Posh,
 another prompt theme engine, msstore id `XP8K0HKJFRXGCK`) as a
 separate, competing prompt themer, but that asymmetry has been
-consolidated onto Starship. The accurate framing is package-specific:
-full and min simply carry different, non-overlapping selections of
-terminal/session tools, not a category full skips wholesale.
+consolidated onto Starship for the full profile. The accurate framing is
+package-specific: full and min simply carry different, non-overlapping
+selections of terminal/session tools, not a category full skips wholesale.
 `README.md`'s min: "development tools only, no gaming/media" framing
 still holds at the profile-purpose level; it just doesn't map onto a
 single missing category the way the earlier version of this section

@@ -95,8 +95,8 @@ the full list. Key categories:
 - **Runtimes:** .NET SDK 8/10, Rust, Visual C++ Redistributable
 - **Development:** Git, Android Studio
 - **VRChat:** Unity Hub, VRChat Creator Companion, VRCX
-- **Editors:** VS Code, Vim, Neovim
-- **CLI Tools:** 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
+- **Editors:** VS Code, Vim
+- **CLI Tools:** FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert
 - **Browsers:** Chrome, Firefox ESR, Tor Browser
 - **Gaming:** Steam, Epic Games, EA Desktop, Minecraft, StepMania
 - **Communication:** Discord, Slack, Zoom
@@ -105,6 +105,12 @@ the full list. Key categories:
 > **Note:** GitHub CLI (`gh`) is no longer installed by this repository.
 > It is [dotfiles](https://github.com/kurone-kito/dotfiles)'s
 > responsibility, via `mise`.
+>
+> **Note:** 7-Zip, Neovim, Ollama, and Starship are not installed by the
+> full profile's WinGet configuration. Their CLI builds are provisioned by
+> [dotfiles](https://github.com/kurone-kito/dotfiles) via `mise` after
+> `chezmoi apply`; the minimal profile still retains WinGet declarations for
+> 7-Zip, Neovim, and Starship.
 
 ### Via Chocolatey (winget unavailable)
 
@@ -159,16 +165,18 @@ shell configuration, and dotfiles should be managed separately
 
 | Layer                          | Owns                                                      | Examples                                                                          |
 | ------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| winget / DSC (this repository) | GUI apps, MSI/Inno/WiX/burn-style installers, OS settings | Git, 7-Zip, GnuPG, Neovim, .NET SDK, Steam, Unity Hub                             |
-| dotfiles (mise)                | Delegated CLI tools, language runtimes                    | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc                             |
+| winget / DSC (this repository) | GUI apps, MSI/Inno/WiX/burn-style installers, OS settings | Git, GnuPG, .NET SDK, Steam, Unity Hub                                             |
+| dotfiles (mise)                | Delegated CLI tools, language runtimes                    | Node.js, GitHub CLI, ghq, GitHub Copilot CLI, git-vrc, 7-Zip, Neovim, Ollama, Starship |
 | dotfiles (managed User PATH)   | The Windows User PATH                                     | `mise\shims`, `WinGet\Links`, packages declared in `data.wingetUserPath.packages` |
 | Chocolatey (this repository)   | Fonts, audio drivers                                      | HackGen, VB-CABLE                                                                 |
 
-Not every CLI tool moved to dotfiles — only the five first-wave
-delegation targets in the "Examples" column above did. This
-repository still installs many other CLI tools directly via winget
+Not every CLI tool moved to dotfiles — the five first-wave delegation
+targets and the four full-profile tools listed in the "Examples" column
+above did. The minimal profile still retains WinGet declarations for
+7-Zip, Neovim, and Starship. This repository still installs many other
+CLI tools directly via winget
 (see "CLI Tools" under [What Gets Installed](#what-gets-installed)
-above, e.g. 7-Zip, FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert).
+above, e.g. FFmpeg, fzf, jq, yq, chezmoi, tealdeer, mkcert).
 
 This repository's own scripts do not manage or write the Windows User
 PATH — the three exceptions are the third-party Unity CLI installer
@@ -188,8 +196,9 @@ source of truth for the managed-path set.
 ### `chezmoi apply` is required after `setup.cmd`
 
 `setup.cmd` alone no longer installs Node.js, GitHub CLI, ghq, GitHub
-Copilot CLI, or git-vrc — all five now come from dotfiles' `mise`
-configuration. This repository installs the `chezmoi` binary itself
+Copilot CLI, git-vrc, or the full profile's 7-Zip, Neovim, Ollama, and
+Starship — these tools now come from dotfiles' `mise` configuration. This
+repository installs the `chezmoi` binary itself
 (see [What Gets Installed](#what-gets-installed) above) but never runs
 `chezmoi apply` automatically; run it yourself after `setup.cmd`
 completes, from a fresh shell so `mise` is already on `PATH` (an
