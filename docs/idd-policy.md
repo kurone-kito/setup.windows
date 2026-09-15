@@ -471,31 +471,32 @@ by #152 and related issues. Adopted here (recorded in
   (2026-09-12) given this repository's ongoing upstream-tracking work
   (the v0.7.0 → v0.11.0 resync and its follow-ups) makes this kind of
   discovery routine going forward.
-- **`critiqueLoop.delegate`**: `{ command: "npx -y markdownlint-cli2
-  \"**/*.md\" && npx -y cspell lint \"**\" --no-progress && pwsh -c
-  \"Invoke-ScriptAnalyzer -Path . -Recurse -Settings
-  ./PSScriptAnalyzerSettings.psd1 -EnableExit\" && pwsh -c
-  \"Invoke-Pester -Path ./tests/powershell -CI\"", mode: "combined" }`
-  — the literal current `commands.pre-push-validate` value (keep this
-  copy in sync if that command ever changes). This repository already
-  runs this same command locally as `pre-push-validate` (markdownlint,
-  cspell, PSScriptAnalyzer, Pester); pointing the C1 critique delegate
-  at it surfaces those findings during self-review as well, not only
-  at pre-push time. `pre-push-validate` is **not itself** one of the
-  registered required CI checks — `.github/workflows/lint.yml`
-  registers separate `lint`, `powershell-analyzer`, and `pester` jobs,
-  and `configuration-drift` (a distinct check this command does not
-  run) is also required — it only mirrors a subset of what those jobs
-  cover, run locally under one umbrella name. `mode: "combined"` keeps
-  the existing per-agent critique pass running unconditionally
-  alongside the delegate — this only adds a signal, never removes
-  one. The maintainer explicitly recorded this exact `command`/`mode`
-  pairing in #155's own acceptance criteria, accepting the added
-  per-round cost of running the full PSScriptAnalyzer/Pester suite on
-  every C1/E10 pass in exchange for that self-review signal; revisit
-  this trade-off as a separate decision if round-count data later
-  shows it is not worth the cost, rather than silently swapping in a
-  lighter delegate command here.
+- **`critiqueLoop.delegate`**: the `command` is a diff-aware shell
+  conditional and `mode` remains `"combined"`. It always runs
+  markdownlint and cspell, then runs PSScriptAnalyzer and Pester only
+  when the combined changed-path list contains a case-insensitive
+  `.ps1`, `.psd1`, or `.psm1` path. The changed-path list covers both
+  the current worktree/index (`git diff --name-only HEAD --`) and the
+  committed branch diff against this repository's `master` base
+  (`git diff --name-only origin/master...HEAD`). This keeps a review
+  round from losing a PowerShell change merely because an earlier
+  round committed it.
+
+  This decision revisits the full delegate recorded in #155, which
+  PR #170 shipped as part of the v0.11.0 optional-field adoption. The
+  2026-09-14 run for docs-only PR #180 measured approximately 99
+  minutes of total wall-clock time (including one rate-limit pause),
+  four fresh critique/validation rounds across five commits, and a
+  PSScriptAnalyzer invocation still running after 7.5 minutes before
+  Pester followed. That diff touched no PowerShell files, so the full
+  PowerShell stages were unnecessary on every round.
+
+  `commands.pre-push-validate` is intentionally unchanged and still
+  runs all four stages for the final local gate. The delegate shortcut
+  changes only the per-round C1/E10 cost; it does not weaken the
+  merged-code validation bar. The two branches are verified with
+  controlled command-dispatch checks, while the real lint/cspell path
+  and the unchanged full pre-push command remain separately tested.
 - **`labels.untrustedLabelerLogins`**: `["coderabbitai[bot]",
   "reviewpad[bot]"]`. This repository's `.coderabbit.yaml` sets
   `issue_enrichment.labeling.auto_apply_labels: true` with
