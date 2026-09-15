@@ -82,7 +82,6 @@
         { "PackageIdentifier": "Hashicorp.Terraform" },
         { "PackageIdentifier": "Starship.Starship" },
         { "PackageIdentifier": "Hashicorp.Vagrant" },
-        { "PackageIdentifier": "TwibrightLabs.Links" },
         { "PackageIdentifier": "FreeCAD.FreeCAD" },
         { "PackageIdentifier": "pixivInc.VRoidStudio" },
         { "PackageIdentifier": "Ollama.Ollama" },

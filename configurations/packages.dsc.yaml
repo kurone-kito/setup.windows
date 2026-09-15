@@ -908,17 +908,6 @@ properties:
         source: winget
 
     # ================================================================
-    # CLI — Web browsers
-    # ================================================================
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.links
-      directives:
-        description: Links — text web browser
-      settings:
-        id: TwibrightLabs.Links
-        source: winget
-
-    # ================================================================
     # GUI — 3D tools
     # ================================================================
     - resource: Microsoft.WinGet.DSC/WinGetPackage
