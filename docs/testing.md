@@ -7,6 +7,19 @@ analysis (PSScriptAnalyzer) catches style problems; Pester catches
 "does this return the right output for this input" problems that
 static analysis cannot.
 
+## IDD critique delegate tests
+
+The repository-local IDD critique delegate has focused Node tests for its
+changed-path dispatch. Run them with:
+
+```sh
+node --test tests/idd-critique-delegate.test.mjs
+```
+
+The tests use stubbed Git and validation commands to cover the Markdown-only
+fast path, all supported PowerShell extensions, and the Windows `npx.cmd`
+launcher path.
+
 ## When to add a test
 
 Add a test alongside any new script under `libs/` or `scripts/` whose

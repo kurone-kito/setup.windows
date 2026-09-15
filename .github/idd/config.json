@@ -73,7 +73,7 @@
   },
   "critiqueLoop": {
     "delegate": {
-      "command": "npx -y markdownlint-cli2 \"**/*.md\" && npx -y cspell lint \"**\" --no-progress && pwsh -c \"Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit\" && pwsh -c \"Invoke-Pester -Path ./tests/powershell -CI\"",
+      "command": "node .github/idd/critique-delegate.mjs",
       "mode": "combined"
     }
   },

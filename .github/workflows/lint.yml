@@ -15,6 +15,8 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@v7
+      - name: Run IDD critique delegate tests
+        run: node --test tests/idd-critique-delegate.test.mjs
       - name: Run cspell
         uses: streetsidesoftware/cspell-action@6f3c77c1406bc930f944ba97e9801a22e42caf58 # v9.1.0
       - name: Run markdownlint
