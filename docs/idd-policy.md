@@ -245,6 +245,20 @@ added (#132).
 
 **Profile**: `ephemeral-npx`
 
+**Decision (Groom hearing, 2026-09-15)**: Keep `helperRuntime.profile` at
+`ephemeral-npx`. The observed resource contention is real, but the
+failures involved heavy helper operations that would be expensive under
+any profile, so the evidence does not isolate `ephemeral-npx` as the
+cause.
+
+Switching to `package-manager` would introduce a new package and lockfile
+surface that this repository does not currently carry. Switching to
+`vendored-node` would require committing compiled helper scripts and
+maintaining them whenever the upstream helper pin changes. Given the
+uncertain causal link and those ongoing maintenance costs, no profile
+change is justified at this time. Revisit the decision only if a
+controlled comparison under comparable load provides stronger evidence.
+
 **`helperRuntime.packageSpec`**:
 `https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037`
 (repository override; distributed default is the mutable `main`
