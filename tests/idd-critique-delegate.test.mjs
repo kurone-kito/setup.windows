@@ -11,6 +11,12 @@ const policy = JSON.parse(readFileSync(
   resolve(repositoryRoot, ".github/idd/config.json"),
   "utf8",
 ));
+const doubleQuoteEscapes = new Set(["$", "`", '"', "\\", "\n"]);
+
+function shouldEscapeNext(quote, nextCharacter) {
+  return quote === null
+    || (quote === '"' && doubleQuoteEscapes.has(nextCharacter));
+}
 
 function splitPipeline(command) {
   const stages = [];
@@ -26,7 +32,7 @@ function splitPipeline(command) {
       continue;
     }
 
-    if (character === "\\" && quote !== "'") {
+    if (character === "\\" && shouldEscapeNext(quote, command[index + 1])) {
       stage += character;
       escaped = true;
       continue;
@@ -64,7 +70,6 @@ function splitShellWords(stage) {
   const words = [];
   let word = "";
   let quote = null;
-  let escaped = false;
   let hasContent = false;
 
   const pushWord = () => {
@@ -75,16 +80,21 @@ function splitShellWords(stage) {
     }
   };
 
-  for (const character of stage.trim()) {
-    if (escaped) {
-      word += character;
-      escaped = false;
-      hasContent = true;
-      continue;
-    }
-
-    if (character === "\\" && quote !== "'") {
-      escaped = true;
+  const text = stage.trim();
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    if (character === "\\" && shouldEscapeNext(quote, text[index + 1])) {
+      const nextCharacter = text[index + 1];
+      if (nextCharacter === "\n") {
+        index += 1;
+        continue;
+      }
+      if (nextCharacter === undefined) {
+        word += character;
+      } else {
+        word += nextCharacter;
+        index += 1;
+      }
       hasContent = true;
       continue;
     }
@@ -115,7 +125,6 @@ function splitShellWords(stage) {
   }
 
   assert.equal(quote, null, `unclosed quote in configured stage: ${stage}`);
-  assert.equal(escaped, false, `trailing escape in configured stage: ${stage}`);
   pushWord();
   return words;
 }
@@ -258,4 +267,14 @@ test("preserves shell token boundaries while parsing policy stages", () => {
     splitShellWords('npx -y markdownlint-cli2 "**/*.md"'),
     splitShellWords('"npx -y markdownlint-cli2 **/*.md"'),
   );
+});
+
+test("preserves non-escaping backslashes inside double quotes", () => {
+  const stage = String.raw`pwsh -c "Invoke\-ScriptAnalyzer"`;
+
+  assert.deepEqual(splitShellWords(stage), [
+    "pwsh",
+    "-c",
+    String.raw`Invoke\-ScriptAnalyzer`,
+  ]);
 });
