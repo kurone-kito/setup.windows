@@ -1,7 +1,203 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { runDelegate } from "../.github/idd/critique-delegate.mjs";
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const policy = JSON.parse(readFileSync(
+  resolve(repositoryRoot, ".github/idd/config.json"),
+  "utf8",
+));
+const doubleQuoteEscapes = new Set(["$", "`", '"', "\\", "\n"]);
+const shellWordBlanks = new Set([" ", "\t"]);
+
+function shouldEscapeNext(quote, nextCharacter) {
+  return quote === null
+    || (quote === '"' && doubleQuoteEscapes.has(nextCharacter));
+}
+
+function trimShellBlanks(text) {
+  let start = 0;
+  let end = text.length;
+
+  while (start < end && shellWordBlanks.has(text[start])) {
+    start += 1;
+  }
+  while (end > start && shellWordBlanks.has(text[end - 1])) {
+    end -= 1;
+  }
+
+  return text.slice(start, end);
+}
+
+function splitPipeline(command) {
+  const stages = [];
+  let stage = "";
+  let quote = null;
+  let escaped = false;
+
+  for (let index = 0; index < command.length; index += 1) {
+    const character = command[index];
+    if (escaped) {
+      stage += character;
+      escaped = false;
+      continue;
+    }
+
+    if (character === "\\" && shouldEscapeNext(quote, command[index + 1])) {
+      stage += character;
+      escaped = true;
+      continue;
+    }
+
+    if (quote) {
+      if (character === quote) {
+        quote = null;
+      }
+      stage += character;
+      continue;
+    }
+
+    if (character === '"' || character === "'") {
+      quote = character;
+      stage += character;
+      continue;
+    }
+
+    if (command.slice(index, index + 2) === "&&") {
+      stages.push(trimShellBlanks(stage));
+      stage = "";
+      index += 1;
+      continue;
+    }
+
+    if (character === "\n" || character === "\r") {
+      assert.fail(
+        `command-separating newline is not supported in configured pipeline: ${command}`,
+      );
+    }
+
+    stage += character;
+  }
+
+  stages.push(trimShellBlanks(stage));
+  return stages;
+}
+
+function splitShellWords(stage) {
+  const words = [];
+  let word = "";
+  let raw = "";
+  let quote = null;
+  let hasContent = false;
+
+  const pushWord = () => {
+    if (hasContent) {
+      words.push({ value: word, raw });
+      word = "";
+      raw = "";
+      hasContent = false;
+    }
+  };
+
+  const text = trimShellBlanks(stage);
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    if (character === "\\" && shouldEscapeNext(quote, text[index + 1])) {
+      const nextCharacter = text[index + 1];
+      if (nextCharacter === "\n") {
+        raw += `${character}${nextCharacter}`;
+        index += 1;
+        continue;
+      }
+      raw += character;
+      if (nextCharacter === undefined) {
+        word += character;
+      } else {
+        raw += nextCharacter;
+        word += nextCharacter;
+        index += 1;
+      }
+      hasContent = true;
+      continue;
+    }
+
+    if (quote) {
+      raw += character;
+      if (character === quote) {
+        quote = null;
+      } else {
+        word += character;
+      }
+      hasContent = true;
+      continue;
+    }
+
+    if (character === '"' || character === "'") {
+      raw += character;
+      quote = character;
+      hasContent = true;
+      continue;
+    }
+
+    if (shellWordBlanks.has(character)) {
+      pushWord();
+      continue;
+    }
+
+    raw += character;
+    word += character;
+    hasContent = true;
+  }
+
+  assert.equal(quote, null, `unclosed quote in configured stage: ${stage}`);
+  pushWord();
+  return words;
+}
+
+function stageKey(stage) {
+  return JSON.stringify(splitShellWords(stage));
+}
+
+const knownDispatches = new Map([
+  [stageKey(String.raw`npx -y markdownlint-cli2 "**/*.md"`), {
+    command: "npx",
+    args: ["-y", "markdownlint-cli2", "**/*.md"],
+  }],
+  [stageKey(String.raw`npx -y cspell lint "**" --no-progress`), {
+    command: "npx",
+    args: ["-y", "cspell", "lint", "**", "--no-progress"],
+  }],
+  [stageKey(String.raw`pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"`), {
+    command: "pwsh",
+    args: [
+      "-c",
+      "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit",
+    ],
+  }],
+  [stageKey(String.raw`pwsh -c "Invoke-Pester -Path ./tests/powershell -CI"`), {
+    command: "pwsh",
+    args: ["-c", "Invoke-Pester -Path ./tests/powershell -CI"],
+  }],
+]);
+
+function canonicalDispatches() {
+  const configured = policy.commands?.["pre-push-validate"];
+  assert.equal(typeof configured, "string");
+
+  return splitPipeline(configured).map((stage, index) => {
+    const tokens = splitShellWords(stage);
+    const dispatch = knownDispatches.get(stageKey(stage));
+    assert.ok(
+      dispatch,
+      `pre-push-validate stage ${index + 1} is not covered by the delegate: ${tokens.map(({ value }) => value).join(" ")}`,
+    );
+    return dispatch;
+  });
+}
 
 function createStubSpawn(pathOutputs) {
   const calls = [];
@@ -27,6 +223,7 @@ function runWithPaths(pathOutputs, options = {}) {
   const stubs = createStubSpawn(pathOutputs);
   const result = runDelegate({
     env: { ComSpec: "C:\\Windows\\System32\\cmd.exe" },
+    platform: "linux",
     spawn: stubs.spawn,
     ...options,
   });
@@ -79,4 +276,59 @@ test("launches npx.cmd through ComSpec on Windows", () => {
     "npx.cmd",
   ]);
   assert.equal(calls[3].command, "C:\\Windows\\System32\\cmd.exe");
+});
+
+test("keeps validation dispatch synchronized with pre-push policy", () => {
+  const { calls } = runWithPaths([
+    "scripts/changed.ps1\0",
+    "docs/committed.md\0",
+    "notes.txt\0",
+  ]);
+
+  assert.deepEqual(
+    calls.slice(3).map(({ command, args }) => ({ command, args })),
+    canonicalDispatches(),
+  );
+});
+
+test("preserves shell token boundaries while parsing policy stages", () => {
+  assert.notDeepEqual(
+    splitShellWords('npx -y markdownlint-cli2 "**/*.md"'),
+    splitShellWords('"npx -y markdownlint-cli2 **/*.md"'),
+  );
+});
+
+test("preserves non-escaping backslashes inside double quotes", () => {
+  const stage = String.raw`pwsh -c "Invoke\-ScriptAnalyzer"`;
+
+  const tokens = splitShellWords(stage);
+
+  assert.deepEqual(tokens.map(({ value }) => value), [
+    "pwsh", "-c", String.raw`Invoke\-ScriptAnalyzer`,
+  ]);
+  assert.equal(tokens[2].raw, String.raw`"Invoke\-ScriptAnalyzer"`);
+});
+
+test("rejects command-separating newlines in the configured pipeline", () => {
+  assert.throws(
+    () => splitPipeline(`npx
+-y markdownlint-cli2 "**/*.md"`),
+    /command-separating newline is not supported/,
+  );
+});
+
+test("does not treat non-shell whitespace as a word separator", () => {
+  const nonBreakingSpaceStage = `npx\u00a0-y markdownlint-cli2 "**/*.md"`;
+
+  assert.deepEqual(splitShellWords(nonBreakingSpaceStage)[0], {
+    value: "npx\u00a0-y",
+    raw: "npx\u00a0-y",
+  });
+});
+
+test("does not trim non-shell whitespace at stage boundaries", () => {
+  assert.equal(
+    splitPipeline("npx &&\u00a0npx")[1],
+    "\u00a0npx",
+  );
 });
