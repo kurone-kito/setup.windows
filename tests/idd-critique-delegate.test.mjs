@@ -15,15 +15,38 @@ const policy = JSON.parse(readFileSync(
 function splitPipeline(command) {
   const stages = [];
   let stage = "";
-  let inDoubleQuotes = false;
+  let quote = null;
+  let escaped = false;
 
   for (let index = 0; index < command.length; index += 1) {
     const character = command[index];
-    if (character === '"' && command[index - 1] !== "\\") {
-      inDoubleQuotes = !inDoubleQuotes;
+    if (escaped) {
+      stage += character;
+      escaped = false;
+      continue;
     }
 
-    if (!inDoubleQuotes && command.slice(index, index + 2) === "&&") {
+    if (character === "\\" && quote !== "'") {
+      stage += character;
+      escaped = true;
+      continue;
+    }
+
+    if (quote) {
+      if (character === quote) {
+        quote = null;
+      }
+      stage += character;
+      continue;
+    }
+
+    if (character === '"' || character === "'") {
+      quote = character;
+      stage += character;
+      continue;
+    }
+
+    if (command.slice(index, index + 2) === "&&") {
       stages.push(stage.trim());
       stage = "";
       index += 1;
@@ -37,27 +60,87 @@ function splitPipeline(command) {
   return stages;
 }
 
-function normalizeConfiguredStage(stage) {
-  return stage.replace(/"([^"]*)"/g, "$1").replace(/\s+/g, " ").trim();
+function splitShellWords(stage) {
+  const words = [];
+  let word = "";
+  let quote = null;
+  let escaped = false;
+  let hasContent = false;
+
+  const pushWord = () => {
+    if (hasContent) {
+      words.push(word);
+      word = "";
+      hasContent = false;
+    }
+  };
+
+  for (const character of stage.trim()) {
+    if (escaped) {
+      word += character;
+      escaped = false;
+      hasContent = true;
+      continue;
+    }
+
+    if (character === "\\" && quote !== "'") {
+      escaped = true;
+      hasContent = true;
+      continue;
+    }
+
+    if (quote) {
+      if (character === quote) {
+        quote = null;
+      } else {
+        word += character;
+      }
+      hasContent = true;
+      continue;
+    }
+
+    if (character === '"' || character === "'") {
+      quote = character;
+      hasContent = true;
+      continue;
+    }
+
+    if (/\s/.test(character)) {
+      pushWord();
+      continue;
+    }
+
+    word += character;
+    hasContent = true;
+  }
+
+  assert.equal(quote, null, `unclosed quote in configured stage: ${stage}`);
+  assert.equal(escaped, false, `trailing escape in configured stage: ${stage}`);
+  pushWord();
+  return words;
 }
 
 const knownDispatches = new Map([
-  ["npx -y markdownlint-cli2 **/*.md", {
+  [JSON.stringify(["npx", "-y", "markdownlint-cli2", "**/*.md"]), {
     command: "npx",
     args: ["-y", "markdownlint-cli2", "**/*.md"],
   }],
-  ["npx -y cspell lint ** --no-progress", {
+  [JSON.stringify(["npx", "-y", "cspell", "lint", "**", "--no-progress"]), {
     command: "npx",
     args: ["-y", "cspell", "lint", "**", "--no-progress"],
   }],
-  ["pwsh -c Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit", {
+  [JSON.stringify([
+    "pwsh",
+    "-c",
+    "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit",
+  ]), {
     command: "pwsh",
     args: [
       "-c",
       "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit",
     ],
   }],
-  ["pwsh -c Invoke-Pester -Path ./tests/powershell -CI", {
+  [JSON.stringify(["pwsh", "-c", "Invoke-Pester -Path ./tests/powershell -CI"]), {
     command: "pwsh",
     args: ["-c", "Invoke-Pester -Path ./tests/powershell -CI"],
   }],
@@ -68,11 +151,11 @@ function canonicalDispatches() {
   assert.equal(typeof configured, "string");
 
   return splitPipeline(configured).map((stage, index) => {
-    const normalized = normalizeConfiguredStage(stage);
-    const dispatch = knownDispatches.get(normalized);
+    const tokens = splitShellWords(stage);
+    const dispatch = knownDispatches.get(JSON.stringify(tokens));
     assert.ok(
       dispatch,
-      `pre-push-validate stage ${index + 1} is not covered by the delegate: ${normalized}`,
+      `pre-push-validate stage ${index + 1} is not covered by the delegate: ${tokens.join(" ")}`,
     );
     return dispatch;
   });
@@ -166,5 +249,12 @@ test("keeps validation dispatch synchronized with pre-push policy", () => {
   assert.deepEqual(
     calls.slice(3).map(({ command, args }) => ({ command, args })),
     canonicalDispatches(),
+  );
+});
+
+test("preserves shell token boundaries while parsing policy stages", () => {
+  assert.notDeepEqual(
+    splitShellWords('npx -y markdownlint-cli2 "**/*.md"'),
+    splitShellWords('"npx -y markdownlint-cli2 **/*.md"'),
   );
 });

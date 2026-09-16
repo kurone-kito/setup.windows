@@ -21,9 +21,9 @@ fast path, all supported PowerShell extensions, and the Windows `npx.cmd`
 launcher path. They also read the canonical `commands.pre-push-validate`
 pipeline from `.github/idd/config.json` and compare its four stages with the
 delegate's direct dispatch. This makes an added, removed, reordered, or
-modified validation stage fail in the focused test until the delegate and its
-contract are updated; the final `pre-push-validate` gate remains the complete
-four-stage command.
+modified validation stage, including shell token-boundary drift, fail in the
+focused test until the delegate and its contract are updated; the final
+`pre-push-validate` gate remains the complete four-stage command.
 
 ## When to add a test
 
