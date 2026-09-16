@@ -12,6 +12,7 @@ const policy = JSON.parse(readFileSync(
   "utf8",
 ));
 const doubleQuoteEscapes = new Set(["$", "`", '"', "\\", "\n"]);
+const shellWordBlanks = new Set([" ", "\t"]);
 
 function shouldEscapeNext(quote, nextCharacter) {
   return quote === null
@@ -60,12 +61,9 @@ function splitPipeline(command) {
     }
 
     if (character === "\n" || character === "\r") {
-      stages.push(stage.trim());
-      stage = "";
-      if (character === "\r" && command[index + 1] === "\n") {
-        index += 1;
-      }
-      continue;
+      assert.fail(
+        `command-separating newline is not supported in configured pipeline: ${command}`,
+      );
     }
 
     stage += character;
@@ -131,7 +129,7 @@ function splitShellWords(stage) {
       continue;
     }
 
-    if (/\s/.test(character)) {
+    if (shellWordBlanks.has(character)) {
       pushWord();
       continue;
     }
@@ -297,10 +295,19 @@ test("preserves non-escaping backslashes inside double quotes", () => {
   assert.equal(tokens[2].raw, String.raw`"Invoke\-ScriptAnalyzer"`);
 });
 
-test("does not normalize command-separating newlines as spaces", () => {
-  assert.deepEqual(splitPipeline(`npx
--y markdownlint-cli2 "**/*.md"`), [
-    "npx",
-    '-y markdownlint-cli2 "**/*.md"',
-  ]);
+test("rejects command-separating newlines in the configured pipeline", () => {
+  assert.throws(
+    () => splitPipeline(`npx
+-y markdownlint-cli2 "**/*.md"`),
+    /command-separating newline is not supported/,
+  );
+});
+
+test("does not treat non-shell whitespace as a word separator", () => {
+  const nonBreakingSpaceStage = `npx\u00a0-y markdownlint-cli2 "**/*.md"`;
+
+  assert.deepEqual(splitShellWords(nonBreakingSpaceStage)[0], {
+    value: "npx\u00a0-y",
+    raw: "npx\u00a0-y",
+  });
 });
