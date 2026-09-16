@@ -185,6 +185,7 @@ function runWithPaths(pathOutputs, options = {}) {
   const stubs = createStubSpawn(pathOutputs);
   const result = runDelegate({
     env: { ComSpec: "C:\\Windows\\System32\\cmd.exe" },
+    platform: "linux",
     spawn: stubs.spawn,
     ...options,
   });
