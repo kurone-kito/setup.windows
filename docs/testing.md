@@ -22,8 +22,9 @@ launcher path. They also read the canonical `commands.pre-push-validate`
 pipeline from `.github/idd/config.json` and compare its four stages with the
 delegate's direct dispatch. This makes an added, removed, reordered, or
 modified validation stage, including shell token-boundary drift, fail in the
-focused test until the delegate and its contract are updated; the final
-`pre-push-validate` gate remains the complete four-stage command.
+focused test until the delegate and its contract are updated. The guard
+preserves quote and escape syntax and rejects command-separating newlines; the
+final `pre-push-validate` gate remains the complete four-stage command.
 
 ## When to add a test
 

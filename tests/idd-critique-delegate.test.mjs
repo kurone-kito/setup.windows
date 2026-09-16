@@ -59,6 +59,15 @@ function splitPipeline(command) {
       continue;
     }
 
+    if (character === "\n" || character === "\r") {
+      stages.push(stage.trim());
+      stage = "";
+      if (character === "\r" && command[index + 1] === "\n") {
+        index += 1;
+      }
+      continue;
+    }
+
     stage += character;
   }
 
@@ -69,13 +78,15 @@ function splitPipeline(command) {
 function splitShellWords(stage) {
   const words = [];
   let word = "";
+  let raw = "";
   let quote = null;
   let hasContent = false;
 
   const pushWord = () => {
     if (hasContent) {
-      words.push(word);
+      words.push({ value: word, raw });
       word = "";
+      raw = "";
       hasContent = false;
     }
   };
@@ -86,12 +97,15 @@ function splitShellWords(stage) {
     if (character === "\\" && shouldEscapeNext(quote, text[index + 1])) {
       const nextCharacter = text[index + 1];
       if (nextCharacter === "\n") {
+        raw += `${character}${nextCharacter}`;
         index += 1;
         continue;
       }
+      raw += character;
       if (nextCharacter === undefined) {
         word += character;
       } else {
+        raw += nextCharacter;
         word += nextCharacter;
         index += 1;
       }
@@ -100,6 +114,7 @@ function splitShellWords(stage) {
     }
 
     if (quote) {
+      raw += character;
       if (character === quote) {
         quote = null;
       } else {
@@ -110,6 +125,7 @@ function splitShellWords(stage) {
     }
 
     if (character === '"' || character === "'") {
+      raw += character;
       quote = character;
       hasContent = true;
       continue;
@@ -120,6 +136,7 @@ function splitShellWords(stage) {
       continue;
     }
 
+    raw += character;
     word += character;
     hasContent = true;
   }
@@ -129,27 +146,27 @@ function splitShellWords(stage) {
   return words;
 }
 
+function stageKey(stage) {
+  return JSON.stringify(splitShellWords(stage));
+}
+
 const knownDispatches = new Map([
-  [JSON.stringify(["npx", "-y", "markdownlint-cli2", "**/*.md"]), {
+  [stageKey(String.raw`npx -y markdownlint-cli2 "**/*.md"`), {
     command: "npx",
     args: ["-y", "markdownlint-cli2", "**/*.md"],
   }],
-  [JSON.stringify(["npx", "-y", "cspell", "lint", "**", "--no-progress"]), {
+  [stageKey(String.raw`npx -y cspell lint "**" --no-progress`), {
     command: "npx",
     args: ["-y", "cspell", "lint", "**", "--no-progress"],
   }],
-  [JSON.stringify([
-    "pwsh",
-    "-c",
-    "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit",
-  ]), {
+  [stageKey(String.raw`pwsh -c "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit"`), {
     command: "pwsh",
     args: [
       "-c",
       "Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit",
     ],
   }],
-  [JSON.stringify(["pwsh", "-c", "Invoke-Pester -Path ./tests/powershell -CI"]), {
+  [stageKey(String.raw`pwsh -c "Invoke-Pester -Path ./tests/powershell -CI"`), {
     command: "pwsh",
     args: ["-c", "Invoke-Pester -Path ./tests/powershell -CI"],
   }],
@@ -161,10 +178,10 @@ function canonicalDispatches() {
 
   return splitPipeline(configured).map((stage, index) => {
     const tokens = splitShellWords(stage);
-    const dispatch = knownDispatches.get(JSON.stringify(tokens));
+    const dispatch = knownDispatches.get(stageKey(stage));
     assert.ok(
       dispatch,
-      `pre-push-validate stage ${index + 1} is not covered by the delegate: ${tokens.join(" ")}`,
+      `pre-push-validate stage ${index + 1} is not covered by the delegate: ${tokens.map(({ value }) => value).join(" ")}`,
     );
     return dispatch;
   });
@@ -272,9 +289,18 @@ test("preserves shell token boundaries while parsing policy stages", () => {
 test("preserves non-escaping backslashes inside double quotes", () => {
   const stage = String.raw`pwsh -c "Invoke\-ScriptAnalyzer"`;
 
-  assert.deepEqual(splitShellWords(stage), [
-    "pwsh",
-    "-c",
-    String.raw`Invoke\-ScriptAnalyzer`,
+  const tokens = splitShellWords(stage);
+
+  assert.deepEqual(tokens.map(({ value }) => value), [
+    "pwsh", "-c", String.raw`Invoke\-ScriptAnalyzer`,
+  ]);
+  assert.equal(tokens[2].raw, String.raw`"Invoke\-ScriptAnalyzer"`);
+});
+
+test("does not normalize command-separating newlines as spaces", () => {
+  assert.deepEqual(splitPipeline(`npx
+-y markdownlint-cli2 "**/*.md"`), [
+    "npx",
+    '-y markdownlint-cli2 "**/*.md"',
   ]);
 });
