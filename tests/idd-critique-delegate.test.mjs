@@ -19,6 +19,20 @@ function shouldEscapeNext(quote, nextCharacter) {
     || (quote === '"' && doubleQuoteEscapes.has(nextCharacter));
 }
 
+function trimShellBlanks(text) {
+  let start = 0;
+  let end = text.length;
+
+  while (start < end && shellWordBlanks.has(text[start])) {
+    start += 1;
+  }
+  while (end > start && shellWordBlanks.has(text[end - 1])) {
+    end -= 1;
+  }
+
+  return text.slice(start, end);
+}
+
 function splitPipeline(command) {
   const stages = [];
   let stage = "";
@@ -54,7 +68,7 @@ function splitPipeline(command) {
     }
 
     if (command.slice(index, index + 2) === "&&") {
-      stages.push(stage.trim());
+      stages.push(trimShellBlanks(stage));
       stage = "";
       index += 1;
       continue;
@@ -69,7 +83,7 @@ function splitPipeline(command) {
     stage += character;
   }
 
-  stages.push(stage.trim());
+  stages.push(trimShellBlanks(stage));
   return stages;
 }
 
@@ -89,7 +103,7 @@ function splitShellWords(stage) {
     }
   };
 
-  const text = stage.trim();
+  const text = trimShellBlanks(stage);
   for (let index = 0; index < text.length; index += 1) {
     const character = text[index];
     if (character === "\\" && shouldEscapeNext(quote, text[index + 1])) {
@@ -310,4 +324,11 @@ test("does not treat non-shell whitespace as a word separator", () => {
     value: "npx\u00a0-y",
     raw: "npx\u00a0-y",
   });
+});
+
+test("does not trim non-shell whitespace at stage boundaries", () => {
+  assert.equal(
+    splitPipeline("npx &&\u00a0npx")[1],
+    "\u00a0npx",
+  );
 });

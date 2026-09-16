@@ -23,8 +23,8 @@ pipeline from `.github/idd/config.json` and compare its four stages with the
 delegate's direct dispatch. This makes an added, removed, reordered, or
 modified validation stage, including shell token-boundary drift, fail in the
 focused test until the delegate and its contract are updated. The guard
-preserves quote and escape syntax, accepts only the shell's ASCII space/tab
-word blanks, requires `&&` pipeline separators, and rejects
+preserves quote and escape syntax, trims and accepts only the shell's ASCII
+space/tab word blanks, requires `&&` pipeline separators, and rejects
 command-separating newlines; the final `pre-push-validate` gate remains the
 complete four-stage command.
 
