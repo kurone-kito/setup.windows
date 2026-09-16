@@ -18,7 +18,12 @@ node --test tests/idd-critique-delegate.test.mjs
 
 The tests use stubbed Git and validation commands to cover the Markdown-only
 fast path, all supported PowerShell extensions, and the Windows `npx.cmd`
-launcher path.
+launcher path. They also read the canonical `commands.pre-push-validate`
+pipeline from `.github/idd/config.json` and compare its four stages with the
+delegate's direct dispatch. This makes an added, removed, reordered, or
+modified validation stage fail in the focused test until the delegate and its
+contract are updated; the final `pre-push-validate` gate remains the complete
+four-stage command.
 
 ## When to add a test
 
