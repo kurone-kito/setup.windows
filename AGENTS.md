@@ -26,7 +26,10 @@ the project's standards and practices:
 - If uncertainties, concerns, or other implementation issues arise while
   running in Agent mode, promptly switch to Plan mode and ask the user
   questions. In such cases, provide one or more recommended response
-  options.
+  options. **Grok Build exception**: do not call `enter_plan_mode`
+  during IDD work — it blocks non-plan-file edits (see
+  [`docs/idd-workflow.md`](docs/idd-workflow.md#entry-points-and-auto-load-expectations)).
+  Ask the question directly in your normal response instead.
 
 ## IDD (Issue-Driven Development)
 
@@ -77,3 +80,13 @@ Before pushing, run the commands recorded as `commands.pre-push-validate`
 in [`.github/idd/config.json`](.github/idd/config.json) — for this
 repository that covers markdownlint, cspell, PSScriptAnalyzer, and
 Pester.
+
+## IDD Workflow
+
+This project uses Issue-Driven Development (IDD) with parallel AI
+agents. Start with [docs/idd-workflow.md](docs/idd-workflow.md) for the
+cross-agent entry path and phase routing.
+
+Before starting IDD work, open
+`.github/instructions/idd-overview-core.instructions.md`. Open the routed
+phase file manually when the current step changes.

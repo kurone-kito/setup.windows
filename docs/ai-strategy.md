@@ -3,8 +3,13 @@
 This repository is worked on by several AI coding agents:
 
 - **GitHub Copilot** — reads
-  [`.github/copilot-instructions.md`](../.github/copilot-instructions.md);
-  GitHub also auto-discovers `AGENTS.md` directly.
+  [`.github/copilot-instructions.md`](../.github/copilot-instructions.md)
+  on every surface. Its **cloud agent** and **code review** surfaces
+  also auto-discover `AGENTS.md` directly; **GitHub.com Copilot Chat**
+  does not (confirmed against GitHub's own [custom instructions support
+  reference](https://docs.github.com/en/copilot/reference/custom-instructions-support)),
+  so `.github/copilot-instructions.md` carries the essential guidance
+  inline rather than only pointing at `AGENTS.md`.
 - **Codex CLI**, **OpenCode**, and **Grok Build** — each auto-loads
   [`AGENTS.md`](../AGENTS.md) from the repository root natively; no
   dedicated file is maintained for any of them.
@@ -18,9 +23,12 @@ This repository is worked on by several AI coding agents:
 instruction source for this repository, following the
 [AGENTS.md](https://agents.md) convention. It carries the
 conversational-language rule, the English-comments/docs rule, the
-Plan-mode pause rule, this repository's own detailed
-"## IDD (Issue-Driven Development)" walkthrough, and the Coding
-standards / Commit rules / Verification sections.
+Plan-mode pause rule (with a Grok Build exception for
+`enter_plan_mode`), this repository's own detailed
+"## IDD (Issue-Driven Development)" walkthrough, the Coding
+standards / Commit rules / Verification sections, and — see the Change
+policy section below — its own literal copy of the shared "## IDD
+Workflow" stub.
 
 `CLAUDE.md` and `GEMINI.md` are thin adapters: a short framing line, a
 standalone `@AGENTS.md` import line (Claude Code resolves `@`-imports
@@ -32,21 +40,31 @@ next item does not depend on import support), and the literal
 kept verbatim so it stays discoverable without depending on import
 support.
 
-`.github/copilot-instructions.md` is a thin pointer plus one genuinely
-Copilot-specific note (GitHub Copilot already auto-discovers
-`AGENTS.md` directly, so it carries no `@AGENTS.md` import line) and the
-same literal stub, path-adjusted for its `.github/` location.
+`.github/copilot-instructions.md` carries no `@AGENTS.md` import line
+(Copilot has no such mechanism), and its situation is genuinely
+different from `CLAUDE.md`/`GEMINI.md`'s: since GitHub.com Copilot Chat
+never sees `AGENTS.md` at all (see the tool-mix list above), this file
+repeats the conversational-language, English-comments, and pause-and-ask
+guidance inline rather than only pointing at `AGENTS.md`, plus the same
+literal stub, path-adjusted for its `.github/` location.
 
 ## Change policy
 
 - Edit `AGENTS.md` for any change to repository-specific engineering
   guidance (conversational rules, coding standards, commit rules,
-  verification commands, or the IDD walkthrough). The three adapters
-  should not need a matching edit for this kind of change.
+  verification commands, or the IDD walkthrough). `CLAUDE.md` and
+  `GEMINI.md` should not need a matching edit for this kind of change
+  (they carry the content forward through `@AGENTS.md`).
+  **Exception**: `.github/copilot-instructions.md` repeats the
+  conversational-language, English-comments, and pause-and-ask bullets
+  inline (see Canonical guidance above) because GitHub.com Copilot Chat
+  cannot reach `AGENTS.md` at all — a change to any of those three
+  bullets needs a matching edit there too, checked by hand since nothing
+  mechanically enforces the two copies staying in sync.
 - Edit an adapter file directly only for framing prose specific to that
   tool (for example, a Copilot-mode terminology note).
-- Keep every adapter's "## IDD Workflow" heading and stub wording
-  byte-identical to
+- Keep every entry file's "## IDD Workflow" heading and stub wording —
+  including `AGENTS.md`'s own copy — byte-identical to
   [`docs/onboarding/agent-entry-and-verification.md`](onboarding/agent-entry-and-verification.md#shared-idd-workflow-stub)'s
   canonical text, modulo only the `.github/`-relative path adjustment
   `.github/copilot-instructions.md` needs for its own location (and the
@@ -55,13 +73,12 @@ same literal stub, path-adjusted for its `.github/` location.
   keeps the block mechanically discoverable by that onboarding
   document's checklist and by the `idd-spec-audit` skill, independent of
   whether a given tool's runtime resolves `@`-imports.
-- `AGENTS.md` intentionally does **not** also carry a second, literal
-  copy of the generic stub: its own "## IDD (Issue-Driven Development)"
-  section already references `docs/idd-workflow.md` and drops no
-  guidance, which is what the onboarding checklist actually requires. A
-  future edit should not try to "complete" the pattern by adding the
-  stub there too — that would reintroduce the duplication this file
-  exists to remove, in the one file meant to be the single source.
+- `AGENTS.md` carries its own literal "## IDD Workflow" copy
+  **in addition to**, not instead of, its existing detailed
+  "## IDD (Issue-Driven Development)" section — issue #189's own
+  acceptance criteria name `AGENTS.md` explicitly alongside the three
+  adapters for this requirement. Keep both sections; do not remove
+  either one to "de-duplicate" AGENTS.md itself.
 
 ## Maintenance notes
 
