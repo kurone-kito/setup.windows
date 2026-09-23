@@ -145,14 +145,20 @@ needs-decision, blocked-by-human, and out-of-scope.
      publication token for target, anchor, set, and session; if that operation
      is unavailable, stop before creating the issue — never intentionally
      create an unlabeled issue
-   - the hidden publication token is this exact HTML-first body line:
+   - the hidden publication token is this exact HTML-first body line.
+     `anchor` reuses the opaque `target` value only when this new issue
+     is itself the set anchor (self-reference); for a non-anchor child,
+     `anchor` is instead the set anchor's already-resolved real
+     `<owner>/<repo>#<number>` reference, not an opaque id (full rule:
+     `references/contract.md`'s "New-issue ownership" section):
 
      ```html
      <!-- <marker-prefix>-authoring-publication: target=<opaque-target-id>; anchor=<opaque-anchor-id>; set=<opaque-set-id>; session=<opaque-session-id>; token=<opaque-publication-token> -->
      ```
 
    - The originating Stage 1 hold uses this append-only publication-intent
-     record:
+     record, whose `anchor` follows the same self-anchor/non-anchor-child
+     rule:
 
      ```html
      <!-- <marker-prefix>-authoring-publication-intent: target=<opaque-target-id>; anchor=<opaque-anchor-id>; set=<opaque-set-id>; session=<opaque-session-id>; token=<opaque-publication-token>; journal=<owner>/<repo>#<number>; issue=<owner>/<repo>#<number>|none; actor=<trusted-marker-actor>; state=<pending|member|cleanup|abandoned> -->
@@ -185,8 +191,12 @@ needs-decision, blocked-by-human, and out-of-scope.
      conflicting exact-token record is not valid evidence; fail closed and
      retain the hold.
 
-     Generate the opaque IDs and token before creation because issue numbers
-     are not yet known; before issuing the create, persist those preallocated
+     Generate the opaque `target` id and token before creation because the
+     new issue's own number is not yet known, and generate `anchor` the
+     same way only when this new issue is the set anchor itself --
+     otherwise reuse the anchor's already-resolved real reference, per
+     the self-anchor/non-anchor-child rule above. Before issuing the
+     create, persist those preallocated
      IDs, the exact token, and `state=pending` in that journal. After
      a successful create, attach and verify the returned issue identities on
      that pending record before appending the owner marker. If the pre-create
@@ -284,15 +294,13 @@ needs-decision, blocked-by-human, and out-of-scope.
   [references/workflow-boundary.md](references/workflow-boundary.md).
 - For concrete drafting patterns and example prompts: read
   [references/draft-patterns.md](references/draft-patterns.md).
-- When editing this bundle inside the upstream source repository
-  (`kurone-kito/idd-skill`), keep the bundled references synchronized
-  with its canonical maintenance docs:
+- When editing this bundle inside the source repository, keep the
+  bundled references synchronized with the canonical maintenance docs at
   [`docs/issue-authoring-skill.md`](https://github.com/kurone-kito/idd-skill/blob/main/docs/issue-authoring-skill.md)
   and
   [`docs/idd-workflow.md`](https://github.com/kurone-kito/idd-skill/blob/main/docs/idd-workflow.md)
-  — upstream's own self-hosting copies, distinct from this repository's
-  imported `docs/idd-workflow.md`. Not applicable when working from an
-  adopter repository such as this one.
+  (relative links are avoided here since this file is mirrored at a
+  different path depth in `.claude/skills/issue-authoring/`).
   <!-- setup.windows: relinked from upstream's bare repo-root-relative
   filenames, which name docs this bundle's .claude/skills/issue-authoring/
   install location does not carry, to upstream URLs instead. -->

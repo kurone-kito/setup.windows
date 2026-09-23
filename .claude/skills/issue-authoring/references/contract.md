@@ -1047,8 +1047,9 @@ Binding rules:
   content like `roadmap-id`; it must never be added to
   `OPERATIONAL_MARKERS` in `scripts/protocol-helpers.mjs` or
   subjected to F4 minimization.
-- **One source of truth.** A score of `1` must agree with
-  `status:blocked-by-human`; never publish a contradiction.
+- **One source of truth.** A score of `1` must agree with the configured
+  `blocked-by-human` label (default `status:blocked-by-human`); never
+  publish a contradiction.
 - **Advisory, never a gate.** The score only ranks/routes
   candidates. The A4.5 suitability gate and A5 claim safety checks
   still run unchanged on whatever issue is selected; a high score
@@ -1136,7 +1137,8 @@ readiness bucket (see [Readiness buckets](#readiness-buckets)) carries a
 hidden, machine-readable **authoring-bucket marker** recording which of
 those two axes applies, so `audit-authored-issue.mts` can mechanically
 enforce the matching label the same way it already enforces
-`status:blocked-by-human` for a suitability score of `1`
+the configured `blocked-by-human` label (default `status:blocked-by-human`)
+for a suitability score of `1`
 (`checkSuitabilityBlockedByHuman`) — see
 [Mechanical pre-publish gate](#mechanical-pre-publish-gate)'s
 `--expect-bucket` flag for the enforcement path. `ready` and other
@@ -1155,7 +1157,8 @@ Binding rules:
 - **Folds the existing suitability-1 check.** When present, this marker
   decides `suitability-blocked-by-human`'s applicability instead of the
   suitability score: `blocked-by-human` requires
-  `status:blocked-by-human` regardless of score; `needs-decision` means
+  the configured `blocked-by-human` label (default `status:blocked-by-human`)
+  regardless of score; `needs-decision` means
   that check does not apply, even at a suitability score of `1`. Absent
   or malformed, `checkSuitabilityBlockedByHuman` falls back to the
   pre-existing suitability-1-only rule — no backfill onto issues
@@ -1229,15 +1232,29 @@ only approval boundary.
   the authoring label atomically and carries an exact hidden publication token
   for target, anchor, set, and session. If the target runtime cannot provide
   that operation, stop before creation. Before the create, generate the
-  opaque target/anchor IDs and token because issue numbers are not yet known,
-  and carry this exact HTML-first body line:
+  opaque `target` id and token for both markers below -- the new issue's
+  own number is not yet known. `anchor` in **both** markers depends on
+  the new issue's role in the set, not on a blanket "not yet known"
+  rule: when this new issue is itself the set anchor, `anchor` reuses
+  that same opaque `target` value (self-reference, since the anchor's
+  own number is equally unknown at this point) -- the template's
+  `<opaque-anchor-id>` placeholder below depicts this self-anchor case
+  only. For a **non-anchor child**, `anchor` is instead the set
+  anchor's **already-resolved real** `<owner>/<repo>#<number>`
+  reference, not an opaque id, since the anchor already exists with a
+  known number by the time a child is created. See also the CLI
+  `--help` text's `authoring-owner`/`authoring-publication-intent`
+  shape notes (`bin/idd-post-idd-marker.mjs --help`) for the related,
+  but not identical, per-marker-type distinction those two carry.
+  Carry this exact HTML-first body line:
 
   ```html
   <!-- <marker-prefix>-authoring-publication: target=<opaque-target-id>; anchor=<opaque-anchor-id>; set=<opaque-set-id>; session=<opaque-session-id>; token=<opaque-publication-token> -->
   ```
 
   The originating Stage 1 hold uses this append-only publication-intent
-  record:
+  record, whose `anchor` field follows the same self-anchor/non-anchor-child
+  rule above:
 
   ```html
   <!-- <marker-prefix>-authoring-publication-intent: target=<opaque-target-id>; anchor=<opaque-anchor-id>; set=<opaque-set-id>; session=<opaque-session-id>; token=<opaque-publication-token>; journal=<owner>/<repo>#<number>; issue=<owner>/<repo>#<number>|none; actor=<trusted-marker-actor>; state=<pending|member|cleanup|abandoned> -->
@@ -1315,6 +1332,48 @@ only approval boundary.
   its authoring label. Re-fetch and verify closed/label-absent state, then
   append `state=abandoned`; if any disposition or cleanup read is uncertain,
   retain `state=cleanup`, leave the issue held, and report the recovery hold.
+- **Fast path: `|set|==1` self-anchor Stage 1 acquire (observed
+  2026-09-21, kurone-kito/dotfiles#465 via gist round 27;
+  kurone-kito/idd-skill#3164).** Creating a standalone issue that is
+  its own anchor -- no parent roadmap, no other target in the set --
+  walks the exact same general-case sequence above, collapsed onto the
+  one target/anchor identity: generate one opaque `target` id, one
+  opaque set ID (a new standalone set has no prior set ID to reuse,
+  so this is a fresh generation, not a reuse), and one publication
+  token before the create (the new issue's own number is not yet
+  known) -- both the `authoring-publication` and
+  `authoring-publication-intent` marker shapes require `set` as a
+  field from their first post, so the set ID must exist before that
+  first post, the same as `target` and the token; set `anchor` to
+  that same `target` value (self-reference, per the self-anchor rule
+  above) instead of a resolved `<owner>/<repo>#<number>`; resolve
+  `journal` to `issueAuthoring.journalIssue` from
+  `.github/idd/config.json`, since a standalone set has no
+  originating Stage 1 hold to reuse; append the publication-intent
+  record, carrying that same set ID, with `state=pending; issue=none`
+  before issuing the create; run the capability-checked
+  create-with-label call; attach and verify the returned issue
+  identity on that still-`pending` record; append the `mode=acquire`
+  owner marker, reusing that same set ID (never a second, different
+  one) and a new opaque owner token (`supersedes=none`); wait
+  `claim.verifySettleDelay` and replay the full paginated owner-marker
+  log to confirm the winning marker, then re-fetch labels, body, and
+  owner comments before treating the issue as a set member, and
+  re-fetch its active `claimed-by` claim and open-PR state -- if
+  execution began during acquisition, stop without editing and leave
+  the verified hold for explicit recovery; only then append
+  `state=member` to the publication-intent record. The
+  anchor-heartbeat-before-each-child-acquisition gate described
+  elsewhere in this section has no child to gate here, so that step is
+  inapplicable rather than skipped: the set has exactly one target, and
+  it is the anchor. Every general-case safety requirement -- the
+  atomic create-with-label-or-stop rule, the trusted-marker-actor and
+  permission check, the direct HTTP JSON `POST` requirement, and
+  fail-closed handling of an unverifiable pre- or post-create read --
+  still applies unchanged; this callout only spares a reader tracing
+  the general non-anchor-child branch (an already-resolved real anchor
+  reference, the anchor-heartbeat-before-each-child gate) to confirm it
+  does not apply here. Pairs with the Stage 2 release fast path below.
 - An atomically labeled publication is not set membership until its owner
   marker is verified. Persist each returned target identity in the durable
   originating Stage 1 hold before appending the marker. On resume, reconcile
@@ -1356,9 +1415,28 @@ only approval boundary.
   `body-sha256=none`, while anchor-only `release-complete` carries the required
   canonical set snapshot digest. Persist the per-target body digests and
   snapshot inputs in the originating hold and re-fetch/recompute them before
-  accepting completion. New markers missing these fields are not valid for a
-  new generation; treat legacy markers only as migration input and fail closed
-  when the required snapshot cannot be verified.
+  accepting completion. For `snapshot-sha256`, compute the SHA-256 digest over
+  the UTF-8 bytes of the whole target set's
+  `<owner>/<repo>#<number>:<body-sha256>` lines. Normalize each `<owner>` and
+  `<repo>` component with
+  `NFC(Unicode-default-lowercase(NFC(component)))`, join them with `/`, and
+  serialize each line with that normalized identity. Sort by the identity's
+  unsigned UTF-8 byte sequence (shorter equal prefixes first), then issue
+  number ascending, and join with a single `\n` and no trailing newline. New
+  markers missing these fields are not valid for a new generation; legacy
+  markers are migration input only. A legacy marker cannot prove completion
+  until its target body and required snapshot are re-fetched and recomputed
+  with the canonical algorithm. For this migration check, that algorithm is
+  the SHA-256 digest of the UTF-8 bytes of
+  `<owner>/<repo>#<number>:<body-sha256>` lines after normalizing each
+  owner/repository component with
+  `NFC(Unicode-default-lowercase(NFC(component)))`, joining the normalized
+  components with `/`, sorting by unsigned UTF-8 identity bytes (shorter
+  equal prefixes first) and then issue number ascending, joining with one
+  `\n`, and omitting a trailing newline. When the stored snapshot digest
+  matches that recomputation, the current verification may accept it.
+  Missing, mismatched, or otherwise unverifiable evidence fails closed.
+  This legacy-marker behavior is preventive; no observed incident yet.
 
   Append this HTML-first body with a direct JSON `POST` to the issue-comments
   endpoint; do not rely on `gh issue comment` or `gh api -f body=` for the
@@ -1669,8 +1747,13 @@ only approval boundary.
   so this command never falls back to REST), classifies every comment
   with `matchCanonicalAuthoringMarkerFamily` (`marker-helpers.mts`,
   unchanged), determines "newest" only among **trusted-actor** matches
-  per family (#2896 review, Codex -- an untrusted actor's later
-  byte-exact comment must never be mistaken for the live marker to keep,
+  sharing the same continuity-chain identity within each family
+  (`target=` for `authoring-owner`; `target=`+`token=` together for
+  `authoring-publication-intent`) -- #3167: a different target's later
+  match, even under the same family and `set=`, is never treated as
+  superseding this one; #2896 review, Codex -- an untrusted actor's
+  later byte-exact comment must never be
+  mistaken for the live marker to keep,
   since `minimize-superseded-markers.mjs` itself refuses to minimize any
   comment outside `--trusted-marker-logins` regardless of this
   selection, so wrongly treating the untrusted comment as newest would
@@ -1708,7 +1791,23 @@ only approval boundary.
   retries, requiring the exact current owner, set, anchor, session, and marker
   body. If that guard is not found conclusively, leave all labels in place and
   stop. The guard suppresses Discover for the whole set during the provisional
-  label-removal window; it does not close the set. Then,
+  label-removal window; it does not close the set. When this release is
+  proceeding under the narrow review-fix-loop-cutoff auto-release
+  exception below instead of an explicit human release request, also
+  verify here -- immediately before the first label removal below,
+  whether that removal is a non-anchor target's or the anchor's own --
+  that the marked target is the sole member of its authoring set: it
+  carries no `<marker-prefix>-roadmap-id` marker (never a roadmap
+  anchor), and a repository-wide paginated issue-comment scan for
+  trusted owner markers whose exact `set` matches finds no sibling
+  target -- the same repository-wide, fail-closed enumeration the
+  resume procedure above requires, since a sibling's marker lives on
+  the sibling's own issue and never appears in the marked target's own
+  comment log; block on incomplete or inconclusive enumeration the
+  same way. If either condition fails, or the scan cannot be
+  completed, the exception does not authorize removing any label for
+  this release; fall back to the ordinary explicit human
+  release-request precondition for the whole set instead. Then,
   immediately before each label removal, append and verify the set anchor's
   `mode=heartbeat` first (or reuse one per the heartbeat-coalescing rule
   above), re-fetching it and requiring its current owner, set, anchor, and
@@ -1728,7 +1827,8 @@ only approval boundary.
   -- covering the anchor's own owner-marker log and the journal's
   publication-intent log -- idempotent with every earlier target's own
   sweep above, since a comment either was already minimized or was not
-  yet the newest for its family either way. Then reuse the earliest
+  yet the newest for its own target within the family either way. Then
+  reuse the earliest
   valid current-owner/set/session `mode=release-complete`
   marker on the anchor, or append one and record its returned comment ID.
   Re-fetch that ID and the anchor's paginated owner-marker log with bounded
@@ -1754,6 +1854,71 @@ only approval boundary.
   record a set-level recovery hold and never claim a partial release. Release
   is a human action; nothing in this bundle auto-releases a held issue set,
   except the narrow, marker-scoped exception immediately below.
+- **Fast path: `|set|==1` self-anchor Stage 2 release (observed
+  2026-09-21, kurone-kito/dotfiles#465 via gist round 27;
+  kurone-kito/idd-skill#3164).** A genuine standalone set -- exactly
+  one target, that target is its own anchor, no parent roadmap, and no
+  sibling child anywhere in the set -- walks the exact same
+  general-case sequence above with no step skipped or weakened; it
+  only collapses onto a single issue instead of needing to be traced
+  through the general N-target prose (the non-anchor-labels-one-at-a-time
+  loop, the "when it is distinct" branch for a target heartbeat). The
+  reduced sequence, in order: (1) release-marker preflight -- re-fetch
+  owner comments, then run the mandatory sweep against that one issue
+  and the journal issue **before** the reuse-or-append decision (a
+  retried or resumed release still re-runs it), then reuse or append
+  the sole target/anchor's own `mode=release` marker and verify it;
+  (2) the anchor-only `mode=release-guard` marker on the same issue,
+  verified against its paginated owner-marker log; (3) **only** when
+  this release is proceeding under the narrow auto-release exception
+  below instead of an explicit human release request -- an ordinary
+  human-gated release skips straight to step (4), since the human
+  request already vouches for the set's scope -- run **both** of that
+  exception's own preconditions here, immediately before the label
+  removal in step (4): first, verify that this sole target really is
+  the sole member of its authoring set -- it carries no
+  `<marker-prefix>-roadmap-id` marker, and a repository-wide paginated
+  scan for trusted owner markers sharing its exact `set` finds no
+  sibling target; this scan is exactly the mechanical proof this fast
+  path's own `|set|==1` premise rests on, so skipping it here would be
+  a genuine weakening, not a condensation; second, run the exception's
+  own provenance check -- the target's body must still carry the exact
+  `review-fix-loop-cutoff` marker from Stage 1 publication, and a
+  freshly recomputed body-sha256 must match that same target's
+  `mode=acquire` owner marker's recorded `body-sha256` -- neither
+  check is optional, and this fast path adds no shortcut through
+  either one; if either the sole-member scan or the provenance check
+  fails, or either cannot be completed, fall back to the ordinary
+  human-release-request precondition instead; (4) immediately before
+  the single label removal, reuse or append the anchor's
+  `mode=heartbeat` marker (reuse allowed per the heartbeat-coalescing
+  rule above) -- already the only heartbeat needed, per "one marker
+  serves both roles when they coincide" above, since target and anchor
+  are the same issue -- wait `claim.verifySettleDelay`, replay the full
+  paginated log, and require the expected owner token, the shared set,
+  anchor, and session, the recorded release-marker comment, and the
+  expected label/body snapshot before the removal itself; (5) removing
+  that one authoring
+  label and re-fetching to verify the release marker, absent label,
+  and expected body snapshot; (6) the mandatory sweep again, against
+  the same issue and the journal issue, before the release-complete
+  reuse-or-append decision; (7) the anchor-only `mode=release-complete`
+  marker, verified via bounded-retry paginated re-fetch; (8) the
+  closing sweep below. Every general-case safety requirement still
+  applies unchanged: paginated owner-marker log reads with bounded
+  retries, the trusted-marker-actor and Write/Maintain/Admin
+  permission check, the direct HTTP JSON `POST` requirement (never `gh
+  issue comment` or `gh api -f body=`), the `claim.verifySettleDelay`
+  wait plus full paginated replay before the heartbeat in step (4)
+  authorizes the label removal, fail-closed handling of an
+  inconclusive read, and running the
+  `authoring-marker-minimization-backlog` check after each of the
+  sweep attempts above to keep its outcome visible. This callout is a
+  shorter path to the same guarantee, never a weaker one: it grants no
+  new exemption, and release stays a human action under the same
+  precondition as the general case, subject to the same narrow
+  auto-release exception named in step (3). Pairs with the Stage 1
+  acquire fast path above.
 - **Closing sweep (after Stage 2 closes, #2896 review, Codex; #2935).**
   The two sweep points above run _before_ Stage 2's own later marker
   appends for the same generation -- the per-target `release` marker,
