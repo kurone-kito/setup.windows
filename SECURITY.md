@@ -14,12 +14,15 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within this project, please report
-it by issuing a
-[pull request with a fix](https://github.com/kurone-kito/setup.windows/pulls)
-or
-[opening an issue](https://github.com/kurone-kito/setup.windows/issues)
-with the “security” label.
+If you discover a security vulnerability within this project, please
+report it through
+[GitHub Security Advisories](https://github.com/kurone-kito/setup.windows/security/advisories/new)
+so the issue can be addressed privately before public disclosure.
+
+If you are unable to use Security Advisories, you may alternatively
+[open an issue](https://github.com/kurone-kito/setup.windows/issues) with the
+"security" label or submit a
+[pull request with a fix](https://github.com/kurone-kito/setup.windows/pulls).
 
 Your contributions to improving the security of this project are greatly
 appreciated.
