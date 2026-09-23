@@ -136,3 +136,17 @@ $RECYCLE.BIN/
 ### Pester ###
 # Test result output from Invoke-Pester -CI (TestResult.Enabled = $true)
 testResults.xml
+
+### AI Agents ###
+# Claude Code local state (scheduled_tasks.lock, settings.local.json,
+# cache, etc.) stays local-only; the shared .claude/skills/ directory
+# ships with the repository.
+.claude/*
+!.claude/skills/
+
+# OpenAI Codex sandbox
+.codex/
+
+### NeoVim ###
+# Project-local NeoVim config
+.nvim.lua
