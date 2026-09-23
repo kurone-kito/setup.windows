@@ -1,32 +1,29 @@
 # Guidelines for AI Agents
 
-This project sets up the dev environment for Windows.
+This is the GitHub Copilot entry point. GitHub Copilot automatically
+discovers [`AGENTS.md`](../AGENTS.md) at the repository root, so this
+file does not import it explicitly the way `CLAUDE.md`/`GEMINI.md` do —
+see [`../docs/ai-strategy.md`](../docs/ai-strategy.md) for the rationale.
+`AGENTS.md` is this repository's canonical, tool-neutral instruction
+source.
 
-When contributing to this repository using AI agents, adhere to the
-following guidelines to ensure high-quality contributions that align with
-the project's standards and practices:
+One Copilot-specific note: when uncertainty, hidden risk, or missing
+context blocks a safe change, pause the current action and ask a direct
+question instead of continuing autonomously — the same guidance
+`AGENTS.md` states as "switch to Plan mode," restated here without
+assuming a fixed mode name, since Copilot's own mode terminology can
+vary by surface and version.
 
-- The conversational language should match the user's language.
-  For example, if the user speaks in Japanese, respond in Japanese.
-- However, comments and documentation should be written in English unless
-  there is a clear context otherwise.
-- If uncertainties, concerns, or other implementation issues arise while
-  running in Agent mode, promptly switch to Plan mode and ask the user
-  questions. In such cases, provide one or more recommended response
-  options.
+See [`../docs/idd-policy.md`](../docs/idd-policy.md) for this
+repository's recorded IDD policy decisions (merge policy, review policy,
+claim timing, CI wait, helper runtime, and related settings).
 
-## IDD (Issue-Driven Development)
+## IDD Workflow
 
-This repository uses an Issue-Driven Development workflow for autonomous
-and semi-autonomous contribution loops. Before starting IDD work, open
-[`.github/instructions/idd-overview-core.instructions.md`](instructions/idd-overview-core.instructions.md)
-for the shared claim/marker/safety-gate definitions, then follow
-[`docs/idd-workflow.md`](../docs/idd-workflow.md) as the phase-by-phase
-entry point (Discover → Claim → Work → PR Submit → CI Wait → Review
-Triage → Review Fix → Merge → Cleanup → Loop). Phase routing is manual:
-when a phase changes, open the next-phase file the current phase
-instructions name — this repository does not auto-route between phase files.
+This project uses Issue-Driven Development (IDD) with parallel AI
+agents. Start with [docs/idd-workflow.md](../docs/idd-workflow.md) for
+the cross-agent entry path and phase routing.
 
-See [`docs/idd-policy.md`](../docs/idd-policy.md) for this repository's
-recorded IDD policy decisions (merge policy, review policy, claim
-timing, CI wait, helper runtime, and related settings).
+Before starting IDD work, open
+`.github/instructions/idd-overview-core.instructions.md`. Open the routed
+phase file manually when the current step changes.

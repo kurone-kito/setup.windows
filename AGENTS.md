@@ -1,7 +1,17 @@
-# Guidelines for AI Agents (Codex CLI / OpenCode)
+# Guidelines for AI Agents
 
-This is the shared entry point for Codex CLI and OpenCode; no
-OpenCode-specific file is maintained separately.
+This is the shared, canonical entry point for Codex CLI, OpenCode, and
+Grok Build — each auto-loads `AGENTS.md` from the repository root
+natively, so no separate file is maintained for any of them. (Grok
+Build has a few IDD-specific caveats; see
+[`docs/idd-workflow.md`](docs/idd-workflow.md#entry-points-and-auto-load-expectations).)
+Following
+the [AGENTS.md](https://agents.md) convention, this file is also this
+repository's canonical, tool-neutral instruction source: `CLAUDE.md`,
+`GEMINI.md`, and
+[`.github/copilot-instructions.md`](.github/copilot-instructions.md)
+import or point back to it instead of duplicating its content. See
+[`docs/ai-strategy.md`](docs/ai-strategy.md) for the rationale.
 
 This project sets up the dev environment for Windows.
 
@@ -33,3 +43,37 @@ name — this repository does not auto-route between phase files.
 See [`docs/idd-policy.md`](docs/idd-policy.md) for this repository's
 recorded IDD policy decisions (merge policy, review policy, claim
 timing, CI wait, helper runtime, and related settings).
+
+## Coding standards
+
+Mirrors [`.editorconfig`](.editorconfig):
+
+- 2-space indent
+- LF line endings
+- Trim trailing whitespace, except in Markdown where trailing spaces may
+  be significant
+- Always end a file with a final newline
+
+Separately — this convention is not encoded in `.editorconfig` — file
+naming is lowercase with hyphens, unless a platform or tool convention
+requires otherwise (for example the PascalCase
+`scripts/Build-Configurations.ps1` and `scripts/Test-PackageIds.ps1`
+PowerShell scripts).
+
+## Commit rules
+
+This project follows [Conventional
+Commits](https://www.conventionalcommits.org/). A commit message
+template is available at [`.gitmessage`](.gitmessage); opt in per clone
+with:
+
+```sh
+git config commit.template .gitmessage
+```
+
+## Verification
+
+Before pushing, run the commands recorded as `commands.pre-push-validate`
+in [`.github/idd/config.json`](.github/idd/config.json) — for this
+repository that covers markdownlint, cspell, PSScriptAnalyzer, and
+Pester.
