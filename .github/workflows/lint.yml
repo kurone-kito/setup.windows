@@ -13,6 +13,7 @@ run-name: ${{ github.event_name }} by @${{ github.actor }}
 jobs:
   lint:
     runs-on: ubuntu-slim
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - name: Run IDD critique delegate tests
@@ -23,6 +24,7 @@ jobs:
         uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24.2.0
   powershell-analyzer:
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - name: Install PowerShell
@@ -35,6 +37,7 @@ jobs:
         run: Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 -EnableExit
   pester:
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -52,6 +55,7 @@ jobs:
         run: Invoke-Pester -Path ./tests/powershell -CI
   configuration-drift:
     runs-on: ubuntu-slim
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:

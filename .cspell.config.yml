@@ -8,8 +8,7 @@ dictionaries:
   - lorem-ipsum
   - markdown
   - misc
-  - npm
-  - shell
+  - shellscript
   - softwareTerms
 enableGlobDot: true
 features:
@@ -50,18 +49,23 @@ words:
   - junegunn
   - kito
   - kuron
+  - kurone
   - kuroné
   - mikefarah
+  - mkcert
   - mojang
   - msix
   - nektos
+  - ngrok
   - nvme
+  - nvmrc
   - oldj
   - ollama
   - pixiv
   - pkgs
   - posh
   - psscriptanalyzer
+  - rollup
   - sharkdp
   - slik
   - steamcmd
@@ -81,13 +85,11 @@ words:
   - desync
   - desynced
   - dofork
-  - esac
   - esync
   - ghec
   - ghes
   - isort
   - onnx
-  - pgrep
   - pylint
   - pyproject
   - pytest

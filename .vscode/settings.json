@@ -5,7 +5,7 @@
     "*.dsc.yaml": "${capture}.import.json",
     "*.md": "${capture}.*.md",
     ".gitattributes": ".gitignore, .gitmessage",
-    ".markdownlint.yml": ".markdownlint-cli2.yaml",
+    ".markdownlint.*": ".markdownlint-cli2.*",
     ".tool-versions": ".node-version, .nvmrc",
     "AGENTS.md": "CLAUDE.md, GEMINI.md"
   },
