@@ -1,3 +1,15 @@
+* text=auto eol=lf
+
 .coderabbit.yaml export-ignore
-.git* export-ignore
+.gitattributes export-ignore
+.githooks export-ignore
+.gitignore export-ignore
+.gitmessage export-ignore
 .imgbotconfig export-ignore
+
+*.gif binary
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.png binary
+*.webp binary
