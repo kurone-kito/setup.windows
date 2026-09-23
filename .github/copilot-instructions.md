@@ -1,13 +1,16 @@
 # Guidelines for AI Agents
 
-This is the GitHub Copilot entry point. GitHub Copilot's **cloud agent**
-and **code review** surfaces auto-discover
+This is the GitHub Copilot entry point. On GitHub.com, Copilot's
+**cloud agent** and **code review** surfaces auto-discover
 [`AGENTS.md`](../AGENTS.md) at the repository root directly — no import
 line is needed here for them. **GitHub.com Copilot Chat does not**: it
 reads only this file and does not treat `AGENTS.md` as a supported
 instruction source, so the guidance below is repeated here for that
-surface specifically, rather than only pointed at. `AGENTS.md` is this
-repository's canonical, tool-neutral instruction source regardless; see
+surface specifically, rather than only pointed at. (Support differs by
+IDE/extension surface too — see `docs/ai-strategy.md` if you need the
+detail — so treat "auto-discovers" as GitHub.com-specific, not
+universal.) `AGENTS.md` is this repository's canonical, tool-neutral
+instruction source regardless; see
 [`../docs/ai-strategy.md`](../docs/ai-strategy.md) for the rationale.
 
 - The conversational language should match the user's language.

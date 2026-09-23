@@ -4,12 +4,18 @@ This repository is worked on by several AI coding agents:
 
 - **GitHub Copilot** — reads
   [`.github/copilot-instructions.md`](../.github/copilot-instructions.md)
-  on every surface. Its **cloud agent** and **code review** surfaces
-  also auto-discover `AGENTS.md` directly; **GitHub.com Copilot Chat**
-  does not (confirmed against GitHub's own [custom instructions support
+  on every surface. **On GitHub.com** specifically, Copilot's **cloud
+  agent** and **code review** surfaces also auto-discover `AGENTS.md`
+  directly; **GitHub.com Copilot Chat** does not (confirmed against
+  GitHub's own [custom instructions support
   reference](https://docs.github.com/en/copilot/reference/custom-instructions-support)),
   so `.github/copilot-instructions.md` carries the essential guidance
-  inline rather than only pointing at `AGENTS.md`.
+  inline rather than only pointing at `AGENTS.md`. Support differs
+  again by IDE/extension surface (for example, VS Code's Copilot code
+  review supports only `.github/copilot-instructions.md`, while VS Code
+  Copilot Chat does support `AGENTS.md` — the reverse split from
+  GitHub.com) — treat "auto-discovers" above as GitHub.com-specific,
+  not a universal claim across every Copilot surface.
 - **Codex CLI**, **OpenCode**, and **Grok Build** — each auto-loads
   [`AGENTS.md`](../AGENTS.md) from the repository root natively; no
   dedicated file is maintained for any of them.

@@ -7,11 +7,12 @@ Build has a few IDD-specific caveats; see
 [`docs/idd-workflow.md`](docs/idd-workflow.md#entry-points-and-auto-load-expectations).)
 Following
 the [AGENTS.md](https://agents.md) convention, this file is also this
-repository's canonical, tool-neutral instruction source: `CLAUDE.md`,
-`GEMINI.md`, and
+repository's canonical, tool-neutral instruction source: `CLAUDE.md` and
+`GEMINI.md` import it instead of duplicating its content, and
 [`.github/copilot-instructions.md`](.github/copilot-instructions.md)
-import or point back to it instead of duplicating its content. See
-[`docs/ai-strategy.md`](docs/ai-strategy.md) for the rationale.
+points back to it too, while also repeating a few essential bullets
+inline for the one Copilot surface that cannot reach this file at all.
+See [`docs/ai-strategy.md`](docs/ai-strategy.md) for the rationale.
 
 This project sets up the dev environment for Windows.
 
