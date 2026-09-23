@@ -23,9 +23,11 @@ Plan-mode pause rule, this repository's own detailed
 standards / Commit rules / Verification sections.
 
 `CLAUDE.md` and `GEMINI.md` are thin adapters: a short framing line, a
-standalone `@AGENTS.md` import (Claude Code resolves `@`-imports
-natively; other tools that read these files as plain text simply see
-the literal line), and the literal
+standalone `@AGENTS.md` import line (Claude Code resolves `@`-imports
+natively; whether Antigravity CLI's own import mechanism also resolves
+this exact line is unconfirmed — a tool that instead reads the file as
+plain text simply sees the literal line either way, which is why the
+next item does not depend on import support), and the literal
 [shared IDD workflow stub](onboarding/agent-entry-and-verification.md#shared-idd-workflow-stub)
 kept verbatim so it stays discoverable without depending on import
 support.

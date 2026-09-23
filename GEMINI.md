@@ -3,7 +3,8 @@
 This is the Antigravity CLI (formerly Gemini CLI) entry point.
 [AGENTS.md](AGENTS.md) is this repository's canonical, tool-neutral
 instruction source — see [`docs/ai-strategy.md`](docs/ai-strategy.md)
-for the rationale. This file imports it directly below.
+for the rationale. This file includes it directly below via a
+standalone `@AGENTS.md` line.
 
 @AGENTS.md
 
