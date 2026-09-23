@@ -1,32 +1,23 @@
 # Guidelines for Gemini / Antigravity CLI
 
-This project sets up the dev environment for Windows.
+This is the Antigravity CLI (formerly Gemini CLI) entry point.
+[AGENTS.md](AGENTS.md) is this repository's canonical, tool-neutral
+instruction source — see [`docs/ai-strategy.md`](docs/ai-strategy.md)
+for the rationale. This file includes it directly below via a
+standalone `@AGENTS.md` line.
 
-When contributing to this repository using AI agents, adhere to the
-following guidelines to ensure high-quality contributions that align with
-the project's standards and practices:
-
-- The conversational language should match the user's language.
-  For example, if the user speaks in Japanese, respond in Japanese.
-- However, comments and documentation should be written in English unless
-  there is a clear context otherwise.
-- If uncertainties, concerns, or other implementation issues arise while
-  running in Agent mode, promptly switch to Plan mode and ask the user
-  questions. In such cases, provide one or more recommended response
-  options.
-
-## IDD (Issue-Driven Development)
-
-This repository uses an Issue-Driven Development workflow for autonomous
-and semi-autonomous contribution loops. Before starting IDD work, open
-[`.github/instructions/idd-overview-core.instructions.md`](.github/instructions/idd-overview-core.instructions.md)
-for the shared claim/marker/safety-gate definitions, then follow
-[`docs/idd-workflow.md`](docs/idd-workflow.md) as the phase-by-phase entry
-point (Discover → Claim → Work → PR Submit → CI Wait → Review Triage →
-Review Fix → Merge → Cleanup → Loop). Phase routing is manual: when a
-phase changes, open the next-phase file the current phase instructions
-name — this repository does not auto-route between phase files.
+@AGENTS.md
 
 See [`docs/idd-policy.md`](docs/idd-policy.md) for this repository's
 recorded IDD policy decisions (merge policy, review policy, claim
 timing, CI wait, helper runtime, and related settings).
+
+## IDD Workflow
+
+This project uses Issue-Driven Development (IDD) with parallel AI
+agents. Start with [docs/idd-workflow.md](docs/idd-workflow.md) for the
+cross-agent entry path and phase routing.
+
+Before starting IDD work, open
+`.github/instructions/idd-overview-core.instructions.md`. Open the routed
+phase file manually when the current step changes.
