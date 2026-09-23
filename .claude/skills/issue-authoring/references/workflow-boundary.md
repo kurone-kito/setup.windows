@@ -33,14 +33,27 @@ approval boundary that hands off to IDD execution.
   session. If the target runtime cannot provide that operation, stop before
   creating the issue. Never intentionally create an unlabeled issue for the
   Stage 1 set
-- The publication token uses this exact HTML-first format:
+- The publication token uses this exact HTML-first format. Generate the
+  opaque `target` id and token for both markers below -- the new
+  issue's own number is not yet known. `anchor` in **both** markers
+  depends on the new issue's role in the set: when this new issue is
+  itself the set anchor, `anchor` reuses that same opaque `target`
+  value (self-reference) -- the `<opaque-anchor-id>` placeholder below
+  depicts this self-anchor case only. For a **non-anchor child**,
+  `anchor` is instead the set anchor's already-resolved real
+  `<owner>/<repo>#<number>` reference, not an opaque id, since the
+  anchor already exists with a known number by the time a child is
+  created (see the bundle's canonical contract,
+  `references/contract.md`'s "New-issue ownership" section, for the
+  full rule):
 
   ```html
   <!-- <marker-prefix>-authoring-publication: target=<opaque-target-id>; anchor=<opaque-anchor-id>; set=<opaque-set-id>; session=<opaque-session-id>; token=<opaque-publication-token> -->
   ```
 
   The originating Stage 1 hold uses this append-only publication-intent
-  record:
+  record, whose `anchor` field follows the same self-anchor/non-anchor-child
+  rule above:
 
   ```html
   <!-- <marker-prefix>-authoring-publication-intent: target=<opaque-target-id>; anchor=<opaque-anchor-id>; set=<opaque-set-id>; session=<opaque-session-id>; token=<opaque-publication-token>; journal=<owner>/<repo>#<number>; issue=<owner>/<repo>#<number>|none; actor=<trusted-marker-actor>; state=<pending|member|cleanup|abandoned> -->
@@ -71,8 +84,12 @@ approval boundary that hands off to IDD execution.
   configured bot/app trust. An untrusted, malformed, or conflicting
   exact-token record is not valid evidence; fail closed and retain the hold.
 
-  Generate the opaque target/anchor IDs and publication token before creation
-  and persist those preallocated IDs, the exact token, and `state=pending` in
+  Generate the opaque `target` id and publication token before creation
+  because the new issue's own number is not yet known, and generate
+  `anchor` the same way only when this new issue is the set anchor
+  itself -- otherwise reuse the anchor's already-resolved real
+  reference, per the self-anchor/non-anchor-child rule above. Persist
+  those preallocated IDs, the exact token, and `state=pending` in
   that journal before issuing the create. After a successful create, attach and
   verify the returned issue identities before appending the owner marker; an
   unverifiable pre-create write blocks creation, while an unverifiable
@@ -133,8 +150,27 @@ approval boundary that hands off to IDD execution.
   Use the same `body-sha256` and `snapshot-sha256` semantics as the portable
   owner protocol: target markers persist the exact fresh body digest, and the
   anchor-only `release-complete` marker carries the recomputed set snapshot.
+  For `snapshot-sha256`, compute the SHA-256 digest over the UTF-8 bytes of
+  the whole target set's `<owner>/<repo>#<number>:<body-sha256>` lines.
+  Normalize each `<owner>` and `<repo>` component with
+  `NFC(Unicode-default-lowercase(NFC(component)))`, join them with `/`, and
+  serialize each line with that normalized identity. Sort by the identity's
+  unsigned UTF-8 byte sequence (shorter equal prefixes first), then issue
+  number ascending, and join with a single `\n` and no trailing newline.
   New markers missing these fields are not valid for a new generation; legacy
-  markers are migration input only and cannot prove completion.
+  markers are migration input only. A legacy marker cannot prove completion
+  until its target body and required snapshot are re-fetched and recomputed
+  with the canonical algorithm. For this migration check, that algorithm is
+  the SHA-256 digest of the UTF-8 bytes of
+  `<owner>/<repo>#<number>:<body-sha256>` lines after normalizing each
+  owner/repository component with
+  `NFC(Unicode-default-lowercase(NFC(component)))`, joining the normalized
+  components with `/`, sorting by unsigned UTF-8 identity bytes (shorter
+  equal prefixes first) and then issue number ascending, joining with one
+  `\n`, and omitting a trailing newline. When the stored snapshot digest
+  matches that recomputation, the current verification may accept it.
+  Missing, mismatched, or otherwise unverifiable evidence fails closed.
+  This legacy-marker behavior is preventive; no observed incident yet.
 
   Append this HTML-first body with a direct JSON `POST` to the issue-comments
   endpoint; do not rely on `gh issue comment` or `gh api -f body=` for the
@@ -345,7 +381,25 @@ approval boundary that hands off to IDD execution.
   retries, requiring the exact current owner, set, anchor, session, and marker
   body. If that guard is not found conclusively, leave all labels in place and
   stop. The guard suppresses Discover for the whole set during the provisional
-  label-removal window; it does not close the set. Then, immediately
+  label-removal window; it does not close the set. When this release is
+  proceeding under the narrow review-fix-loop-cutoff auto-release
+  exception in
+  [Authoring hold and release](contract.md#authoring-hold-and-release)
+  instead of an explicit human release request, also verify here --
+  immediately before the first label removal below, whether that
+  removal is a non-anchor target's or the anchor's own -- that the
+  marked target is the sole member of its authoring set: it carries no
+  `<marker-prefix>-roadmap-id` marker (never a roadmap anchor), and a
+  repository-wide paginated issue-comment scan for trusted owner
+  markers whose exact `set` matches finds no sibling target -- the
+  same repository-wide, fail-closed enumeration the resume procedure
+  above requires, since a sibling's marker lives on the sibling's own
+  issue and never appears in the marked target's own comment log;
+  block on incomplete or inconclusive enumeration the same way. If
+  either condition fails, or the scan cannot be completed, the
+  exception does not authorize removing any label for this release;
+  fall back to the ordinary explicit human release-request
+  precondition for the whole set instead. Then, immediately
   before each label removal, append and verify the set anchor's
   `mode=heartbeat` first, re-fetching it and requiring its current owner, set,
   anchor, and session. Only after that succeeds, append and verify the target
@@ -386,6 +440,21 @@ approval boundary that hands off to IDD execution.
   [Authoring hold and release](contract.md#authoring-hold-and-release)
 - Release remains a human action; nothing in this bundle auto-releases
   a held issue set, except that same narrow, marker-scoped exception
+- For an ordinary human-gated release, under an orchestrator and
+  delegated-worker split, the release action itself must be
+  performed by whichever party directly holds the verified user's
+  release request, never relayed as a claim for the other party to
+  trust —
+  mirroring how Discover and Claim already stay the orchestrator's
+  own job under `docs/idd-workflow.md`'s Orchestrator fan-out
+  variant. A delegated worker that receives only a relayed release
+  claim, even from its own orchestrator, must refuse to act on it and
+  require the party holding the actual request to release directly.
+  This rule does not extend to the narrow review-fix-loop-cutoff
+  auto-release exception above, which by design runs with no user
+  release request for any party to hold in the first place — see
+  [Authoring hold and release](contract.md#authoring-hold-and-release)
+  (observed 2026-09-17, kurone-kito/idd-skill#3102)
 
 ## A4.5 Gate Timing
 
