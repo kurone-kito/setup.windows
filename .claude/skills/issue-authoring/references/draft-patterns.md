@@ -100,17 +100,26 @@ Before you publish a ready issue, confirm:
 
 ## Mechanical pre-publish gate
 
+Run the completed-draft adversarial review in
+[contract.md](contract.md#completed-draft-adversarial-review) before
+this linter. The linter then runs on the reviewed body.
+
 Before you publish a drafted **ready orphan, roadmap, or child** body,
 run the `audit-authored-issue` linter against it when a helper runtime
 is available. It mechanically catches shape and marker mistakes — a
 missing or duplicated autopilot-suitability footer, a wrong
 markerPrefix, a missing required heading for the declared shape, a
 malformed dependency marker — that a confident narrative can otherwise
-mask:
+mask. For the `orphan` and `child` shapes, it also runs the same A4/A4.5
+triage evaluators Discover runs later, so most viability/suitability
+failures surface here instead of only at claim time -- pass `--title`
+(or lead the draft with a `# <title>` line) so those checks can
+evaluate:
 
 ```sh
 node scripts/audit-authored-issue.mjs --shape orphan \
-  --marker-prefix <resolved-target-prefix> --body-file draft.md
+  --marker-prefix <resolved-target-prefix> --title "Drafted issue title" \
+  --body-file draft.md
 ```
 
 Before newly publishing a body into the `needs-decision` or
@@ -121,11 +130,13 @@ matching value) — without it, the marker/label checks that key off
 never run through this gate at all. Passing `--expect-bucket` also
 skips the ready-shape-only checks (the suitability footer and required
 headings) that a bucket body like `#431` below is never expected to
-carry:
+carry, and downgrades a failing A4/A4.5 triage finding to a warning
+instead of a failure, since such a body is meant to be non-ready:
 
 ```sh
 node scripts/audit-authored-issue.mjs --shape orphan \
-  --marker-prefix <resolved-target-prefix> --body-file draft.md \
+  --marker-prefix <resolved-target-prefix> --title "Drafted issue title" \
+  --body-file draft.md \
   --expect-bucket needs-decision \
   --label status:needs-decision
 ```
@@ -152,6 +163,18 @@ reverse, a non-`1` score paired with the label. Fix every reported
 finding and re-run before publishing; a `passed: false` report means
 the draft is not ready yet, regardless of how complete the narrative
 reads.
+
+When the proposed issue touches a file governed by the target repository's
+configured `bundleBudgets` or `instructionSizeBudgets` entries — or an
+`idd-template/` source that maps to a generated target through
+`syncPairs` (or an equivalent source-to-target mapping), including
+onboarding documents — also apply the contract's
+[context-ceiling check](contract.md#codebase-fidelity-validation) before treating
+`bundleBudgets.limitBytes` as available headroom; that limit is not the
+only constraint. Apply the same check when the proposed issue adds a bundle
+member or changes the `bundleBudgets`, `instructionSizeBudgets`, or
+`contextCeiling` policy, evaluating
+the proposed post-change memberships and limits as well as current entries.
 
 **No helper runtime available (`instructions-only` profile):** the
 linter cannot run. `instructions-only` is a first-class supported
@@ -551,7 +574,13 @@ Before publishing an issue, apply a reuse-first decision tree:
 1. Is an existing open issue a better fit? If yes, extend it instead of
    creating a new one. Add a comment linking to the new schema request.
 2. Is the work already complete in a closed issue or merged PR? If yes,
-   create a reference or learning note instead of reopening it.
+   create a reference or learning note instead of reopening it. Was it
+   instead already declined — closed as `not planned`, or rejected in
+   a review thread of the PR that last reshaped the same mechanism
+   (the reuse-first policy's previously declined check)? If yes and
+   nothing is new since that outcome, route to `needs-decision` or
+   drop the proposal instead of publishing it as `ready`; if something
+   is new, cite the declined outcome in the Background and continue.
 3. Is a parent roadmap already managing this work? If yes, add it to the
    task list instead of filing independently.
 4. Does the issue have any of these properties? If yes, escalate to
@@ -637,8 +666,9 @@ verification shape, not a rigid edit order.
 
 ## Publication boundary
 
-Publish each `ready` body directly under the authoring hold once it
-passes the mechanical gate and the critique pass — this is the default
+Publish each `ready`, `needs-decision`, or `blocked-by-human` body
+directly under the authoring hold once the completed-draft adversarial
+review and then the mechanical gate have passed. This is the default
 outcome of drafting, and it needs no separate publish approval. Stop
 after publishing (and applying/creating the authoring label) unless
 the user also separately requests release from the authoring hold —

@@ -64,7 +64,20 @@ In this phase, the agent:
 
 The critique pass is agent-neutral: use a subagent or rubber-duck
 reviewer when available, otherwise run an explicit self-critique
-locally. Clarification must be bounded; use the repository-local
+locally. When that reviewer is a subagent, prefer a
+non-context-inheriting mechanism whenever the tool offers one, and
+apply the same preference to any other no-mutation verification or
+research dispatch. A context-inheriting mechanism, such as Claude
+Code's `fork` subagent type, is a fallback only. A prose-only
+restriction in the dispatch prompt does not reliably stop that
+delegate from completing the calling session's broader task. Observed
+2026-09-17, when a research-only verification subagent published a
+roadmap and 4 child issues, and a read-only verification subagent
+published another roadmap and 4 child issues and rewrote a personal
+gist; and 2026-09-24/25, when a read-only fact-check subagent
+published two drafted issues. issue #3448 records those incidents.
+Clarification must be bounded; use the
+repository-local
 `issueAuthoring.maxClarificationRounds` value when available,
 otherwise default to 3 rounds. If safe drafting is still impossible
 after that, stop and report the remaining blockers instead of looping
@@ -263,7 +276,31 @@ after claim — this scan only adds an earlier, pre-publish checkpoint.
 A fast enough race can still surface even after B2.0; when it does, it
 resolves the same way.
 
-**Same-shape follow-up chains.** A different case from both checks
+**Previously declined check.** Before treating a proposal as new, you
+**MUST** check whether it was already declined. Vocabulary alone can
+miss a match: the Groom outcome recorded on issue #2996 on 2026-09-15
+closed it as not-planned, yet issue #3164's own later search missed it
+six days after. Search closed issues using the proposal's core nouns
+rather than its new framing, plus at least one alternative phrasing:
+
+```sh
+gh issue list --repo <owner>/<repo> --state closed --limit 100 \
+  --search 'reason:"not planned" <core-nouns>'
+```
+
+When the proposal changes an existing mechanism, identify the PR that
+introduced or last reshaped it (for example from `git log -S` on the
+mechanism's symbol, followed by its merge commit's `Merge pull
+request #N` subject) and read that PR's review threads for a
+**Rejected** disposition of the same idea — for example, PR #2895
+review comment `3983246464` was dispositioned Rejected on 2026-09-10
+as a deliberate trade-off; that rejection is recorded only in that
+review thread. **Cite every match** found by either search in the
+drafted issue's Background, stating what is new since that outcome.
+When nothing is new, do **not** publish the issue as `ready` — route
+it to `needs-decision` or drop the proposal and record why.
+
+**Same-shape follow-up chains.** A different case from the checks
 above: an issue whose own acceptance criteria explicitly ask for a
 follow-up issue with the same acceptance criteria when the round does
 not fully complete (a "retry again" pattern, e.g., an iterative
@@ -276,9 +313,10 @@ diagnosis, no new information beyond the predecessor), route to
 `needs-decision` (or an equivalent hold) instead of authoring another
 identical-shape issue, and record why the chain paused so a later
 session or human can see the reasoning. This is a sibling check, not a
-replacement: the checks above guard against an accidental duplicate;
-this guards against a correct-but-repeated pattern continuing past the
-point it stops being useful.
+replacement: the checks above guard against an accidental duplicate or
+a previously declined proposal; this guards against a
+correct-but-repeated pattern continuing past the point it stops being
+useful.
 
 ## Output chooser
 
@@ -512,6 +550,52 @@ Ask these checks:
    asserting a file needs no placeholder substitution as an unverified
    default (observed 2026-08-12/13 on an adopter repository,
    `setup.ubuntu`, kurone-kito/idd-skill#2012).
+6. When a draft proposes changes to files covered by the target repository's
+   configured `bundleBudgets` or `instructionSizeBudgets` entries — including
+   `.github/instructions/` files, their `idd-template/` sources, and
+   onboarding documents — first
+   resolve that repository's own bundle-budget policy. For a changed
+   `idd-template/` source that is not itself listed in `bundleBudgets.files`,
+   resolve its generated target through the target repository's `syncPairs`
+   (or equivalent source-to-target mapping) before selecting bundles;
+   evaluate that target path as changed. For each applicable
+   `instructionSizeBudgets` entry covering a changed file, run its per-file
+   limit and near-ceiling-ratchet checks on banner-stripped byte totals before
+   claiming headroom. For every
+   configured
+   bundle containing a changed file, compare its measured,
+   banner-stripped total with its `bundleBudgets.limitBytes` and apply the
+   `contextCeiling.maxUtilizationPct` constraint before claiming byte-budget
+   headroom. Apply the same check when a draft adds a file to a bundle or
+   changes the `bundleBudgets`, `instructionSizeBudgets`, or
+   `contextCeiling` policy: evaluate the
+   proposed post-change bundle memberships and limits in addition to current
+   manifest entries. For a proposed `bundleBudgets.limitBytes` increase,
+   include the base-reference near-ceiling ratchet and full
+   `contextCeiling` policy in the proposed pass/fail result. Use the linked
+   Context ceiling section for threshold, absolute-limit, and exemption
+   mechanics. When the draft also changes `noticeUtilizationPct`, record the
+   lower of the base and proposed values for the near-ceiling-ratchet result.
+   Include every other applicable
+   manifest budget, including `instructionSizeBudgets` per-file limits and
+   their near-ceiling ratchets, when the draft changes a governed file or
+   proposes a budget-policy edit, using the target repository's own
+   configured values.
+   Record each affected bundle or file's measured total, configured limit,
+   utilization, applicable ceiling, ratchet status (`not applicable` when no
+   relevant increase is proposed), and pass/fail result in the draft's
+   headroom claim. If no applicable budget entry is configured, or the target
+   repository does not define these source-repository-only settings, do not
+   claim headroom: state that no repository-configured byte/context ceiling
+   was found or use the target's own declared budget checks when available.
+   These checks preserve the observed regressions in
+   [#1213](https://github.com/kurone-kito/idd-skill/issues/1213) (closed
+   2026-07-03) and [#1259](https://github.com/kurone-kito/idd-skill/issues/1259)
+   (closed 2026-07-04), where recovered headroom regressed without an upper
+   bound. Use the
+   [Context ceiling](https://github.com/kurone-kito/idd-skill/blob/main/docs/policy-constants.md#context-ceiling)
+   section as the authoritative policy reference instead of copying its
+   mechanics into the issue.
 
 ## Live-observed claim citation
 
@@ -643,7 +727,21 @@ Validation expectations:
 
 - Roadmap identity via `<!-- <marker-prefix>-roadmap-id: ... -->`
 - Active child issues via roadmap task-list links
-- Issue-to-issue dependencies via `Blocked by #NNN`
+- Issue-to-issue dependencies via `Blocked by #NNN`, line-anchored
+  (after optional indentation, blockquote `>` markers, and at most one
+  list marker), with a bare `#NNN`, a qualified `owner/repo#NNN`, or a
+  full GitHub issue URL as the reference. A mid-line mention, a
+  near-miss spelling or shape (an emphasis-wrapped keyword,
+  `Blocked-by`/`BlockedBy`/`Depends-on`, a full-width colon, or a
+  Markdown-link reference) is rejected unconditionally by the
+  `dependency-line-grammar` mechanical check (see
+  [Mechanical pre-publish gate](#mechanical-pre-publish-gate)) — none
+  of these produce a dependency Discover can actually resolve. A
+  cross-repository token on an otherwise well-formed line is rejected
+  only when the linter is given `--current-repo` and it does not
+  match; without that context the token is treated as unverifiable,
+  not malformed, since Discover's own live run resolves a same-repo
+  reference correctly regardless.
 - Sequential roadmap dependencies via
   `<!-- <marker-prefix>-blocked-by: ... -->` only when a separate
   roadmap
@@ -660,7 +758,12 @@ for the A4 Step 2 high-contention shared-file check (see
 Populate it accurately rather than as a loose reading aid for humans.
 Optional for an orphan or roadmap issue; required for a
 [child issue under a roadmap](#child-issue-under-a-roadmap) (see
-[Required draft content](#required-draft-content) below).
+[Required draft content](#required-draft-content) below). For a child,
+the section parsing to zero paths -- heading missing or present but
+empty -- disqualifies it from `ready`, unless it also carries an
+`authoring-bucket: needs-decision`/`blocked-by-human` marker or a
+suitability score of `1` (`audit-authored-issue`'s
+`candidate-files-not-empty` check).
 
 - List each candidate file path inside backticks, one path (or one
   bullet) per line — for example `` - `src/scripts/idd-onboard.mts` ``.
@@ -702,8 +805,11 @@ Validation expectations:
   `authoring-bucket: needs-decision` marker substitutes the configured
   needs-decision label instead (see
   [Authoring-bucket marker](#authoring-bucket-marker))
-- passes the `audit-authored-issue` mechanical pre-publish gate for the
-  `orphan` shape (see [Mechanical pre-publish gate](#mechanical-pre-publish-gate))
+- passes the completed-draft adversarial review and then the
+  `audit-authored-issue` mechanical pre-publish gate for the
+  `orphan` shape (see
+  [Completed-draft adversarial review](#completed-draft-adversarial-review)
+  and [Mechanical pre-publish gate](#mechanical-pre-publish-gate))
 
 ### Roadmap issue
 
@@ -735,8 +841,11 @@ Validation expectations:
   `authoring-bucket: needs-decision` marker substitutes the configured
   needs-decision label instead (see
   [Authoring-bucket marker](#authoring-bucket-marker))
-- passes the `audit-authored-issue` mechanical pre-publish gate for the
-  `roadmap` shape (see [Mechanical pre-publish gate](#mechanical-pre-publish-gate))
+- passes the completed-draft adversarial review and then the
+  `audit-authored-issue` mechanical pre-publish gate for the
+  `roadmap` shape (see
+  [Completed-draft adversarial review](#completed-draft-adversarial-review)
+  and [Mechanical pre-publish gate](#mechanical-pre-publish-gate))
 
 ### Child issue under a roadmap
 
@@ -771,8 +880,11 @@ Validation expectations:
   `authoring-bucket: needs-decision` marker substitutes the configured
   needs-decision label instead (see
   [Authoring-bucket marker](#authoring-bucket-marker))
-- passes the `audit-authored-issue` mechanical pre-publish gate for the
-  `child` shape (see [Mechanical pre-publish gate](#mechanical-pre-publish-gate))
+- passes the completed-draft adversarial review and then the
+  `audit-authored-issue` mechanical pre-publish gate for the
+  `child` shape (see
+  [Completed-draft adversarial review](#completed-draft-adversarial-review)
+  and [Mechanical pre-publish gate](#mechanical-pre-publish-gate))
 
 ## Drafted issue prose language
 
@@ -834,13 +946,167 @@ Pre-publish validation checklist:
 4. **Human dependency isolation**: Ready issues do not hide unresolved
    decisions, credentials, subjective approvals, or mid-implementation
    human handoffs
-5. **Mechanical audit**: the drafted body passes the
+5. **Completed-draft review**: the drafted body has passed the
+   [completed-draft adversarial review](#completed-draft-adversarial-review)
+   before the linter runs
+6. **Mechanical audit**: the drafted body passes the
    `audit-authored-issue` linter for its declared shape (see
-   [Mechanical pre-publish gate](#mechanical-pre-publish-gate))
+   [Mechanical pre-publish gate](#mechanical-pre-publish-gate)) — for the
+   `orphan` and `child` shapes, this now also runs the same A4 criteria
+   and the six offline-evaluable A4.5 checks this table lists, catching
+   most of a would-be A4/A4.5 failure here instead of only at Discover
+   time
 
 If any check is uncertain, route the issue to `needs-decision` or
 `blocked-by-human` during drafting instead of publishing a
 marginally-ready issue.
+
+## Completed-draft adversarial review
+
+This review is distinct from the Intake and Clarification critique.
+That earlier pass reviews the emerging interpretation, before a body
+exists. This pass reviews each completed roadmap, child, or orphan
+draft after drafting and before `audit-authored-issue` and before
+publication.
+
+Review and audit a roadmap shell while its `## Tracks` list may still
+be empty, then publish and acquire that shell. Review and audit each
+child before that child's publication. Writing the real child numbers
+into `## Tracks` revises the roadmap: review that revised body, then
+run the linter again, before saving the edit. Do not hold child
+publication until the parent task list is final.
+
+The reviewer receives the exact candidate title and body, plus only
+this packet:
+
+- the user's goal
+- confirmed constraints and design choices
+- relevant evidence or file references
+- relationship context for a multi-issue set
+- the issue-authoring critique checklist below
+
+The packet does not include the whole conversation or unbounded work
+instructions.
+
+**Issue-authoring critique checklist.**
+
+- the title and body match the confirmed goal and constraints
+- a concrete surface and an objective verification are named
+- acceptance criteria are checkable without a hidden human decision,
+  credential, or subjective approval
+- dependency edges are true blockers, and independent siblings stay in
+  the roadmap task list
+- the draft stays inside the specificity target range: no hidden
+  assumption that only a top-tier model could infer, and no
+  step-by-step runbook, so a middle-tier cloud model can implement it
+  without drifting
+- candidate files, when present, are cues rather than an edit script
+
+### Resolver
+
+When a helper runtime can run it, resolve the delegate with
+`idd-issue-authoring-delegate`. In this source repository the
+equivalent is:
+
+```sh
+node scripts/idd-issue-authoring-delegate.mjs [--policy <path>] [--no-user-global]
+```
+
+The helper resolves `issueAuthoring.adversarialReview.delegate`. It
+does not invoke the command, does not read a branch diff, and does not
+read `critiqueLoop.delegate`.
+
+If that resolver cannot be run (`instructions-only`, or the helper is
+not available), use the agent-native reviewer or a structured
+self-critique. A missing resolver is not a delegate failure.
+
+`usable: false` (`not-configured`, `repository-local-explicit-disable`,
+or `invalid-repository-local-delegate`) keeps that same native reviewer
+or structured self-critique. An unusable delegate is not a failed
+review.
+
+When `usable` is true, apply one of four modes. They match the C/E
+critique-delegate modes, for this delegate only. Whenever both
+mechanisms run, union their findings.
+
+| mode                 | delegate succeeded           | delegate failed              |
+| -------------------- | ---------------------------- | ---------------------------- |
+| `fallback` (default) | native reviewer does not run | native reviewer runs         |
+| `combined`           | both run                     | both run                     |
+| `on-success`         | both run                     | native reviewer does not run |
+| `never`              | native reviewer does not run | native reviewer does not run |
+
+Delegate failure applies only after `usable: true`. It means a missing
+command, a non-zero exit, a timeout, cancellation, or findings that
+cannot be read as a list. A readable empty list is a clean verdict. If
+no mechanism that actually ran returns a readable list, stop
+publication. Do not create an issue, do not update a body, do not apply
+or remove a label, and do not append an authoring marker. An issue that
+already exists under the authoring hold keeps that label and its
+previous body. A failure is never a clean review. Remaining held means
+the candidate does not become a released, discoverable issue. It does
+not mean creating a labeled issue to represent the stop.
+
+The reviewer must be read-only and review-scoped. It returns a findings
+list only. It must not create or update issues, change labels, or
+append authoring markers. This is a trust-based contract, not an
+enforced sandbox: the configured command runs in the caller's
+environment as executable configuration, so nothing in this workflow
+technically stops it from mutating, and a prose-only restriction in a
+dispatch prompt does not reliably stop a context-inheriting reviewer
+either. Prefer a non-context-inheriting reviewer, and run the reviewer
+under a read-only capability or sandbox wherever the harness offers
+one.
+issue #3448 records the observed risk: a context-inheriting
+no-mutation dispatch can still publish.
+
+Bound the delegated command with
+`issueAuthoring.adversarialReview.waitCeiling`.
+Use the resolver's `waitCeiling` when resolution ran, otherwise the
+default `PT20M`. Enforce it through the caller's own bounded wait and
+cleanup. Do not wrap the configured command in a timeout utility, the
+same principle as issue #3449. This ceiling does not read
+`critiqueLoop.subagentWaitCeiling`, and a user-global ceiling is
+ignored. Use the same caller-side bound for the native reviewer, so a
+hung native pass is not an unbounded substitute.
+
+**Input.** The caller runs the resolved `command` as a shell command with
+its working directory set to the root of the repository checkout the draft
+is being authored for. It passes no extra argv and no file path, writes
+exactly one UTF-8 JSON object to the command's stdin, and closes stdin. The
+object has three fields: `title` (string, the exact candidate title), `body`
+(string, the exact candidate body), and `packet` (object). `packet` has five
+fields: `goal` (string), `constraints` (array of strings: confirmed
+constraints and design choices), `evidence` (array of strings: evidence or
+file references, where a file reference is a repository-relative path),
+`relationships` (array of strings: relationship context for a multi-issue
+set, empty for a single issue), and `checklist` (array of strings: the
+issue-authoring critique checklist items). All eight fields are required,
+`title`, `body`, `goal`, and every array item are non-empty strings, an array
+itself may be empty, and no other field is allowed at either level. The packet
+stays the bounded set defined above: it never carries the whole conversation
+or unbounded work instructions. The shape is published as the
+[issue-authoring review input schema][issue-authoring-review-input-schema].
+
+**Output.** The command writes free-form findings to stdout, read the same way
+a subagent's critique response is read; no machine-readable output schema is
+introduced. The failure meaning, the mode table, the wait ceiling, and the
+no-mutation boundary above are unchanged.
+
+The configured command is trusted executable configuration and may
+transmit the supplied draft and evidence packet.
+
+### Disposition
+
+Record an explicit author disposition for every finding before
+publication. When a disposition changes the title or body, run
+`audit-authored-issue` on the revised text. When that revision changes
+more than wording, run this review once more on the revised draft
+before the linter. That includes a change to acceptance criteria,
+candidate files, dependency edges, roadmap task-list or relationship
+wiring, scope or the proposed change, or the readiness bucket.
+Wording-only edits do not start another review. The body that enters
+the linter is the reviewed body plus those wording-only edits.
 
 ## Mechanical pre-publish gate
 
@@ -874,6 +1140,56 @@ authoring marker, the declared shape's required section headings, the
 roadmap-id/blocked-by dependency-marker rules, and visible/hidden line
 agreement for the suitability and effort footers — so a weak model does
 not have to hold every rule in its head at once while drafting.
+
+It also emits a **failing** finding, `dependency-line-grammar`: a
+`Blocked by`/`Depends on` mention that the shared line-anchored grammar
+(`dependency-grammar.mjs`, the same grammar every Discover helper uses
+to resolve a real dependency) would never resolve fails the audit
+outright, naming the offending line number. This covers a mid-line
+mention (the keyword appears after other prose, or hidden inside an
+HTML comment), a near-miss line at the otherwise-correct position (an
+emphasis-wrapped keyword, a hyphenated/camelCase spelling such as
+`Blocked-by` or `BlockedBy`, a full-width colon, or a Markdown-link
+reference instead of the three plain forms the grammar accepts), and a
+cross-repository token on an otherwise well-formed line — the last one
+only when the caller supplies `--current-repo` and it does not match,
+since without that context a qualified reference is treated as
+unverifiable rather than malformed (the same precedent this contract's
+own `roadmap-tracks-parse` check already follows for an unverifiable
+qualified reference). A real
+`<!-- <marker-prefix>-blocked-by: ... -->` roadmap marker (see
+[Required dependency encoding](#required-dependency-encoding)) is never
+mistaken for a near-miss, even when its own value happens to look like
+an issue reference (e.g. `<!-- idd-skill-blocked-by: #12 -->` — the
+extractor behind this marker accepts any non-whitespace value, with no
+format restriction): the check masks every well-formed marker of this
+shape out of its near-miss scan before running it, using the same
+pattern the marker's own extractor matches against, so the marker's
+value is never read as the required trailing reference in the first
+place. Unlike `prose-dependency` below, `dependency-line-grammar` is
+not advisory: it flips `passed` to `false` and the linter's exit code
+the same as any other structural check above.
+
+For the `orphan` and `child` shapes, the linter also runs the same A4
+viability and A4.5 suitability evaluators the IDD discover phase runs
+later, at claim time (`triage-title-missing`, one
+`triage-a4-<criterion id>` finding per A4 criterion, and one
+`triage-a45-<check id>` finding per A4.5 check) — so a body that would
+fail A4 or A4.5 at claim time is caught here, before it is ever
+published, instead of only after. `triage-a45-duplicate_or_superseded`
+(Check 4) always reports "not applicable" (it needs a live repository,
+which this offline linter never has); the `roadmap` shape reports every
+one of these findings as not applicable, since Discover never routes a
+roadmap node through A4 or A4.5 in the first place. A title is required
+for these checks to actually evaluate: pass `--title`, or lead the
+drafted body with a `# <title>` line (see the command example below);
+without either, `triage-title-missing` fails and every `triage-a45-*` finding
+reports "not evaluated" instead of a noisy Check 2/Coherence cascade
+(the three `triage-a4-*` findings still evaluate normally, since A4's
+criteria are title-independent). With `--expect-bucket`, a failing
+triage finding is downgraded to a warning instead of failing the
+report, mirroring how this linter already treats a bucket body as
+deliberately non-ready everywhere else.
 
 The linter also emits one **advisory, warning-severity-only** finding
 (`prose-dependency`): it flags an issue/PR reference (`#<digits>` or a
@@ -961,14 +1277,19 @@ confirm the reference is a mere breadcrumb.
 
 ```sh
 node scripts/audit-authored-issue.mjs --shape <orphan|roadmap|child> \
-  --marker-prefix <resolved-target-prefix> \
+  --marker-prefix <resolved-target-prefix> --title <drafted-title> \
   --body-file <path-to-drafted-body> [--label <label>]... \
   [--expect-bucket <needs-decision|blocked-by-human>]
 ```
 
 Or, for npx/package-manager profiles, the equivalent
 `idd-audit-authored-issue` command. Pass `--stdin` instead of
-`--body-file` when the drafted body is not yet written to disk.
+`--body-file` when the drafted body is not yet written to disk. Omit
+`--title` when the drafted body already leads with a `# <title>` line
+(the local convention `evaluateSuitabilityLocal`'s own dry-run mode
+uses); for the `orphan` and `child` shapes, at least one of the two is
+required for the `triage-a45-*` findings to actually evaluate (see
+[Mechanical pre-publish gate](#mechanical-pre-publish-gate) above).
 **Always pass `--marker-prefix`** with the prefix resolved under
 [Target marker prefix](#target-marker-prefix): without it, the linter
 falls back to reading `.github/idd/config.json` from the current
@@ -1213,10 +1534,13 @@ Issue authoring uses a two-stage contract: drafting and publishing
 happen together under an authoring hold; release from that hold is the
 only approval boundary.
 
-- **Stage 1 — author-and-publish.** Once a drafted `ready` body passes
-  the mechanical `audit-authored-issue` gate (see
-  [Mechanical pre-publish gate](#mechanical-pre-publish-gate)) and the
-  critique pass, publish it directly under the configured authoring
+- **Stage 1 — author-and-publish.** Once a drafted roadmap, child, or
+  orphan body passes the completed-draft adversarial review (see
+  [Completed-draft adversarial review](#completed-draft-adversarial-review))
+  and then the mechanical `audit-authored-issue` gate (see
+  [Mechanical pre-publish gate](#mechanical-pre-publish-gate)), including
+  a body published into `needs-decision` or `blocked-by-human`, publish
+  it directly under the configured authoring
   label (`issueAuthoring.authoringLabelName`, defaulting to
   `status:authoring`) — no separate user approval of the drafted body
   is required. The label doubles as the draft marker for the held
@@ -1608,22 +1932,43 @@ only approval boundary.
   above have both succeeded -- never before, and never interleaved with
   posting -- scan that same target's prior comments (the target issue for
   `authoring-owner`; the journal issue named in the record's own `journal`
-  field for `authoring-publication-intent`, which naturally also hides other
-  authoring sets' already superseded journal records on that shared journal
-  -- intentional, since the journal read path is the same paginated scan and
-  is unaffected either way) and minimize (classifier `OUTDATED`) every prior
+  field for `authoring-publication-intent`, which naturally also fetches
+  other authoring sets' records on that shared journal -- intentional,
+  since the journal read path is the same paginated scan either way, but
+  the continuity-chain-identity restriction below means only the
+  just-posted record's own target (and, for
+  `authoring-publication-intent`, its own token too) is ever eligible for
+  minimization, never a different set's) and minimize (classifier
+  `OUTDATED`) every prior
   comment from a trusted marker actor whose body is a byte-exact match of the
-  canonical rendered template for the same marker family.
+  canonical rendered template for the same marker family AND shares the
+  just-posted record's own continuity-chain identity (`target=` alone for
+  `authoring-owner`; `target=`+`token=` together for
+  `authoring-publication-intent`) -- on the journal-hosted
+  `authoring-publication-intent` family this excludes a different target's
+  record on the same shared journal, and a same-target record under a
+  different token, even though both byte-exact-match the family template;
+  this matches the mandatory Stage 2 sweep's own fixed classifier
+  (`classifyAuthoringMarkerFamily` in `marker-helpers.mts`) so the two
+  procedures never disagree about which prior record is eligible.
   `matchCanonicalAuthoringMarkerFamily` (`marker-helpers.mts`, re-exported by
-  `protocol-helpers.mts`) implements that check: it parses the candidate,
-  re-renders the parsed fields with `renderAuthoringOwnerMarker` /
-  `renderAuthoringPublicationIntentMarker`, and requires the result to equal
-  the candidate's body exactly. A candidate that deviates from the template
-  in any way -- reordered or extra fields, altered spacing, trailing
-  content, a different visible note -- is never minimized; leave it visible
-  rather than guessing. Skip the just-posted comment itself and any
-  candidate whose `isMinimized` is already `true` (idempotent; the minimize
-  helper's own probe already enforces this).
+  `protocol-helpers.mts`) implements the byte-exact-template half of that
+  check: it parses the candidate, re-renders the parsed fields with
+  `renderAuthoringOwnerMarker` / `renderAuthoringPublicationIntentMarker`,
+  and requires the result to equal the candidate's body exactly. A
+  candidate that deviates from the template in any way -- reordered or
+  extra fields, altered spacing, trailing content, a different visible
+  note -- is never minimized; leave it visible rather than guessing.
+  Apply the continuity-chain-identity half directly: parse each
+  byte-exact candidate the same way (`parseAuthoringOwnerComment` /
+  `parseAuthoringPublicationIntentComment`) and compare its `target=`
+  field (plus `token=` for `authoring-publication-intent`) against the
+  just-posted record's own fields -- the identical field comparison
+  `classifyAuthoringMarkerFamily`'s own (module-private)
+  `resolveAuthoringMarkerIdentity` performs internally for the Stage 2
+  sweep. Skip the just-posted comment itself and any candidate whose
+  `isMinimized` is already `true` (idempotent; the minimize helper's own
+  probe already enforces this).
 
   Convert each eligible candidate's REST comment id to its GraphQL node id
   (the paginated comment list already carries it as `node_id` -- no extra
@@ -1798,14 +2143,29 @@ only approval boundary.
   whether that removal is a non-anchor target's or the anchor's own --
   that the marked target is the sole member of its authoring set: it
   carries no `<marker-prefix>-roadmap-id` marker (never a roadmap
-  anchor), and a repository-wide paginated issue-comment scan for
-  trusted owner markers whose exact `set` matches finds no sibling
-  target -- the same repository-wide, fail-closed enumeration the
-  resume procedure above requires, since a sibling's marker lives on
-  the sibling's own issue and never appears in the marked target's own
-  comment log; block on incomplete or inconclusive enumeration the
-  same way. If either condition fails, or the scan cannot be
-  completed, the exception does not authorize removing any label for
+  anchor), and the read-only `authoring-set-members` helper reports
+  that this target is the only issue whose trusted `authoring-owner`
+  marker carries that exact `set`
+  (`node scripts/authoring-set-members.mjs --set <id>`). A zero exit
+  whose JSON has `soleMember: true` and `issues` equal to that one
+  target is the only passing result. The helper exits non-zero when
+  enumeration does not finish, including a search response with
+  `incomplete_results` or an index-lag window that does not finish.
+  The candidate search is the owner-marker token, so an edited marker
+  that dropped the set is still fetched and fails closed. An
+  unparseable trusted comment that still carries the token fails
+  closed too. A trusted marker whose target names a different
+  issue than the comment's host fails closed as well.
+  **Exception:** a trusted owner marker that GitHub has minimized
+  with `minimizedReason: outdated` (case-insensitive) is silently
+  skipped rather than failing closed; it is a superseded comment
+  that the maintainer or an IDD tool has hidden as stale, and it
+  cannot prove or disprove current membership.
+  Any other result is inconclusive and blocks
+  this exception the same way. A sibling's marker lives on the
+  sibling's own issue and never appears in the marked target's own
+  comment log. If either condition fails, or the helper cannot
+  finish, the exception does not authorize removing any label for
   this release; fall back to the ordinary explicit human
   release-request precondition for the whole set instead. Then,
   immediately before each label removal, append and verify the set anchor's
@@ -1827,7 +2187,8 @@ only approval boundary.
   -- covering the anchor's own owner-marker log and the journal's
   publication-intent log -- idempotent with every earlier target's own
   sweep above, since a comment either was already minimized or was not
-  yet the newest for its own target within the family either way. Then
+  yet the newest for its own continuity-chain identity within the family
+  either way. Then
   reuse the earliest
   valid current-owner/set/session `mode=release-complete`
   marker on the anchor, or append one and record its returned comment ID.
@@ -1877,17 +2238,21 @@ only approval boundary.
   exception's own preconditions here, immediately before the label
   removal in step (4): first, verify that this sole target really is
   the sole member of its authoring set -- it carries no
-  `<marker-prefix>-roadmap-id` marker, and a repository-wide paginated
-  scan for trusted owner markers sharing its exact `set` finds no
-  sibling target; this scan is exactly the mechanical proof this fast
-  path's own `|set|==1` premise rests on, so skipping it here would be
-  a genuine weakening, not a condensation; second, run the exception's
+  `<marker-prefix>-roadmap-id` marker, and
+  `node scripts/authoring-set-members.mjs --set <id>` reports
+  `soleMember: true` with `issues` equal to this one target; that
+  helper is exactly the mechanical proof this fast path's own
+  `|set|==1` premise rests on, so skipping it here would be a genuine
+  weakening, not a condensation, and a non-zero exit (including
+  `incomplete_results`, an unfinished index-lag window, or an edited
+  marker the token search still fetched) is
+  inconclusive; second, run the exception's
   own provenance check -- the target's body must still carry the exact
   `review-fix-loop-cutoff` marker from Stage 1 publication, and a
   freshly recomputed body-sha256 must match that same target's
   `mode=acquire` owner marker's recorded `body-sha256` -- neither
   check is optional, and this fast path adds no shortcut through
-  either one; if either the sole-member scan or the provenance check
+  either one; if either the sole-member helper or the provenance check
   fails, or either cannot be completed, fall back to the ordinary
   human-release-request precondition instead; (4) immediately before
   the single label removal, reuse or append the anchor's
@@ -2061,9 +2426,10 @@ only approval boundary.
   `docs/idd-helper-scripts.md`) performs and verifies this comparison
   mechanically (`#2891`). This
   exists because
-  `idd-review-triage.instructions.md`'s round-count cutoff files this
-  exact marker on a follow-up issue during unattended autonomous
-  execution, where no human is present to issue a release request —
+  `idd-review-triage.instructions.md`'s round-count or
+  adopt-now-urgency defer trigger files this exact marker on a
+  follow-up issue during unattended autonomous execution, where no
+  human is present to issue a release request —
   left under the ordinary human-gated boundary above, that deferred
   work would sit under the authoring label indefinitely on a fully
   autonomous repository, silently defeating the point of deferring it
@@ -2076,7 +2442,7 @@ only approval boundary.
   single-target design intentionally does not extend to anchor
   release. See `docs/idd-autonomy-contract.md`'s Stage 2 label-removal
   row for the same note in table form. **Sequencing with the
-  originating issue (`#2877`):** the round-count cutoff's follow-up
+  originating issue (`#2877`):** either defer trigger's follow-up
   issue also carries a `Refs #<originating-issue>` line back to the
   deferred work (the D3 follow-up-issue rule in
   `idd-pr-submit.instructions.md`); `discover-readiness-check.mts`
@@ -2093,12 +2459,15 @@ only approval boundary.
 
 ## Publication boundary
 
-Publishing a drafted `ready` body under the authoring hold does not
-need a separate user approval once it passes the mechanical
-`audit-authored-issue` gate and the critique pass — see
+Publishing a `ready`, `needs-decision`, or `blocked-by-human` body under
+the authoring hold does not need a separate user approval once it
+passes the completed-draft adversarial review and then the mechanical
+`audit-authored-issue` gate — see
 [Authoring hold and release](#authoring-hold-and-release) above for the
 full two-stage contract. Removing the authoring label and starting the
 IDD execution loop both require the user's explicit hold-release
 request, except the narrow auto-release exception documented in
 [Authoring hold and release](#authoring-hold-and-release) above; nothing
 else authorizes either.
+
+[issue-authoring-review-input-schema]: https://kurone-kito.github.io/idd-skill/schemas/issue-authoring-review-input.schema.json

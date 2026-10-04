@@ -69,7 +69,42 @@ needs-decision, blocked-by-human, and out-of-scope.
    - keep independent sibling work in roadmap task lists unless a true
      correctness, availability, or ordering constraint requires a
      dependency edge
-6. Before publishing a ready orphan, roadmap, or child body, run the
+6. Before the mechanical audit, run the completed-draft adversarial
+   review on each completed roadmap, child, or orphan draft. This is
+   not the Intake critique above. The packet, checklist, mode table,
+   failure stop, wait ceiling, and no-mutation boundary are normative
+   in
+   [Completed-draft adversarial review](references/contract.md#completed-draft-adversarial-review).
+   Send only the exact title and body plus that bounded packet. Resolve
+   `idd-issue-authoring-delegate` when a helper runtime can run it; the
+   helper does not invoke the command. If the resolver cannot be run,
+   or `usable` is false, use the agent-native reviewer or a structured
+   self-critique. That is not a failed review. When `usable` is true,
+   the mode is `fallback` (default), `combined`, `on-success`, or
+   `never`; union findings when both mechanisms run. A missing command,
+   non-zero exit, timeout, cancellation, or unreadable findings is a
+   failure only after `usable: true`. A readable empty list is clean.
+   If no mechanism that ran returns a readable list, do not publish:
+   do not create an issue, update a body, change a label, or append a
+   marker. An existing held issue keeps its label and previous body.
+   The reviewer returns findings only. Prefer a non-context-inheriting
+   reviewer; issue #3448 records why a context-inheriting no-mutation
+   dispatch can still publish. Bound the wait with
+   `issueAuthoring.adversarialReview.waitCeiling`
+   (default `PT20M`) using the caller's own wait and cleanup, and do
+   not wrap the command in a timeout utility. Dispose of every finding.
+   Review the revised draft again before the linter whenever that
+   revision changes more than wording, including acceptance criteria,
+   candidate files, dependency edges, roadmap task-list or relationship
+   wiring, scope or the proposed change, or the readiness bucket
+   ([Disposition](references/contract.md#disposition)). Wording-only
+   edits do not start another review. Audit every revised body before
+   publication. A roadmap shell may be reviewed
+   and published with an empty `## Tracks` list. Review each child
+   before publishing it. Review the parent again when real child
+   numbers are written into `## Tracks`, then audit that edit before
+   saving it.
+7. Before publishing a ready orphan, roadmap, or child body, run the
    `audit-authored-issue` linter against it as the mechanical
    pre-publish gate — see
    [Mechanical pre-publish gate](references/contract.md#mechanical-pre-publish-gate)
@@ -83,9 +118,11 @@ needs-decision, blocked-by-human, and out-of-scope.
    requires the matching `authoring-bucket` marker for that publish,
    closing the gap where a non-ready body would otherwise never be
    audited at all.
-7. Publish each `ready` drafted body directly under the authoring hold
-   once it passes the mechanical gate (step 6) and the critique pass
-   (the Intake and Clarification phase above) — no separate publish
+8. Publish each `ready`, `needs-decision`, or `blocked-by-human` body
+   directly under the authoring hold once the completed-draft review
+   (step 6) and then the mechanical gate (step 7) have passed. The
+   Intake critique stays the pre-draft
+   pass above and does not replace step 6. No separate publish
    approval is needed. Only skip publishing when the current request
    explicitly asked for a preview instead. Manage the authoring label
    for each created or updated issue:
@@ -279,7 +316,7 @@ needs-decision, blocked-by-human, and out-of-scope.
      read with a bounded fresh read, restore labels for already processed
      targets while the owner/set still match, verify the restored set, and
      leave every target generation open
-8. Stop at the single approval boundary: release. Publishing under the
+9. Stop at the single approval boundary: release. Publishing under the
    hold does not by itself authorize starting the IDD execution loop —
    only the user's explicit release request does, except the narrow
    review-fix-loop-cutoff auto-release exception in
@@ -318,11 +355,13 @@ needs-decision, blocked-by-human, and out-of-scope.
   new issue.
 - Avoid widening drafting output beyond the user request without saying
   so.
-- Run the `audit-authored-issue` linter (or its manual fallback in
-  `instructions-only` installs) against every drafted ready body, and
-  against every body newly published into `needs-decision` or
-  `blocked-by-human` with `--expect-bucket`; resolve every reported
-  failure before publishing.
+- Run the completed-draft adversarial review, then the
+  `audit-authored-issue` linter (or its manual fallback in
+  `instructions-only` installs), against every drafted roadmap, child,
+  or orphan body. That includes a body published into
+  `needs-decision` or `blocked-by-human`; pass `--expect-bucket` for
+  those two buckets. Resolve every reported failure before publishing.
+  A failed review does not publish.
 - Name a concrete surface to edit and an objective verification for
   every `ready` candidate; route anything else to `needs-decision` or
   ask instead of guessing (the under-clarification stop rule).
