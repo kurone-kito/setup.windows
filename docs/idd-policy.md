@@ -391,15 +391,18 @@ npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f9
   If the collaborator permission API is unavailable, the issue's live
   `author_association` substitutes for the author self-authorization
   signal only (`OWNER` always qualifies, `MEMBER` qualifies under both
-  actor policies); the label and comment signals still need a successful
-  permission read.
-- **Ready-label guard**: the `presence-only` default accepts the label's
-  presence without checking who applied it, so
+  actor policies). The `IDD ready` comment signal still needs a
+  successful permission read for its author; the label signal performs
+  no permission read (see Ready-label guard).
+- **Ready-label guard**: the approval helper never checks who applied the
+  label, in either freshness mode, so
   [`strip-untrusted-labels.yml`](../.github/workflows/strip-untrusted-labels.yml)
   also removes `idd:ready` when one of the configured untrusted labelers
-  (`labels.untrustedLabelerLogins`) applies it. A maintainer has to
-  create the label before it can be used; the `IDD ready` comment signal
-  needs no label.
+  (`labels.untrustedLabelerLogins`) applies it; other bot actors are
+  covered only if they are listed there. The guard removes the label
+  from an issue; it does not control which actors can create the label
+  in the repository, which stays a maintainer action. The `IDD ready`
+  comment signal needs no label.
 - **Missing-approval behavior**: an issue without a qualifying signal
   remains in the `approval-needed` route and is excluded from the A4
   candidate set. An explicit-target (A0-T) run on an execution leaf stops
@@ -690,7 +693,10 @@ by #152 and related issues. Adopted here (recorded in
   [`.github/workflows/strip-untrusted-labels.yml`](../.github/workflows/strip-untrusted-labels.yml),
   hand-copied from the recipe's manual path (no local `idd-skill` clone
   is available in this environment for the generated-guard path via
-  `idd-onboard --substitute`).
+  `idd-onboard --substitute`). The guard's reserved set also includes
+  `status:authoring` and `idd:ready`, which the generated-guard path
+  (built only from the three `labels.*` names) would not carry over;
+  re-add both by hand if the guard is ever regenerated.
 - **`issueAuthoring.journalIssue`**: `"kurone-kito/setup.windows#175"`
   — see the [Issue-Authoring Companion](#issue-authoring-companion)
   section above for the full rationale (#172).

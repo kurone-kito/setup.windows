@@ -25,9 +25,8 @@ jobs:
     # semantic-labeler risk this workflow otherwise guards), plus the
     # issue-author approval gate's ready label
     # (approvalSignals.readyLabelName, also unset -- default `idd:ready`):
-    # under the default `presence-only` freshness mode claim-approval-gate
-    # accepts the label's presence as approval without checking who
-    # applied it, so a semantic labeler applying it would approve an
+    # claim-approval-gate never checks who applied the label, in either
+    # freshness mode, so a semantic labeler applying it would approve an
     # unapproved issue. See docs/customization.md's "Reserved-label guard
     # recipe" for the full rationale.
     if: |-
