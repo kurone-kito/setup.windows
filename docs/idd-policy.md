@@ -42,11 +42,12 @@ recorded in `.github/idd/config.json`)
 **Policy**: `human-gated`, authority `owners-and-maintainers-only`
 (`forcedHandoff` in [`.github/idd/config.json`](../.github/idd/config.json)).
 
-- **Decision**: decided on 2026-10-04, after the session holding the
-  claim for issue #166 (PR #213) became unavailable while its claim was
-  still non-stale. A forced handoff was also posted on issue #201
-  (2026-10-03). In both cases the default branch did not carry the
-  opt-in, so only checkout-local helpers could honor the marker.
+- **Decision**: decided on 2026-10-04 (UTC), after the session holding
+  the claim for issue #166 (PR #213) became unavailable while its claim
+  was still non-stale. A forced handoff was posted on issue #166
+  (2026-10-04 UTC) and an earlier one on issue #201 (2026-10-03 UTC). In
+  both cases the default branch did not carry the opt-in, so only
+  checkout-local helpers could honor the marker.
 - **Why it must be on `master`**: `pre-merge-readiness` loads the default
   branch's copy of the config through the API, and the advisory-convergence
   workflows check out `ref: master`. Local helpers such as
@@ -75,8 +76,10 @@ recorded in `.github/idd/config.json`)
 
 Copied verbatim from
 [`docs/customization.md`](customization.md#forced-handoff-consent-and-marker-contract),
-as that section asks local policy records to do. Do not paraphrase it:
-helper and template generation reuse the exact wording.
+as `docs/customization.md` asks local policy records to do. Do not
+paraphrase it: helper and template generation reuse the exact wording.
+Re-copy this block whenever the source section changes, for example on
+an upstream pin bump.
 
 Forced handoff is distinct from the normal F2.5 merge-policy handoff. It
 is a recovery exception for a stuck non-stale claim, not a shortcut
