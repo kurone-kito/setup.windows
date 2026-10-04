@@ -127,7 +127,12 @@ node scripts/audit-authored-issue.mjs --shape orphan \
   --marker-prefix <resolved-target-prefix> --title "Drafted issue title" \
   --body-file draft.md
 
-# Package-manager / ephemeral-npx profile
+# Package-manager profile (use its manifest-generated script)
+<profile-selected idd:audit-authored-issue command> \
+  --shape orphan --marker-prefix <resolved-target-prefix> \
+  --title "Drafted issue title" --body-file draft.md
+
+# ephemeral-npx profile
 npx --yes --package <helper-package-spec> \
   idd-audit-authored-issue --shape orphan \
   --marker-prefix <resolved-target-prefix> --title "Drafted issue title" \
@@ -153,7 +158,13 @@ node scripts/audit-authored-issue.mjs --shape orphan \
   --expect-bucket needs-decision \
   --label status:needs-decision
 
-# Package-manager / ephemeral-npx profile
+# Package-manager profile (use its manifest-generated script)
+<profile-selected idd:audit-authored-issue command> \
+  --shape orphan --marker-prefix <resolved-target-prefix> \
+  --title "Drafted issue title" --body-file draft.md \
+  --expect-bucket needs-decision --label status:needs-decision
+
+# ephemeral-npx profile
 npx --yes --package <helper-package-spec> \
   idd-audit-authored-issue --shape orphan \
   --marker-prefix <resolved-target-prefix> --title "Drafted issue title" \

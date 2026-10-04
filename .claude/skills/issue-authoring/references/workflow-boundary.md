@@ -402,8 +402,9 @@ approval boundary that hands off to IDD execution.
   `<marker-prefix>-roadmap-id` marker (never a roadmap anchor), and
   the source repository or vendored-node command
   `node scripts/authoring-set-members.mjs --set <id>`, or the
-  package-manager / ephemeral-npx command
-  `npx --yes --package <helper-package-spec>
+  package-manager profile's manifest-generated
+  `idd:authoring-set-members` script with `--set <id>`, or the
+  ephemeral-npx command `npx --yes --package <helper-package-spec>
   idd-authoring-set-members --set <id>`, reports
   `soleMember: true` with `issues` equal to that one target. The
   helper exits non-zero when enumeration does not finish, including a

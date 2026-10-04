@@ -278,9 +278,10 @@ resolves the same way.
 
 **Previously declined check.** Before treating a proposal as new, you
 **MUST** check whether it was already declined. Vocabulary alone can
-miss a match: the Groom outcome recorded on issue #2996 on 2026-09-15
-closed it as not-planned, yet issue #3164's own later search missed it
-six days after. Search closed issues using the proposal's core nouns
+miss a match: the Groom outcome recorded on
+kurone-kito/idd-skill#2996 on 2026-09-15 closed it as not-planned, yet
+kurone-kito/idd-skill#3164's own later search missed it six days after.
+Search closed issues using the proposal's core nouns
 rather than its new framing, plus at least one alternative phrasing:
 
 ```sh
@@ -292,7 +293,7 @@ When the proposal changes an existing mechanism, identify the PR that
 introduced or last reshaped it (for example from `git log -S` on the
 mechanism's symbol, followed by its merge commit's `Merge pull
 request #N` subject) and read that PR's review threads for a
-**Rejected** disposition of the same idea — for example, PR #2895
+**Rejected** disposition of the same idea — for example, kurone-kito/idd-skill#2895
 review comment `3983246464` was dispositioned Rejected on 2026-09-10
 as a deliberate trade-off; that rejection is recorded only in that
 review thread. **Cite every match** found by either search in the
@@ -1065,7 +1066,7 @@ Bound the delegated command with
 Use the resolver's `waitCeiling` when resolution ran, otherwise the
 default `PT20M`. Enforce it through the caller's own bounded wait and
 cleanup. Do not wrap the configured command in a timeout utility, the
-same principle as issue #3449. This ceiling does not read
+same principle as kurone-kito/idd-skill#3449. This ceiling does not read
 `critiqueLoop.subagentWaitCeiling`, and a user-global ceiling is
 ignored. Use the same caller-side bound for the native reviewer, so a
 hung native pass is not an unbounded substitute.
@@ -1282,7 +1283,14 @@ node scripts/audit-authored-issue.mjs --shape <orphan|roadmap|child> \
   --body-file <path-to-drafted-body> [--label <label>]... \
   [--expect-bucket <needs-decision|blocked-by-human>]
 
-# Package-manager / ephemeral-npx profile
+# Package-manager profile (use its manifest-generated script)
+<profile-selected idd:audit-authored-issue command> \
+  --shape <orphan|roadmap|child> \
+  --marker-prefix <resolved-target-prefix> --title <drafted-title> \
+  --body-file <path-to-drafted-body> [--label <label>]... \
+  [--expect-bucket <needs-decision|blocked-by-human>]
+
+# ephemeral-npx profile
 npx --yes --package <helper-package-spec> \
   idd-audit-authored-issue --shape <orphan|roadmap|child> \
   --marker-prefix <resolved-target-prefix> --title <drafted-title> \
@@ -1290,9 +1298,11 @@ npx --yes --package <helper-package-spec> \
   [--expect-bucket <needs-decision|blocked-by-human>]
 ```
 
-For an `ephemeral-npx` target, resolve `<helper-package-spec>` from its
-`.github/idd/config.json` `helperRuntime.packageSpec`. This v0.14 gate
-requires a helper build that accepts `--title` and emits the
+For a `package-manager` target, use the manifest-generated
+`idd:audit-authored-issue` script. For an `ephemeral-npx` target, resolve
+`<helper-package-spec>` from its `.github/idd/config.json`
+`helperRuntime.packageSpec`. Both profiles require a helper build that
+accepts `--title` and emits the
 `triage-a4-*` and `triage-a45-*` checks. If the configured build rejects
 those options or omits those checks, stop before publication and
 restore helper compatibility; do not treat a legacy audit result as a
@@ -2160,9 +2170,11 @@ only approval boundary.
   that this target is the only issue whose trusted `authoring-owner`
   marker carries that exact `set`
   (`node scripts/authoring-set-members.mjs --set <id>` in the source
-  repository or vendored-node profile, or
-  `npx --yes --package <helper-package-spec> idd-authoring-set-members
-  --set <id>` in package-manager or ephemeral-npx profiles). A zero exit
+  repository or vendored-node profile, the package-manager profile's
+  manifest-generated `idd:authoring-set-members` script with `--set <id>`,
+  or `npx --yes --package <helper-package-spec>
+  idd-authoring-set-members --set <id>` in the ephemeral-npx profile). A
+  zero exit
   whose JSON has `soleMember: true` and `issues` equal to that one
   target is the only passing result. The helper exits non-zero when
   enumeration does not finish, including a search response with
@@ -2257,8 +2269,10 @@ only approval boundary.
   `<marker-prefix>-roadmap-id` marker, and
   `node scripts/authoring-set-members.mjs --set <id>` in the source
   repository or vendored-node profile, or
-  `npx --yes --package <helper-package-spec> idd-authoring-set-members
-  --set <id>` in package-manager or ephemeral-npx profiles, reports
+  `idd:authoring-set-members` script with `--set <id>` in the
+  package-manager profile, or `npx --yes --package <helper-package-spec>
+  idd-authoring-set-members --set <id>` in the ephemeral-npx profile,
+  reports
   `soleMember: true` with `issues` equal to this one target; that
   helper is exactly the mechanical proof this fast path's own
   `|set|==1` premise rests on, so skipping it here would be a genuine
@@ -2424,7 +2438,8 @@ only approval boundary.
   to the single target carrying the marker, never to a roadmap anchor
   or a sibling target in the same authoring set that lacks it; and a
   marker added after Stage 1 publication never qualifies a target
-  retroactively. **Provenance check (`#2877`):** before honoring this
+  retroactively. **Provenance check**
+  (`kurone-kito/idd-skill#2877`): before honoring this
   exception, the releasing session must recompute the target's current
   body-sha256 from a fresh read and compare it against that same
   target's own `mode=acquire` owner marker's `body-sha256` (hashed from
@@ -2453,7 +2468,7 @@ only approval boundary.
   work would sit under the authoring label indefinitely on a fully
   autonomous repository, silently defeating the point of deferring it
   at all (preventive; no observed incident yet). **Roadmap-anchor
-  scope (accepted limitation, `#2877`):** the "never to a roadmap
+  scope (accepted limitation, `kurone-kito/idd-skill#2877`):** the "never to a roadmap
   anchor" exclusion above is permanent, not a gap awaiting a fix — a
   roadmap anchor carrying this marker under `issue-scope: roadmap`
   with orphan discovery disabled still requires the ordinary
@@ -2461,7 +2476,7 @@ only approval boundary.
   single-target design intentionally does not extend to anchor
   release. See `docs/idd-autonomy-contract.md`'s Stage 2 label-removal
   row for the same note in table form. **Sequencing with the
-  originating issue (`#2877`):** either defer trigger's follow-up
+  originating issue (`kurone-kito/idd-skill#2877`):** either defer trigger's follow-up
   issue also carries a `Refs #<originating-issue>` line back to the
   deferred work (the D3 follow-up-issue rule in
   `idd-pr-submit.instructions.md`); `discover-readiness-check.mts`

@@ -88,8 +88,8 @@ needs-decision, blocked-by-human, and out-of-scope.
    do not create an issue, update a body, change a label, or append a
    marker. An existing held issue keeps its label and previous body.
    The reviewer returns findings only. Prefer a non-context-inheriting
-   reviewer; kurone-kito/idd-skill#3448 records why a context-inheriting no-mutation
-   dispatch can still publish. Bound the wait with
+   reviewer; kurone-kito/idd-skill#3448 records why a context-inheriting
+   no-mutation dispatch can still publish. Bound the wait with
    `issueAuthoring.adversarialReview.waitCeiling`
    (default `PT20M`) using the caller's own wait and cleanup, and do
    not wrap the command in a timeout utility. Dispose of every finding.
