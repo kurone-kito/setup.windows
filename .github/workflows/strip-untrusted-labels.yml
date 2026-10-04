@@ -22,11 +22,16 @@ jobs:
     # (issueAuthoring.authoringLabelName, also unset -- default
     # `status:authoring`; idd-discover.instructions.md's Authoring label
     # guard skips A0/A3 for any issue carrying it, the same
-    # semantic-labeler risk this workflow otherwise guards). See
-    # docs/customization.md's "Reserved-label guard recipe" for the full
-    # rationale.
+    # semantic-labeler risk this workflow otherwise guards), plus the
+    # issue-author approval gate's ready label
+    # (approvalSignals.readyLabelName, also unset -- default `idd:ready`):
+    # under the default `presence-only` freshness mode claim-approval-gate
+    # accepts the label's presence as approval without checking who
+    # applied it, so a semantic labeler applying it would approve an
+    # unapproved issue. See docs/customization.md's "Reserved-label guard
+    # recipe" for the full rationale.
     if: |-
-      contains(fromJSON('["coderabbitai[bot]", "reviewpad[bot]"]'), github.event.sender.login) && (github.event.label.name == 'roadmap' || github.event.label.name == 'status:blocked-by-human' || github.event.label.name == 'status:needs-decision' || github.event.label.name == 'status:authoring')
+      contains(fromJSON('["coderabbitai[bot]", "reviewpad[bot]"]'), github.event.sender.login) && (github.event.label.name == 'roadmap' || github.event.label.name == 'status:blocked-by-human' || github.event.label.name == 'status:needs-decision' || github.event.label.name == 'status:authoring' || github.event.label.name == 'idd:ready')
     # ubuntu-latest here for maximum portability across time and
     # adopters. ubuntu-slim -- GitHub's own leaner hosted Ubuntu image,
     # not a runner private to this source repository -- is a valid

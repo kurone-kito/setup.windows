@@ -388,6 +388,13 @@ npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f9
   authorize work. The label uses the distributed `presence-only`
   freshness default; see A3.5 in
   [Discover instructions](../.github/instructions/idd-discover.instructions.md).
+- **Ready-label guard**: the `presence-only` default accepts the label's
+  presence without checking who applied it, so
+  [`strip-untrusted-labels.yml`](../.github/workflows/strip-untrusted-labels.yml)
+  also removes `idd:ready` when one of the configured untrusted labelers
+  (`labels.untrustedLabelerLogins`) applies it. A maintainer has to
+  create the label before it can be used; the `IDD ready` comment signal
+  needs no label.
 - **Missing-approval behavior**: an issue without a qualifying signal
   remains in the `approval-needed` route and is excluded from the A4
   candidate set. An explicit-target (A0-T) run on an execution leaf stops
