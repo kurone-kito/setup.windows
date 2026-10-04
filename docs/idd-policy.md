@@ -388,6 +388,11 @@ npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f9
   authorize work. The label uses the distributed `presence-only`
   freshness default; see A3.5 in
   [Discover instructions](../.github/instructions/idd-discover.instructions.md).
+  If the collaborator permission API is unavailable, the issue's live
+  `author_association` substitutes for the author self-authorization
+  signal only (`OWNER` always qualifies, `MEMBER` qualifies under both
+  actor policies); the label and comment signals still need a successful
+  permission read.
 - **Ready-label guard**: the `presence-only` default accepts the label's
   presence without checking who applied it, so
   [`strip-untrusted-labels.yml`](../.github/workflows/strip-untrusted-labels.yml)
