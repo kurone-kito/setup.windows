@@ -37,6 +37,106 @@ recorded in `.github/idd/config.json`)
 - **claim-heartbeat-interval**: `PT6H` (repository override;
   distributed default is `PT12H`)
 
+### Forced Handoff
+
+**Policy**: `human-gated`, authority `owners-and-maintainers-only`
+(`forcedHandoff` in [`.github/idd/config.json`](../.github/idd/config.json)).
+
+- **Decision**: decided on 2026-10-04 (UTC), after the session holding
+  the claim for issue #166 (PR #213) became unavailable while its claim
+  was still non-stale. A forced handoff was posted on issue #166
+  (2026-10-04 UTC) and an earlier one on issue #201 (2026-10-03 UTC). In
+  both cases the default branch did not carry the opt-in, so only
+  checkout-local helpers could honor the marker.
+- **Why it must be on `master`**: `pre-merge-readiness` loads the default
+  branch's copy of the config through the API, and the advisory-convergence
+  workflows check out `ref: master`. Local helpers such as
+  `resume-claim-routing` read the config of the checkout they run from.
+  An opt-in kept in one local checkout therefore lets `idd-force-handoff`
+  post a marker, but the merge-time gate still resolves the displaced
+  claim and the successor cannot pass F2/F3. Enable the opt-in on
+  `master` before an incident, and sync a branch that predates it before
+  resuming there.
+- **Operating rule**: use only the interactive `idd-force-handoff` helper
+  from a TTY. Unattended agents and autopilot never initiate, request, or
+  broaden a forced handoff, and a chat approval never replaces the
+  helper's `y/N` confirmation. This is a procedural invariant, not an
+  identity-enforced one: IDD sessions authenticate as the maintainer's
+  account (see [Credential Scope](#credential-scope)), so the marker
+  rules cannot tell a helper-posted marker from a hand-posted one.
+- **Authority**: being listed under
+  [Trusted Marker Actors](#trusted-marker-actors) lets an actor's markers
+  be parsed; it does not authorize a handoff. Authority comes only from
+  `authorityPolicy`. The canonical consent text and marker contract are
+  recorded verbatim below.
+- **Revert**: remove the `forcedHandoff` block to return to the
+  distributed `disabled` default.
+
+#### Canonical consent text and marker contract
+
+Copied verbatim from
+[`docs/customization.md`](customization.md#forced-handoff-consent-and-marker-contract),
+as `docs/customization.md` asks local policy records to do. Do not
+paraphrase it: helper and template generation reuse the exact wording.
+Re-copy this block whenever the source section changes, for example on
+an upstream pin bump.
+
+Forced handoff is distinct from the normal F2.5 merge-policy handoff. It
+is a recovery exception for a stuck non-stale claim, not a shortcut
+around the normal merge or stale-takeover flow.
+
+Required consent text for any future human approval note:
+
+For `issue-only` context:
+
+```text
+Forced handoff approved by {human-actor}. I verified that the current
+owning session or agent is unavailable. This transfers ownership away
+from claim `{old-claim-id}` on branch `{branch}`.
+If the prior session resumes, it must stop immediately and must not
+push, comment, resolve review state, or merge until a maintainer
+reassigns ownership.
+```
+
+For `issue-plus-pr` context:
+
+```text
+Forced handoff approved by {human-actor}. I verified that the current
+owning session or agent is unavailable. This transfers ownership away
+from claim `{old-claim-id}` on branch `{branch}` for PR {pr-reference}.
+If the prior session resumes, it must stop immediately and must not
+push, comment, resolve review state, or merge until a maintainer
+reassigns ownership.
+```
+
+The implemented protocol uses a dedicated `<!-- forced-handoff: {json} -->`
+marker followed by the visible consent note above. The JSON payload uses
+the field names below exactly, and maintainer-facing helpers should
+generate the full body so humans do not hand-write fragile claim IDs.
+
+| Field           | Requirement | Meaning                                                                       |
+| --------------- | ----------- | ----------------------------------------------------------------------------- |
+| `old-agent-id`  | Required    | The agent ID that held the superseded claim                                   |
+| `old-claim-id`  | Required    | The exact active claim being taken over                                       |
+| `new-agent-id`  | Required    | The agent or session identifier that receives ownership                       |
+| `new-claim-id`  | Required    | The new claim token that becomes authoritative after the handoff              |
+| `branch`        | Required    | The inherited work branch                                                     |
+| `linked-pr`     | Conditional | The decimal PR number or `http(s)` URL when PR context is part of the handoff |
+| `forced-by`     | Required    | The approving human actor                                                     |
+| `reason`        | Required    | Why the prior session is considered unavailable                               |
+| `timestamp`     | Required    | Operator-recorded UTC timestamp captured in the marker payload                |
+| `context-scope` | Required    | Whether the handoff covers `issue-only` or `issue-plus-pr` context            |
+
+The forced-handoff marker must stay distinct from normal `claimed-by` and
+`unclaimed-by` events so older parsers do not mistake it for a standard
+release or claim.
+
+Forced handoff must not delete, hide, minimize, or otherwise unmark
+open-PR operational markers such as `claimed-by`, `review-watermark`,
+`review-baseline`, or `advisory-wait`. The successor session must rerun
+the relevant freshness and review gates instead of mutating away the old
+evidence.
+
 ### CI Wait Policy
 
 - **running timeout**: `PT10M` (repository override; distributed

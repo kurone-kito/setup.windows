@@ -12,6 +12,10 @@
     "staleAge": "PT12H",
     "heartbeatInterval": "PT6H"
   },
+  "forcedHandoff": {
+    "mode": "human-gated",
+    "authorityPolicy": "owners-and-maintainers-only"
+  },
   "trustedMarkerActors": ["kurone-kito", "github-actions[bot]"],
   "labels": {
     "untrustedLabelerLogins": ["coderabbitai[bot]", "reviewpad[bot]"]
