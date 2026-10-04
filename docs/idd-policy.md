@@ -44,9 +44,9 @@ recorded in `.github/idd/config.json`)
 
 - **Decision**: decided on 2026-10-04, after the session holding the
   claim for issue #166 (PR #213) became unavailable while its claim was
-  still non-stale. The forced handoff on issue #201 (2026-10-03) had the
-  same shape. Both ran from an uncommitted local opt-in, which only
-  checkout-local helpers honor.
+  still non-stale. A forced handoff was also posted on issue #201
+  (2026-10-03). In both cases the default branch did not carry the
+  opt-in, so only checkout-local helpers could honor the marker.
 - **Why it must be on `master`**: `pre-merge-readiness` loads the default
   branch's copy of the config through the API, and the advisory-convergence
   workflows check out `ref: master`. Local helpers such as
