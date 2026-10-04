@@ -278,13 +278,40 @@ npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f9
 
 ### Issue-Author Approval Gate
 
-- **Gate posture**: opted out
-- **Opt-out state**: `skipIssueAuthorApprovalGate: true`
-- **`maintainer-approval-actors` policy**: `owners-and-maintainers-only`
-- **Approval signals**: not applicable — the gate itself is opted out,
-  so no `approvalSignals.readyLabelName` /
-  `approvalSignals.labelFreshnessMode` override is recorded
-- **Missing-approval behavior**: not applicable for the same reason
+- **Gate posture**: enabled
+- **Gate state**: `skipIssueAuthorApprovalGate: false`
+- **Maintainer approval actor policy**:
+  `owners-and-maintainers-only`
+- **Approval signals**: the issue author may self-authorize when they
+  satisfy the configured actor policy; otherwise a maintainer-applied
+  `idd:ready` label or a qualifying `IDD ready` approval comment may
+  authorize work. The label uses the distributed `presence-only`
+  freshness default; see A3.5 in
+  [Discover instructions](../.github/instructions/idd-discover.instructions.md).
+- **Missing-approval behavior**: an issue without a qualifying signal
+  remains in the `approval-needed` route and is excluded from the A4
+  candidate set.
+
+**Maintainer decision (Groom hearing, 2026-09-15):** Re-enable the
+issue-author approval gate. Merged PR #165 introduced free-text fields
+in the structured issue forms and enabled blank issues, so form shape
+does not establish that a body-supplied IDD marker is trustworthy. The
+current Discover workflow reads issue-body suitability and roadmap
+markers before execution; routing unapproved issues out before A4 keeps
+their body-supplied markers from influencing candidate selection. Most
+issues are filed by the repository owner, who self-authorizes under the
+recorded policy, so ordinary issue filing remains low-friction.
+
+The alternative of editing vendored upstream Discover and suitability
+instructions to authenticate each body marker was not selected because
+that would create local drift against the pinned upstream files. If
+marker-level trust validation is needed later, propose it upstream.
+
+**Accepted residual risk:** An approved issue can still carry forged
+`roadmap-id` or `blocked-by` markers that alter the apparent dependency
+graph. This narrower risk is accepted as out of scope for the approval
+gate change; no abuse has been observed. Revisit it if new evidence
+appears.
 
 ### Issue-Authoring Companion
 

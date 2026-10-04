@@ -35,7 +35,7 @@
   },
   "issueScope": "roadmap-first",
   "orphanFirstPolicy": "none",
-  "skipIssueAuthorApprovalGate": true,
+  "skipIssueAuthorApprovalGate": false,
   "maintainerApprovalActorPolicy": "owners-and-maintainers-only",
   "advisoryWait": {
     "convergenceScope": "all-prs"
