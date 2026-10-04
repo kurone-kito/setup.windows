@@ -398,11 +398,16 @@ npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f9
   label, in either freshness mode, so
   [`strip-untrusted-labels.yml`](../.github/workflows/strip-untrusted-labels.yml)
   also removes `idd:ready` when one of the configured untrusted labelers
-  (`labels.untrustedLabelerLogins`) applies it; other bot actors are
-  covered only if they are listed there. The guard removes the label
-  from an issue; it does not control which actors can create the label
-  in the repository, which stays a maintainer action. The `IDD ready`
-  comment signal needs no label.
+  (`labels.untrustedLabelerLogins`) applies it. This is a best-effort
+  blocklist, not an actor check. The removal runs after GitHub has
+  applied the label, so an issue can briefly carry it. Any actor that is
+  not listed but may label issues, such as a write collaborator or a
+  newly installed app, is not covered. The guard also does not control
+  which actors can create the label in the repository, which stays a
+  maintainer action. Validating the label actor belongs in the approval
+  helper upstream; until then, keep the collaborator list and the
+  installed apps minimal, and prefer the `IDD ready` comment signal,
+  whose author is permission-checked and which needs no label.
 - **Missing-approval behavior**: an issue without a qualifying signal
   remains in the `approval-needed` route and is excluded from the A4
   candidate set. An explicit-target (A0-T) run on an execution leaf stops
