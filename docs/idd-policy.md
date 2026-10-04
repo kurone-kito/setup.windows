@@ -66,12 +66,73 @@ recorded in `.github/idd/config.json`)
 - **Authority**: being listed under
   [Trusted Marker Actors](#trusted-marker-actors) lets an actor's markers
   be parsed; it does not authorize a handoff. Authority comes only from
-  `authorityPolicy`. The canonical consent text and marker contract live
-  in
-  [`docs/customization.md`](customization.md#forced-handoff-consent-and-marker-contract)
-  and are not repeated here.
+  `authorityPolicy`. The canonical consent text and marker contract are
+  recorded verbatim below.
 - **Revert**: remove the `forcedHandoff` block to return to the
   distributed `disabled` default.
+
+#### Canonical consent text and marker contract
+
+Copied verbatim from
+[`docs/customization.md`](customization.md#forced-handoff-consent-and-marker-contract),
+as that section asks local policy records to do. Do not paraphrase it:
+helper and template generation reuse the exact wording.
+
+Forced handoff is distinct from the normal F2.5 merge-policy handoff. It
+is a recovery exception for a stuck non-stale claim, not a shortcut
+around the normal merge or stale-takeover flow.
+
+Required consent text for any future human approval note:
+
+For `issue-only` context:
+
+```text
+Forced handoff approved by {human-actor}. I verified that the current
+owning session or agent is unavailable. This transfers ownership away
+from claim `{old-claim-id}` on branch `{branch}`.
+If the prior session resumes, it must stop immediately and must not
+push, comment, resolve review state, or merge until a maintainer
+reassigns ownership.
+```
+
+For `issue-plus-pr` context:
+
+```text
+Forced handoff approved by {human-actor}. I verified that the current
+owning session or agent is unavailable. This transfers ownership away
+from claim `{old-claim-id}` on branch `{branch}` for PR {pr-reference}.
+If the prior session resumes, it must stop immediately and must not
+push, comment, resolve review state, or merge until a maintainer
+reassigns ownership.
+```
+
+The implemented protocol uses a dedicated `<!-- forced-handoff: {json} -->`
+marker followed by the visible consent note above. The JSON payload uses
+the field names below exactly, and maintainer-facing helpers should
+generate the full body so humans do not hand-write fragile claim IDs.
+
+| Field           | Requirement | Meaning                                                                       |
+| --------------- | ----------- | ----------------------------------------------------------------------------- |
+| `old-agent-id`  | Required    | The agent ID that held the superseded claim                                   |
+| `old-claim-id`  | Required    | The exact active claim being taken over                                       |
+| `new-agent-id`  | Required    | The agent or session identifier that receives ownership                       |
+| `new-claim-id`  | Required    | The new claim token that becomes authoritative after the handoff              |
+| `branch`        | Required    | The inherited work branch                                                     |
+| `linked-pr`     | Conditional | The decimal PR number or `http(s)` URL when PR context is part of the handoff |
+| `forced-by`     | Required    | The approving human actor                                                     |
+| `reason`        | Required    | Why the prior session is considered unavailable                               |
+| `timestamp`     | Required    | Operator-recorded UTC timestamp captured in the marker payload                |
+| `context-scope` | Required    | Whether the handoff covers `issue-only` or `issue-plus-pr` context            |
+
+The forced-handoff marker must stay distinct from normal `claimed-by` and
+`unclaimed-by` events so older parsers do not mistake it for a standard
+release or claim.
+
+Forced handoff must not delete, hide, minimize, or otherwise unmark
+open-PR operational markers such as `claimed-by`, `review-watermark`,
+`review-baseline`, or `advisory-wait`. The successor session must rerun
+the relevant freshness and review gates instead of mutating away the old
+evidence.
 
 ### CI Wait Policy
 
