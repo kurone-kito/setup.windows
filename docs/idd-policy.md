@@ -378,13 +378,80 @@ npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f9
 
 ### Issue-Author Approval Gate
 
-- **Gate posture**: opted out
-- **Opt-out state**: `skipIssueAuthorApprovalGate: true`
-- **`maintainer-approval-actors` policy**: `owners-and-maintainers-only`
-- **Approval signals**: not applicable — the gate itself is opted out,
-  so no `approvalSignals.readyLabelName` /
-  `approvalSignals.labelFreshnessMode` override is recorded
-- **Missing-approval behavior**: not applicable for the same reason
+- **Gate posture**: enabled
+- **Gate state**: `skipIssueAuthorApprovalGate: false`
+- **Maintainer approval actor policy**:
+  `owners-and-maintainers-only`
+- **Approval signals**: the issue author may self-authorize when they
+  satisfy the configured actor policy, or a maintainer-applied
+  `idd:ready` label or a qualifying `IDD ready` approval comment may
+  authorize work. The label uses the distributed `presence-only`
+  freshness default; see A3.5 in
+  [Discover instructions](../.github/instructions/idd-discover.instructions.md).
+  If the collaborator permission API is unavailable, the issue's live
+  `author_association` substitutes for the author self-authorization
+  signal only (`OWNER` always qualifies, `MEMBER` qualifies under both
+  actor policies). The `IDD ready` comment signal still needs a
+  successful permission read for its author; the label signal performs
+  no permission read (see Ready-label guard).
+- **Ready-label guard**: the approval helper never checks who applied the
+  label, in either freshness mode, so
+  [`strip-untrusted-labels.yml`](../.github/workflows/strip-untrusted-labels.yml)
+  also removes `idd:ready` when one of the configured untrusted labelers
+  (`labels.untrustedLabelerLogins`) applies it. This is a best-effort
+  blocklist, not an actor check. The removal runs after GitHub has
+  applied the label, so an issue can briefly carry it. Any actor that is
+  not listed but may label issues, such as a write collaborator or a
+  newly installed app, is not covered. The guard also does not control
+  which actors can create the label in the repository, which stays a
+  maintainer action. Validating the label actor belongs in the approval
+  helper upstream; until then, keep the collaborator list and the
+  installed apps minimal, and prefer the `IDD ready` comment signal,
+  whose author is permission-checked and which needs no label.
+- **Missing-approval behavior**: an issue without a qualifying signal
+  remains in the `approval-needed` route and is excluded from the A4
+  candidate set. An explicit-target (A0-T) run on an execution leaf stops
+  before claim (a roadmap-node target instead filters unapproved
+  descendants at A3.5), and A5(a) re-verifies approval immediately before
+  the A5 implementation claim.
+
+**Maintainer decision (Groom hearing, 2026-09-15; rationale corrected by
+the 2026-10-04 addendum on issue #166):** Re-enable the issue-author
+approval gate. Merged PR #165 introduced free-text fields in the
+structured issue forms and enabled blank issues, so form shape does not
+establish that a body-supplied IDD marker is trustworthy. The gate
+applies at A3.5, so an unapproved issue is routed to `approval-needed`
+and never becomes a candidate in A4 Step 2 or A4.5; its body-supplied
+suitability and effort markers are therefore never scored or used as
+tie-breaks there. It can still affect which candidates reach those steps
+(the accepted residual risk below), and the A4.5 duplicate search still
+compares the chosen candidate against all open issues, unapproved ones
+included. Most issues are filed by the repository owner, who
+self-authorizes under the recorded policy, so ordinary issue filing
+remains low-friction.
+
+The alternative of editing vendored upstream Discover and suitability
+instructions to authenticate each body marker was not selected because
+that would create local drift against the pinned upstream files. If
+marker-level trust validation is needed later, propose it upstream.
+
+**Accepted residual risk:** Several Discover paths read issue-body
+markers before A3.5 applies the gate, including A0-T and A0-O (readiness
+checks; in autopilot runs A0-O also reads the suitability footer for its
+floor), A1, A1.5 and A2 (roadmap markers; A1 only in the optional
+cross-roadmap mode, whose ranking also reads suitability footers), and A3
+(dependency markers, resolved with a repository-wide body search). An
+unapproved issue can therefore still influence roadmap traversal,
+dependency readiness, or that earlier ranking, although it stays out of
+the A4 candidate set. For example, an open issue that duplicates a
+completed dependency's `roadmap-id` keeps a legitimate candidate
+classified as blocked, and a forged `roadmap-id` on an issue that A2
+traverses makes A2 treat it as a roadmap node instead of an execution
+leaf. An approved issue can carry forged markers in the same way. The
+maintainer accepted these as out of scope for the approval gate change
+(addendum on issue #166, 2026-10-04): no abuse has been observed, and
+this change adds no marker authentication and does not reorder
+discovery. Revisit it if new evidence appears.
 
 ### Issue-Authoring Companion
 
@@ -631,7 +698,10 @@ by #152 and related issues. Adopted here (recorded in
   [`.github/workflows/strip-untrusted-labels.yml`](../.github/workflows/strip-untrusted-labels.yml),
   hand-copied from the recipe's manual path (no local `idd-skill` clone
   is available in this environment for the generated-guard path via
-  `idd-onboard --substitute`).
+  `idd-onboard --substitute`). The guard's reserved set also includes
+  `status:authoring` and `idd:ready`, which the generated-guard path
+  (built only from the three `labels.*` names) would not carry over;
+  re-add both by hand if the guard is ever regenerated.
 - **`issueAuthoring.journalIssue`**: `"kurone-kito/setup.windows#175"`
   — see the [Issue-Authoring Companion](#issue-authoring-companion)
   section above for the full rationale (#172).
