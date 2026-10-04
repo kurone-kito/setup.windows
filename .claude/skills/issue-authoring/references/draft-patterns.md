@@ -114,10 +114,22 @@ mask. For the `orphan` and `child` shapes, it also runs the same A4/A4.5
 triage evaluators Discover runs later, so most viability/suitability
 failures surface here instead of only at claim time -- pass `--title`
 (or lead the draft with a `# <title>` line) so those checks can
-evaluate:
+evaluate. Under `ephemeral-npx`, resolve the package from the target's
+`.github/idd/config.json` `helperRuntime.packageSpec`. The configured
+helper build must accept `--title` and emit `triage-a4-*` and
+`triage-a45-*` checks. If it rejects those options or omits those
+checks, stop before publication and restore helper compatibility; a
+legacy audit result does not pass this v0.14 gate:
 
 ```sh
+# Source repository / vendored-node profile
 node scripts/audit-authored-issue.mjs --shape orphan \
+  --marker-prefix <resolved-target-prefix> --title "Drafted issue title" \
+  --body-file draft.md
+
+# Package-manager / ephemeral-npx profile
+npx --yes --package <helper-package-spec> \
+  idd-audit-authored-issue --shape orphan \
   --marker-prefix <resolved-target-prefix> --title "Drafted issue title" \
   --body-file draft.md
 ```
@@ -134,7 +146,16 @@ carry, and downgrades a failing A4/A4.5 triage finding to a warning
 instead of a failure, since such a body is meant to be non-ready:
 
 ```sh
+# Source repository / vendored-node profile
 node scripts/audit-authored-issue.mjs --shape orphan \
+  --marker-prefix <resolved-target-prefix> --title "Drafted issue title" \
+  --body-file draft.md \
+  --expect-bucket needs-decision \
+  --label status:needs-decision
+
+# Package-manager / ephemeral-npx profile
+npx --yes --package <helper-package-spec> \
+  idd-audit-authored-issue --shape orphan \
   --marker-prefix <resolved-target-prefix> --title "Drafted issue title" \
   --body-file draft.md \
   --expect-bucket needs-decision \

@@ -75,7 +75,7 @@ delegate from completing the calling session's broader task. Observed
 roadmap and 4 child issues, and a read-only verification subagent
 published another roadmap and 4 child issues and rewrote a personal
 gist; and 2026-09-24/25, when a read-only fact-check subagent
-published two drafted issues. issue #3448 records those incidents.
+published two drafted issues. kurone-kito/idd-skill#3448 records those incidents.
 Clarification must be bounded; use the
 repository-local
 `issueAuthoring.maxClarificationRounds` value when available,
@@ -1057,7 +1057,7 @@ dispatch prompt does not reliably stop a context-inheriting reviewer
 either. Prefer a non-context-inheriting reviewer, and run the reviewer
 under a read-only capability or sandbox wherever the harness offers
 one.
-issue #3448 records the observed risk: a context-inheriting
+kurone-kito/idd-skill#3448 records the observed risk: a context-inheriting
 no-mutation dispatch can still publish.
 
 Bound the delegated command with
@@ -1276,15 +1276,28 @@ convert the prose into a proper dependency marker or consciously
 confirm the reference is a mere breadcrumb.
 
 ```sh
+# Source repository / vendored-node profile
 node scripts/audit-authored-issue.mjs --shape <orphan|roadmap|child> \
+  --marker-prefix <resolved-target-prefix> --title <drafted-title> \
+  --body-file <path-to-drafted-body> [--label <label>]... \
+  [--expect-bucket <needs-decision|blocked-by-human>]
+
+# Package-manager / ephemeral-npx profile
+npx --yes --package <helper-package-spec> \
+  idd-audit-authored-issue --shape <orphan|roadmap|child> \
   --marker-prefix <resolved-target-prefix> --title <drafted-title> \
   --body-file <path-to-drafted-body> [--label <label>]... \
   [--expect-bucket <needs-decision|blocked-by-human>]
 ```
 
-Or, for npx/package-manager profiles, the equivalent
-`idd-audit-authored-issue` command. Pass `--stdin` instead of
-`--body-file` when the drafted body is not yet written to disk. Omit
+For an `ephemeral-npx` target, resolve `<helper-package-spec>` from its
+`.github/idd/config.json` `helperRuntime.packageSpec`. This v0.14 gate
+requires a helper build that accepts `--title` and emits the
+`triage-a4-*` and `triage-a45-*` checks. If the configured build rejects
+those options or omits those checks, stop before publication and
+restore helper compatibility; do not treat a legacy audit result as a
+pass. Pass `--stdin` instead of `--body-file` when the drafted body is
+not yet written to disk. Omit
 `--title` when the drafted body already leads with a `# <title>` line
 (the local convention `evaluateSuitabilityLocal`'s own dry-run mode
 uses); for the `orphan` and `child` shapes, at least one of the two is
@@ -2146,7 +2159,10 @@ only approval boundary.
   anchor), and the read-only `authoring-set-members` helper reports
   that this target is the only issue whose trusted `authoring-owner`
   marker carries that exact `set`
-  (`node scripts/authoring-set-members.mjs --set <id>`). A zero exit
+  (`node scripts/authoring-set-members.mjs --set <id>` in the source
+  repository or vendored-node profile, or
+  `npx --yes --package <helper-package-spec> idd-authoring-set-members
+  --set <id>` in package-manager or ephemeral-npx profiles). A zero exit
   whose JSON has `soleMember: true` and `issues` equal to that one
   target is the only passing result. The helper exits non-zero when
   enumeration does not finish, including a search response with
@@ -2239,7 +2255,10 @@ only approval boundary.
   removal in step (4): first, verify that this sole target really is
   the sole member of its authoring set -- it carries no
   `<marker-prefix>-roadmap-id` marker, and
-  `node scripts/authoring-set-members.mjs --set <id>` reports
+  `node scripts/authoring-set-members.mjs --set <id>` in the source
+  repository or vendored-node profile, or
+  `npx --yes --package <helper-package-spec> idd-authoring-set-members
+  --set <id>` in package-manager or ephemeral-npx profiles, reports
   `soleMember: true` with `issues` equal to this one target; that
   helper is exactly the mechanical proof this fast path's own
   `|set|==1` premise rests on, so skipping it here would be a genuine

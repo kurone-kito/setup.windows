@@ -400,7 +400,11 @@ approval boundary that hands off to IDD execution.
   removal is a non-anchor target's or the anchor's own -- that the
   marked target is the sole member of its authoring set: it carries no
   `<marker-prefix>-roadmap-id` marker (never a roadmap anchor), and
-  `node scripts/authoring-set-members.mjs --set <id>` reports
+  the source repository or vendored-node command
+  `node scripts/authoring-set-members.mjs --set <id>`, or the
+  package-manager / ephemeral-npx command
+  `npx --yes --package <helper-package-spec>
+  idd-authoring-set-members --set <id>`, reports
   `soleMember: true` with `issues` equal to that one target. The
   helper exits non-zero when enumeration does not finish, including a
   search response with `incomplete_results` or an index-lag window
