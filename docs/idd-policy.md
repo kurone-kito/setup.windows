@@ -37,6 +37,42 @@ recorded in `.github/idd/config.json`)
 - **claim-heartbeat-interval**: `PT6H` (repository override;
   distributed default is `PT12H`)
 
+### Forced Handoff
+
+**Policy**: `human-gated`, authority `owners-and-maintainers-only`
+(`forcedHandoff` in [`.github/idd/config.json`](../.github/idd/config.json)).
+
+- **Decision**: decided on 2026-10-04, after the session holding the
+  claim for issue #166 (PR #213) became unavailable while its claim was
+  still non-stale. The forced handoff on issue #201 (2026-10-03) had the
+  same shape. Both ran from an uncommitted local opt-in, which only
+  checkout-local helpers honor.
+- **Why it must be on `master`**: `pre-merge-readiness` loads the default
+  branch's copy of the config through the API, and the advisory-convergence
+  workflows check out `ref: master`. Local helpers such as
+  `resume-claim-routing` read the config of the checkout they run from.
+  An opt-in kept in one local checkout therefore lets `idd-force-handoff`
+  post a marker, but the merge-time gate still resolves the displaced
+  claim and the successor cannot pass F2/F3. Enable the opt-in on
+  `master` before an incident, and sync a branch that predates it before
+  resuming there.
+- **Operating rule**: use only the interactive `idd-force-handoff` helper
+  from a TTY. Unattended agents and autopilot never initiate, request, or
+  broaden a forced handoff, and a chat approval never replaces the
+  helper's `y/N` confirmation. This is a procedural invariant, not an
+  identity-enforced one: IDD sessions authenticate as the maintainer's
+  account (see [Credential Scope](#credential-scope)), so the marker
+  rules cannot tell a helper-posted marker from a hand-posted one.
+- **Authority**: being listed under
+  [Trusted Marker Actors](#trusted-marker-actors) lets an actor's markers
+  be parsed; it does not authorize a handoff. Authority comes only from
+  `authorityPolicy`. The canonical consent text and marker contract live
+  in
+  [`docs/customization.md`](customization.md#forced-handoff-consent-and-marker-contract)
+  and are not repeated here.
+- **Revert**: remove the `forcedHandoff` block to return to the
+  distributed `disabled` default.
+
 ### CI Wait Policy
 
 - **running timeout**: `PT10M` (repository override; distributed
