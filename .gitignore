@@ -150,3 +150,7 @@ testResults.xml
 ### NeoVim ###
 # Project-local NeoVim config
 .nvim.lua
+
+### Node ###
+# Spellcheck cache. This repository does not commit dependency installs.
+node_modules/

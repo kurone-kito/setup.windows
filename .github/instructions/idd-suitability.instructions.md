@@ -44,6 +44,21 @@ Does the issue describe work scoped to this repository?
   system coordination needed
 - **Fail**: Issue crosses repository boundaries, requires external system
   access, or is out-of-scope for this repository
+- A negative regression fixture or expected-rejection example is descriptive
+  context, not a live prerequisite, only when an explicit, positively framed
+  fixture/rejection cue precedes the external-access phrase in the same
+  Markdown paragraph or list item. On a list marker line, the cue and phrase
+  must remain in the same sentence; a separate sentence is part of the same
+  context only when it is a correctly indented loose-list continuation
+  paragraph whose cue text also identifies the external/access context. A
+  heading at the list item's indentation ends that context. Inline-code terms
+  remain scannable when they occur in a live prerequisite, while fixture cues
+  inside inline code, strikethrough, and inline-code-only examples are
+  ignored. A separate live prerequisite still fails this check, while
+  unrelated or negated cues (including `non-`/`not-` prefixed variants), a cue
+  after the access phrase, a cue in another paragraph, and ambiguous wording
+  remain fail-closed. This boundary follows the observed false positive in
+  issue #3522.
 - **Outcome on fail**: `out-of-scope`
 
 ### Check 2: Issue Coherence
@@ -85,7 +100,12 @@ or configured needs-decision label from `labels.needsDecisionLabelName`
   represents novel work
 - **Fail**: Issue duplicates an existing open or closed issue, is
   superseded by newer work, or the work was already completed or is in
-  progress (including draft PRs)
+  progress (including draft PRs). An open or draft PR whose head branch
+  matches an inheritable claim branch from A5(d) — the stale active
+  claim, the latest released claim, verified forced-handoff evidence
+  whose branch and linked PR match, or the legacy migration source —
+  is this issue's own work, not a duplicate. Any other open or draft
+  PR still fails
 - **Outcome on fail**: `duplicate`
 
 #### High-confidence tier (#1484)
@@ -242,6 +262,10 @@ On a Check 4 `tier: 'high-confidence'` hit only — never the weak
 heuristic — for a discovery-path candidate (A2/A3 roadmap traversal or
 A0-O orphan-first; never an A0-T explicit target, which keeps its
 report-and-stop path unchanged):
+
+With `instructions-only`, report evidence, remove candidate from Candidates,
+skip claim/close/release; continue A4.5. A0-T reports/stops; otherwise use the
+coordination-close procedure below:
 
 1. Post a no-worktree coordination claim on the candidate, structurally
    identical to A1.5's roadmap-audit claim

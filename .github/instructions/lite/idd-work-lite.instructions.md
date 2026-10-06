@@ -16,6 +16,10 @@ repository is `instructions-only`, use the standard work instructions instead.
 
 ## Stop-and-ask conditions
 
+B1's setup steps run on the primary worktree by design; the
+sibling-worktree and current-branch bullets below apply from B2
+onward, once B1 step 30's cwd check passes.
+
 - The active claim is ambiguous, disputed, or lost.
 - The current directory is not the sibling worktree for the claimed branch.
   For a harness whose file-read/edit tools stay bound to the launch
@@ -32,7 +36,17 @@ repository is `instructions-only`, use the standard work instructions instead.
 ## Pre-mutation guard
 
 Before any commit, push, rebase, claim heartbeat, reply, resolve, reviewer
-request, or other GitHub side effect, confirm all of the following:
+request, or other GitHub side effect, confirm all of the following.
+
+Every B1 step — including the step 10 and step 31 hold-comment posts —
+runs with checks 1-2 only. Checks 3-5 apply from B2 onward, once B1 step
+30's cwd check passes; steps 28-31 are the hand-off mechanism, so a
+step 28 or 29 failure that routes to step 31's hold still runs under
+checks 1-2 only. Never relax checks 1-2 anywhere. This defers only this
+guard's own check 3-5 gate, never B1's own explicit lock-acquisition
+steps: step 7's takeover lock/collision check, and steps 19 and 26's
+lock acquisition and immediate token-recording after creation, all stay
+mandatory regardless of this deferral.
 
 1. The active claim still uses this session's claim id.
 2. If this session posted an activation nonce for the current claim,
@@ -47,8 +61,8 @@ request, or other GitHub side effect, confirm all of the following:
    `claim-lock` helper (`node scripts/claim-lock.mjs --acquire
    --worktree <this-worktree-path> --agent-id <id> --claim-id <id>`, or
    the package-manager-profile `idd:claim-lock` command with the same
-   arguments — resolve the exact command from
-   `docs/idd-helper-scripts.md` if unsure). A `collision` result is
+   arguments, or the ephemeral-npx equivalent — resolve the exact
+   command from `docs/idd-helper-scripts.md` if unsure). A `collision` result is
    fail-closed: stop rather than proceed. Then, separately, run
    `--read-tokens --worktree <this-worktree-path> --claim-id <id>`
    and require `present: true` with no `malformed`; otherwise recover
@@ -74,8 +88,12 @@ worktree removal) behind the
    primary worktree — each of these violates this rule.
 6. Reuse the existing branch name verbatim for takeover.
 7. Run `git worktree list` (and `git worktree list --porcelain` when checking
-   prunable entries). If a sibling worktree already exists, inspect that exact
-   path with the profile-selected `claim-lock` helper before reuse or removal.
+   prunable entries). If a sibling worktree already exists, inspect and
+   acquire its worktree-local claim lock with the profile-selected
+   `claim-lock` helper before reuse or removal. A `collision` result is
+   fail-closed: do not reuse or remove the path — resolve it via the
+   Claim-state rule in `idd-claim.instructions.md`, and only remove the
+   path once the current claim is authorized to take it over.
 8. If `git worktree list --porcelain` marks the entry `prunable` and its path
    is already absent, remove that stale entry with
    `git worktree remove --force <path-from-list>` and continue.
@@ -111,6 +129,9 @@ worktree removal) behind the
     --claim-id <id> --nonce <nonce>` (same nonce value as the A5 write;
     omitting `--nonce` drops it, since the helper overwrites rather than
     merges) for this worktree's own copy, before it installs anything.
+    After the hook succeeds, `cd` into the new sibling (`-x <noop>` never
+    changes the caller's directory; resolve the path from
+    `git worktree list`) before steps 28-30.
 20. If the hook cannot acquire the lock or record tokens, create the
     worktree without the hook.
 21. If WorkTrunk is unavailable, use
@@ -131,7 +152,9 @@ worktree removal) behind the
     the A5 write; omitting `--nonce` drops it, since the helper overwrites
     rather than merges) for this worktree's own copy, immediately after
     creation and before any install or other mutation.
-27. Run `install-deps` on the manual/no-hook path.
+27. On the manual/no-hook path, `cd` into the new sibling worktree first,
+    then run `install-deps` there — never from the primary worktree,
+    whose lifecycle hooks would otherwise mutate the primary checkout.
 28. Verify the primary worktree's HEAD is still on `main`.
 29. Verify `git worktree list` shows the new path.
 30. Verify the current directory is the new sibling worktree. For a
@@ -161,8 +184,12 @@ worktree removal) behind the
    superseding PR.
 6. If the criteria only partly hold, keep the issue open, record the overlap
    in the plan, and plan only the remaining work.
-7. Draft an issue comment plan for the exact change set.
-8. Run a critique pass on the plan.
+7. Draft an issue comment plan for the change set.
+8. For a per-agent plan critique, resolve `critiqueLoop.subagentWaitCeiling`
+   (`PT20M` default). If the harness lacks bound/cleanup, skip delegation and
+   use structured self-critique, recording risk. Otherwise enforce a harness
+   timeout, not a wrapper (#3449); timeout/cancel/interruption/error without
+   findings uses self-critique and records no return. Then run the critique.
 9. Post the refined final plan as a follow-up or update to the same issue
    comment.
 10. After the final plan comment, update the live status digest to `B2 planned`,
@@ -179,6 +206,13 @@ hold with the primary-source evidence (file, line, or excerpt, or the reason
 verification was inconclusive) in the hold comment, until a maintainer
 addendum resolves it.
 
+## B2.2 — Example field-name verification
+
+If the issue's "Proposed change" or "Acceptance criteria" cites an
+existing schema field, config key, or token as an example (not one it
+adds), verify it exists as cited before drafting the plan. Fix or drop
+the citation if it does not exist; stop and hold if unclear (`#2806`).
+
 ## B3 — Implement
 
 1. Before the first implementation edit, confirm the final B2 plan comment
@@ -189,7 +223,9 @@ addendum resolves it.
 4. Post the plan retroactively.
 5. Implement the plan.
 6. Critique the completed diff.
-7. Run `fix-validate` before each commit.
+7. Run `fix-validate` before each commit, judged by its own exit
+   status (in Bash, check `${PIPESTATUS[0]}` or use `set -o pipefail`)
+   — a `tail`/`head` filter cannot prove success (#3139).
 8. Keep commits atomic.
 9. If `fix-validate` changes files, stage and commit them before continuing.
 10. Verify a commit actually landed before trusting a subsequent push: a
@@ -251,6 +287,17 @@ ad hoc or improvise worker-side authoring.
 ## C — Self-review
 
 ### C1 — Critique pass
+
+#### Delegated critique wait ceiling
+
+Per-agent pass: resolve `critiqueLoop.subagentWaitCeiling` (`PT20M` default)
+with a harness timeout, not a wrapper (#3449). Only per-agent; shell-delegate
+rules unchanged. Background waits require cleanup and late-output suppression.
+`mode` only decides whether the per-agent pass starts from the configured
+delegate's outcome (see step 5). Once started, timeout/cancel/interruption/error
+without findings routes to structured self-critique and records no delegated
+return. If the harness cannot bound/clean up, skip the per-agent pass, use
+structured self-critique, and record residual risk.
 
 A critique pass asks whether the implementation is correct, whether the issue's
 requirements are satisfied, whether coverage is adequate, and whether any other
@@ -319,8 +366,11 @@ pass asks, never a separate pass to run on top of the one that ran.
    Neither a delegate that succeeded and returned a readable list with no issues
    in it, nor one that failed but still emitted a readable list, is this case:
    both are genuine results, so continue to step 3.
-3. Otherwise, if the critique pass reports zero issues, check the `fix-validate`
-   floor.
+3. Otherwise, if the critique pass reports zero issues, invoke
+   `critiqueLoop.telemetryHook` (C1) with zero findings/accepted/rejected
+   counts — fire-and-forget — then check the `fix-validate` floor. A round
+   that continues to C5 for the floor only is still a zero-finding round
+   and must not lose its record.
 4. If the floor has not passed, continue to C5 to repair validation.
 5. If the floor has passed, open and follow `idd-pr-submit-lite.instructions.md`
    now.
@@ -341,13 +391,21 @@ pass asks, never a separate pass to run on top of the one that ran.
    the floor has passed, open and follow `idd-pr-submit-lite.instructions.md` now.
 5. Otherwise continue to C5.
 
+Once the exit above is chosen (before C5, PR submission, or a C4 hold),
+invoke `critiqueLoop.telemetryHook` (C1) with this round's findings,
+severity, accepted/rejected counts, and delegate usage — fire-and-forget.
+A delegate's own fail-closed hold (C2 step 2) stops before C2 and has no
+telemetry record.
+
 ### C5 — Fix accepted issues
 
-1. Run `fix-validate`.
+1. Run `fix-validate`, judged by its own exit status (in Bash, check
+   `${PIPESTATUS[0]}` or use `set -o pipefail`) — a `tail`/`head`
+   filter cannot prove success (#3139).
 2. If the floor still has not passed and there are no accepted issues, stop
    and ask.
 3. Fix the accepted issues.
-4. Rerun `fix-validate`.
+4. Rerun `fix-validate`, judged the same way.
 5. If anything changed, commit atomically.
 
 ### C6 — Return to C1

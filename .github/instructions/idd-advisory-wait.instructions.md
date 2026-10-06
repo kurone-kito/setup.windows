@@ -11,26 +11,24 @@ owns behavior; `advisoryWait.exemptBotAuthoredPrs` is convergence-only.
 ## Scope — Copilot-only settle/wait window
 
 This protocol's settle/wait window covers **Copilot only**. Other
-`advisoryBotLogins` (e.g. CodeRabbit) get **no** wait window here —
-deliberately (`external-bot` profile in
-[`docs/idd-review-policy-profiles.md`](../../docs/idd-review-policy-profiles.md)
-swaps the single bot instead of gating every configured one).
+`advisoryBotLogins` get **no** wait window in this file. A configured
+`advisoryWait.secondaryQuietWindow` is F2's separate
+`secondary-quiet-window` blocker
+(`idd-pre-merge.instructions.md`): when set, F2 waits until that
+helper reports `elapsed: true` since the last substantive review
+activity. It is the blocker aimed at `secondaryBotLogin`'s login(s),
+not a poll until any reaches HEAD. Unset never adds it. Other
+`advisoryBotLogins` stay on the E1 snapshot and watermark.
 
-For non-Copilot bots, the load-bearing safety net for late-arriving
-findings is the **E1 activity-universe snapshot + `review-watermark`
-delta** (`idd-review-snapshot.instructions.md`), re-checked by the
-F2/F3 merge-readiness gate (`idd-pre-merge.instructions.md`), which
-forbids a bare CI-green merge without a fresh covering snapshot.
+For non-Copilot bots, late findings still use the **E1 snapshot +
+`review-watermark` delta**, re-checked by F2/F3, which forbids a
+bare CI-green merge without a fresh covering snapshot.
 
-**Do not build a substitute wait for a non-primary bot.** A polling
-loop, scheduled wakeup, or background monitor that blocks on a
-specific non-primary bot's review reaching current HEAD (any bot
-other than the configured `advisoryWait.primaryBotLogin` — for
-example, Codex, on a repository where it is not that configured bot)
-is not this protocol — it has none of this protocol's caps, timeouts,
-or hold routes, and the bot may never review the PR at all, so the
-wait has no bounded exit. Rely on the E1/review-watermark/F2/F3
-safety net above instead.
+**Do not build a substitute wait for a non-primary bot.** A poll
+that blocks on a bot other than `advisoryWait.primaryBotLogin`
+reaching HEAD is not this protocol: no caps, timeouts, or hold
+routes, and the bot may never review. Use the E1 net above. Do not
+treat the F2 elapsed-window blocker as that substitute.
 
 ## Fast path — common case
 
@@ -54,22 +52,17 @@ Batch post-wait actions into one turn.
 
 ## 1. Canonical path (helper-first)
 
-When helper support is installed, this is the canonical evidence
-collector (resolve `<profile-selected-advisory-wait-command>` from
-`docs/idd-helper-scripts.md`; never hardcode `node scripts/...` for
-non-vendored profiles):
+When helper support is installed, use the profile-selected command from
+`docs/idd-helper-scripts.md`; it always takes the four options below.
 
 ```sh
-# source repo / vendored-node profile
 node scripts/advisory-wait-state.mjs \
   --pr <pr-number> \
-  --trusted-marker-logins "<trusted-login-1>,<trusted-login-2>"
-
-# package-manager / ephemeral-npx profile
-<profile-selected-advisory-wait-command> \
-  --pr <pr-number> \
+  --claim-id <claim-id> --agent-id <agent-id> \
   --trusted-marker-logins "<trusted-login-1>,<trusted-login-2>"
 ```
+
+The package-manager / ephemeral-npx equivalent takes the same options.
 
 Contract: `docs/idd-helper-scripts.md#stable-helper-evidence-outputs`
 and `schemas/advisory-wait-state.schema.json`.
@@ -82,8 +75,9 @@ Required helper fields: `prHeadSha`, `lastCopilotCommit`,
 
 Optional non-gating secondary-bot fields (not in the `outcome`/
 `f3Outcome` enums; see **Secondary advisory bot supplement** below):
-`secondaryBotLogin` (empty when unconfigured or equal to the primary)
-and `secondaryRequestNeeded`.
+`secondaryBotLogin` (single login only), `secondaryBotLogins` (full
+list), `secondaryRequestLogins` (still-unrequested subset), and
+`secondaryRequestNeeded` (true iff non-empty).
 
 Allowed `outcome`/`f3Outcome` values: `SATISFIED`, `REQUEST_NEEDED`,
 `RECOVERY_NEEDED`, `CAP_EXHAUSTED`, `WAIT`. `HOLD` is a protocol-level
@@ -110,7 +104,7 @@ outage (e.g. via status page or an org admin surface) before retrying.
 | Outcome | D4 | E14 | F2 | F3 |
 | --- | --- | --- | --- | --- |
 | `SATISFIED` | `lastCopilotCommit` matches HEAD: rerun `idd-advisory-convergence`; resume D4. Elapsed-window `SATISFIED`: exit CI-wait; proceed to E1 | proceed to E15 | continue to CI check | proceed with merge |
-| `REQUEST_NEEDED` | `copilotPending` false: request review + marker; resume D4. `copilotPending` true: exit CI-wait; proceed to E1 | request Copilot + marker + poll | return to E14 | return to E14 |
+| `REQUEST_NEEDED` | `copilotPending` false: E14 guarded registration, then marker after evidence; resume D4. `copilotPending` true: exit CI-wait; proceed to E1 | request Copilot + marker + poll | return to E14 | return to E14 |
 | `RECOVERY_NEEDED` | exit CI-wait; proceed to E1 | post recovery marker + poll | post recovery marker + poll | post recovery marker; return to F2 |
 | `CAP_EXHAUSTED` | exit CI-wait; proceed to E1 | use `CAP_EXHAUSTED_ROUTE` | post cap-exhausted hold and stop | post cap-exhausted hold and stop |
 | `WAIT` | wait for Copilot's review; rerun `idd-advisory-convergence`; resume D4 | continue polling | poll then restart F2 from top | do not merge; return to F2 |
@@ -122,11 +116,12 @@ outage (e.g. via status page or an org admin surface) before retrying.
 Orthogonal to the table above: changes no `outcome`/`f3Outcome` or
 route, never satisfies the primary gate, posts no `advisory-wait`
 marker. A bot check alone never confirms review of current HEAD.
-Full trigger condition (`secondaryRequestNeeded`/`CAP_EXHAUSTED`/
-stalled `SATISFIED`) and request procedure:
-`idd-review-fix.instructions.md`'s E14 step 5 — never poll/wait for it
-there, E1, or E2; only F2's `secondary-quiet-window` blocker
-(`idd-pre-merge.instructions.md`) waits.
+`secondaryBotLogin` accepts one login or a list; request every
+`secondaryRequestLogins` entry, not only the first, never polling any.
+Trigger condition and per-login procedure:
+`idd-review-fix.instructions.md`'s E14 step 5 — never poll/wait there,
+E1, or E2; only F2's `secondary-quiet-window` blocker
+(`idd-pre-merge.instructions.md`) waits, folded across every login.
 
 ### F3-specific interpretation
 
@@ -269,46 +264,45 @@ AW1-AW2 plus the terminal contract's remaining budget (trusted bound
 `advisory-wait-recovery:` markers only). For the non-pending entry,
 `AW2`'s `SAME_HEAD_REQUEST_MARKER_PRESENT` is required — a same-head
 marker that is only the recovery form must never itself satisfy this
-check (a prior cycle's own marker is not proof a request was
-requested). The non-pending entry reuses `SETTLED_WINDOW_MINUTES` as
-its re-check budget (no new config value); before it elapses the
-classifier stays `"not-applicable"`/`recheck-budget-unspent` —
-ordinary lag, not failure.
+check (a prior cycle's own marker doesn't count). The non-pending
+entry reuses `SETTLED_WINDOW_MINUTES` as its re-check budget; before it
+elapses the classifier stays
+`"not-applicable"`/`recheck-budget-unspent` — ordinary lag, not
+failure.
 
 **Bounded cycle** (only when `"attempt"`). Before each mutating step,
 re-verify the active claim
 ([claim revalidation gate](idd-overview-core.instructions.md#claim-revalidation-gate))
 and that HEAD hasn't moved since the attempt started; either failure
 aborts without mutating or counting a cycle — discard and restart from
-E1 against the new HEAD. Commands for every step (same gh-then-REST
-pattern as E14's **Primary advisory bot**):
+E1 against the new HEAD. Commands for every step (same request as
+E14's **Primary advisory bot**):
 [shell fallback AW3-S](../../docs/idd-advisory-wait-shell-fallback.md#aw3-s).
 
 1. **Remove** the stale request. Skip this step for a non-pending entry
    (`#2327` — `COPILOT_PENDING` was already `false`, so nothing is
    pending to remove) and start at step 3 instead. Otherwise, if removal
    fails because the bot is no longer pending, re-run AW1-AW3 and
-   re-evaluate `staleRequestRecovery`; any other failure posts the `AW4`
-   pending-refresh-failed hold and stops — no cycle counted.
+   re-evaluate `staleRequestRecovery`; if a DELETE can't resolve a User
+   node, retry `gh pr edit --remove-reviewer` alone (step 4's budget);
+   any other failure, or that retry's exhaustion, posts the
+   `AW4` pending-refresh-failed hold and stops — no cycle counted.
 2. **Verify** removal and current HEAD before proceeding.
-3. **Request** Copilot again, same fallback pattern.
-4. **Verify association**: confirm `review_requested` follows HEAD's
-   `committed` event (same proof as `COPILOT_PENDING_COVERS_HEAD`). Not
-   yet true is ordinary lag, not failure — do **not** redo steps 1-3;
-   re-check alone after a brief pause (default: 3 attempts, a few
-   seconds apart). Disposition after that budget depends on entry type:
-   - **Pending entry**: still unproven → abort without posting a
-     marker or counting a cycle, return to the polling loop (or E1)
-     next interval — never tight-loop on unresolved lag.
-   - **Non-pending entry** (`#2327`): the event appearing proves this
-     re-request actually registered — abort without counting (ordinary
-     success, no cycle needed; the next pass's `COPILOT_PENDING_COVERS_HEAD`
-     check picks it up normally). No event within the same short budget
-     is itself the proof this re-request _also_ failed to register —
-     the entry condition already spent a full `SETTLED_WINDOW_MINUTES`
-     confirming the original request's silence before this cycle
-     started, so the short budget is sufficient here, not a redundant
-     wait — proceed to step 5 and count the cycle.
+3. **Request** Copilot again, same fallback pattern; preserve its return
+   status for step 4's bounded rechecks.
+4. **Verify association**: retain step 3's baselines, but require a new
+   matching `review_requested` event after HEAD's `committed` event (the
+   `COPILOT_PENDING_COVERS_HEAD` proof). A fresh request node is not tied
+   to a commit and is insufficient for AW3-S. If absent, recheck only
+   readable evidence (default: 3 attempts); unreadable is indeterminate —
+   use AW4, with no marker or cycle count. Then:
+   - **Pending entry**: still unproven → abort without marker/count and
+     return to polling or E1; never tight-loop on lag.
+   - **Non-pending entry** (`#2327`): a fresh event proves registration →
+     abort without count; the next `COPILOT_PENDING_COVERS_HEAD` check
+     picks it up. No fresh event in the short budget proves failure; the
+     entry already spent `SETTLED_WINDOW_MINUTES` confirming silence, so
+     proceed to step 5 and count the cycle.
 5. **Post exactly one** bound marker, once step 4 concludes in a
    counted disposition — proven re-registration for a pending entry, or
    proven failure-to-register for a non-pending entry (`#2327`). `<n>`
@@ -317,8 +311,7 @@ pattern as E14's **Primary advisory bot**):
 
 **Ordinary counters are untouched**: excluded from `requestMarkerCount`
 and `#1511`'s reroll accounting, but **does** count as a same-head
-marker for the AW2 clock (blocking a second mutation for the same
-verified HEAD within one pass).
+marker for the AW2 clock (blocking a same-HEAD second mutation).
 
 ### AW3-H — Hide superseded advisory-wait markers
 
@@ -472,13 +465,13 @@ still hold independently. See
 
 `advisoryWait.convergenceDeadline` (the maintainer-waiver escape hatch
 above) and `advisoryWait.terminalWindow` (the terminal contract's
-clock) measure differently — the deadline from the new HEAD commit's
-own `committedDate` (not the moment it is pushed), the window from the
+clock) measure differently — the deadline from when GitHub first
+recorded the new HEAD commit, the window from the
 earliest trusted, active-claim-bound, agent-bound, current-HEAD
 `advisory-wait-recovery:` marker's GitHub `created_at` — but both are
 scoped to the current HEAD, so a push to a new HEAD replaces both
 anchors rather than resetting a clock that keeps running: the deadline
-re-anchors on the new commit's own timestamp, and the terminal window
+re-anchors on when GitHub first recorded it, and the terminal window
 goes fully unanchored — no elapsed time at all — until a fresh
 current-HEAD recovery marker is posted. Waiting out either clock is
 therefore only a viable strategy once the diff has converged — no

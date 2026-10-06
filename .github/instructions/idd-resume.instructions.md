@@ -5,45 +5,45 @@ prior session context, or when a fresh session resumes an issue whose prior
 session left an active claim after its own deliberate, announced pause (see
 [Operator-present release](#operator-present-release)
 below). Read `idd-overview-core.instructions.md` for shared definitions
-(claim format, stale threshold, abort, hold). For full narrative detail on
-each routing branch, see
+(claim format, stale threshold) and
+`idd-overview-appendix.instructions.md` for abort and hold. For full
+narrative detail on each routing branch, see
 [`docs/idd-resume-detail.md`](../../docs/idd-resume-detail.md).
 
-Resume stale checks use the `claim-stale-age` policy value from
-`docs/policy-constants.md` (this repository's configured value: `12 h`;
-distributed default: `24 h`).
+Resume stale checks use the `claim-stale-age` policy default from
+`docs/policy-constants.md` (distributed default: `24 h`).
 
 ## Required Inputs
 
 Collect all signals before routing. Use GitHub server timestamps only.
 
-| Signal                   | What to collect                                                                                                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Claim state              | Active `{claim-id}`, agent-id, branch, latest valid `claimed-by` `created_at`; `none` if unclaimed. Record suspicious marker-shaped comments from untrusted authors separately.            |
-| Forced-handoff evidence  | Approving human, displaced `{claim-id}`, branch, linked PR, evidence URL — only when `forced-handoff: human-gated`. When an open PR exists, require issue-plus-PR approval naming that PR. |
-| Open PR and current HEAD | PR number + current HEAD SHA; or `none`.                                                                                                                                                   |
-| Activity recency         | Latest `updatedAt` across issue comments, review threads, review bodies, PR comments. Include PR `createdAt`/`updatedAt` when a PR exists.                                                 |
-| PR HEAD movement         | Baseline: latest trusted watermark/baseline marker SHA if present, else current PR HEAD. Then confirm whether commits were added after that baseline.                                      |
-| CI state                 | Check states for PR HEAD; latest completed `completedAt`; latest successful `completedAt`; or `none`.                                                                                      |
-| Worktrees                | `git worktree list` output.                                                                                                                                                                |
-| Local branch             | Whether the branch named in the claim comment exists locally.                                                                                                                              |
-| Worktree state           | `git status` in worktree (if it exists); otherwise `missing`.                                                                                                                              |
-| Unpushed commits         | `git log @{u}..HEAD` in worktree. Treat all commits as unpushed if no upstream is configured.                                                                                              |
-| Local HEAD SHA           | `git rev-parse HEAD` in worktree.                                                                                                                                                          |
-| Live digest state        | Count of `<!-- idd-live-status: current -->` comments on issue/PR. Do not use digest text to route resume.                                                                                 |
+| Signal                   | What to collect                                                                                                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claim state              | Active `{claim-id}`, agent-id, branch, latest valid `claimed-by` `created_at`; `none` if unclaimed. Record suspicious marker-shaped comments from untrusted authors separately. |
+| Forced-handoff evidence  | Approving human, displaced `{claim-id}`, branch, linked PR, evidence URL (`forced-handoff: human-gated` only); an open PR requires issue-plus-PR approval naming it.            |
+| Open PR and current HEAD | PR number + current HEAD SHA; or `none`.                                                                                                                                        |
+| Activity recency         | Latest `updatedAt` across issue comments, review threads, review bodies, PR comments. Include PR `createdAt`/`updatedAt` when a PR exists.                                      |
+| PR HEAD movement         | Baseline: latest trusted watermark/baseline marker SHA if present, else current PR HEAD. Then confirm whether commits were added after that baseline.                           |
+| CI state                 | Check states for PR HEAD; latest completed `completedAt`; latest successful `completedAt`; or `none`.                                                                           |
+| Worktrees                | `git worktree list` output.                                                                                                                                                     |
+| Local branch             | Whether the branch named in the claim comment exists locally.                                                                                                                   |
+| Worktree state           | `git status` in worktree (if it exists); otherwise `missing`.                                                                                                                   |
+| Unpushed commits         | `git log @{u}..HEAD` in worktree. Treat all commits as unpushed if no upstream is configured.                                                                                   |
+| Local HEAD SHA           | `git rev-parse HEAD` in worktree.                                                                                                                                               |
+| Live digest state        | Count of `<!-- idd-live-status: current -->` comments on issue/PR. Do not use digest text to route resume.                                                                      |
 
 ## Step 0 — Route classifier
 
 Evaluate in order; take the first matching row.
 
-| Condition                                                                                                               | Route                                                              |
-| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Issue closed or PR merged                                                                                               | Step 1 (cleanup only)                                              |
-| `forced-handoff: human-gated` + valid evidence matching active/inheritable state                                        | Step 1 forced-handoff path (skip stall check)                      |
-| `forced-handoff: human-gated` + evidence exists but mismatches live claim/branch/PR state                               | STOP — report mismatch; do not claim, push, or mutate review state |
-| Non-owned active claim + evidence satisfying the operator-present release path below + operator-supplied input received | Operator-present release path (below); skip the stall file         |
-| Non-owned active claim + no valid forced-handoff evidence                                                               | `idd-resume-stall.instructions.md`; then Step 1 if unblocked       |
-| Otherwise                                                                                                               | Step 1                                                             |
+| Condition                                                                                 | Route                                                              |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Issue closed or PR merged                                                                 | Step 1 (§MC)                                                       |
+| `forced-handoff: human-gated` + valid evidence matching active/inheritable state          | Step 1 forced-handoff path (skip stall check)                      |
+| `forced-handoff: human-gated` + evidence exists but mismatches live claim/branch/PR state | STOP — report mismatch; do not claim, push, or mutate review state |
+| Non-owned active claim + operator-present predicate (below) met + input received          | Operator-present release path (below); skip the stall file         |
+| Non-owned active claim + no valid forced-handoff evidence                                 | `idd-resume-stall.instructions.md`; then Step 1 if unblocked       |
+| Otherwise                                                                                 | Step 1                                                             |
 
 Autopilot and unattended agents must never invent, request, or broaden
 forced handoff; they may only consume already-recorded human-gated evidence.
@@ -67,7 +67,9 @@ If stalled-session routing returns hold/inconclusive, stop.
   `npm run idd:force-handoff` under `package-manager`); under
   `instructions-only` (no helper runtime vended), the operator instead
   posts the manual consent text and marker documented in
-  `docs/customization.md` themselves.
+  `docs/customization.md` themselves, using `unclaimed-by` when no
+  successor is known. On a vended helper, answer `release` at that
+  prompt instead (posts `unclaimed-by`, not a same-agent transfer).
 
 ### Operator-present release
 
@@ -115,7 +117,7 @@ Sequence:
 4. Post a normal fresh A5 claim with `supersedes: none`, then continue
    to Step 1.
 
-The 30-minute quiet window and 12h stale threshold in
+The 30-minute quiet window and 24h stale threshold in
 `idd-resume-stall.instructions.md` surface an _unannounced_ stall
 only; this path's own already-announced pause waits on neither.
 
@@ -124,16 +126,32 @@ only; this path's own already-announced pause waits on neither.
 When helper runtime is enabled, you may collect Step 1 evidence with:
 
 ```sh
-node scripts/resume-claim-routing.mjs --issue {issue-number}
+node scripts/resume-claim-routing.mjs --issue {issue-number} [--claim-id {claim-id}] [--nonce {nonce}] [--worktree {path}]
 ```
 
-Use helper output as evidence mapped to this table, not as an
-authoritative replacement:
+Pass `--claim-id` once this session recorded and verified one,
+`--nonce {nonce}` when this session recorded one for that same
+claim-id, and `--worktree {path}` once the B1 worktree exists.
+
+When the issue is closed or its PR merged, skip every bullet below and
+go directly to the table's first three rows (§MC): the helper's routing
+verdict (`state`/`action`) reflects claim state only, never merge or
+close state.
+
+Use helper output as evidence, not as authority:
 
 - `state: already_owned` + `action: keep` → continue with the same
   `{claim-id}` route.
+- `state: owner_evidence_required` + `action: stop` → retry once with
+  `--worktree {path}`; if it persists, stop (not a live competitor) unless
+  a forced-handoff successor: §FH.
 - `state: unclaimed` + `action: re_claim` → no-active-claim route.
 - `state: stale` + `action: takeover` → stale-claim takeover route.
+- `state: local_worktree_occupied` + `action: stop` → a stale or released
+  claim's matching local worktree is occupied, unreadable, or unknown;
+  stop; see §LWR (`docs/idd-resume-detail.md`). Verify owner resume with
+  the exact claim-id, or retry a valid forced-handoff successor with its
+  new claim-id, before proceeding.
 - `state: non_inheritable` + `action: stop` → active non-stale claim
   stop route.
 - `state: disputed` + `action: stop` → contested-claim stop route
@@ -152,29 +170,39 @@ it as authoritative.
 
 Evaluate in order; take the first matching row.
 
-| Claim state                                                                                     | Route                                                                                                                         |
-| ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Issue closed or PR merged                                                                       | Clean up local worktree and branch; STOP                                                                                      |
-| Active claim = this session's verified `{claim-id}` + branch field starts with `roadmap-audit/` | Re-run A1.5; skip worktree creation; STOP after roadmap-side effects. Coordination-only: does not lock child-issue execution. |
-| Active claim = this session's verified `{claim-id}`                                             | Continue with same `{claim-id}`; ignore stale FH evidence citing a different displaced `{claim-id}`; → Step 2                 |
-| FH evidence names this session's already-verified `{claim-id}`                                  | STOP — current session is displaced; do not push, comment, resolve, request reviewers, or merge                               |
-| Forced-handoff recovery confirmed (§FH)                                                         | Re-claim via A5 after GitHub reflects handoff; cite evidence in digest `Authoritative by`; → Step 2                           |
-| No new-format claims + legacy `claimed-by` + later trusted `unclaimed-by` (same agent)          | Treat as unclaimed → fresh A5 claim → Step 2                                                                                  |
-| No new-format claims + legacy `claimed-by`, age < 12 h                                          | STOP — not inheritable even if agent-id matches                                                                               |
-| No new-format claims + legacy `claimed-by`, age ≥ 12 h                                          | Migrate via A5 with `supersedes: none`; → Step 2                                                                              |
-| No active claim                                                                                 | Re-claim via A5; → Step 2                                                                                                     |
-| Active non-stale claim (< 12 h, other session)                                                  | STOP — not inheritable even if agent-id matches                                                                               |
-| Active stale claim (≥ 12 h, other session) + branch field starts with `roadmap-audit/`          | Takeover via A5 with `supersedes: <prior-id>`; then re-run A1.5; STOP after roadmap-side effects                              |
-| Active stale claim (≥ 12 h, other session)                                                      | Takeover via A5 with `supersedes: <prior-id>`; → Step 2                                                                       |
+Absent or disagreeing helper evidence requires the porcelain occupancy scan;
+this table is the instructions-only fallback.
+If that scan fails, is malformed, or is unreadable, treat it as unknown and
+stop before re-claim or takeover; never treat failure as no match.
+
+| Claim state                                                                                    | Route                                                                                               |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| PR merged; claim = this session's verified `{claim-id}`                                        | Run F4 steps 4-7 (guarded); also step 1 if non-default branch + open closing issue; STOP (§MC)      |
+| PR merged; claim released (no active claim); its branch = `{branch}`; no local worktree for it | Run F4 step 4 + step 5's `git branch -d` only (guarded); skip steps 6-7; STOP (§MC)                 |
+| FH evidence names this session's already-verified `{claim-id}`                                 | STOP — current session is displaced; do not push, comment, resolve, request reviewers, or merge     |
+| Issue closed with no PR merged, or any other closed/merged state                               | Post a hold comment naming the state; STOP — never remove a worktree or branch                      |
+| This session's claim; branch starts with `roadmap-audit/`                                      | Re-run A1.5; skip worktree creation; STOP (roadmap coordination only)                               |
+| Active claim = this session's verified `{claim-id}`                                            | Continue with same `{claim-id}`; ignore stale FH evidence citing a different `{claim-id}`; → Step 2 |
+| Forced-handoff recovery confirmed (§FH)                                                        | Re-claim via A5 after GitHub reflects handoff; cite evidence in digest `Authoritative by`; → Step 2 |
+| No active claim after release + matching local worktree is occupied or unreadable              | STOP — route to §LWR or verify owner-resume / forced-handoff successor claim-id                     |
+| No new-format claims + legacy `claimed-by` + later trusted `unclaimed-by` (same agent)         | Treat as unclaimed → fresh A5 claim → Step 2                                                        |
+| No new-format claims + legacy `claimed-by`, age < 24 h                                         | STOP — not inheritable even if agent-id matches                                                     |
+| No new-format claims + legacy `claimed-by`, age ≥ 24 h                                         | Migrate via A5 with `supersedes: none`; → Step 2                                                    |
+| No active claim                                                                                | Re-claim via A5; → Step 2                                                                           |
+| Active non-stale claim (< 24 h, other session)                                                 | STOP — not inheritable even if agent-id matches                                                     |
+| Active stale claim (≥ 24 h, other session) + matching local worktree is occupied or unreadable | STOP — route to §LWR or verify owner-resume / forced-handoff successor claim-id                     |
+| Stale claim (other session); branch starts with `roadmap-audit/`                               | Takeover via A5 (`supersedes: <prior-id>`); re-run A1.5; STOP (roadmap-side only)                   |
+| Active stale claim (≥ 24 h, other session)                                                     | Takeover via A5 with `supersedes: <prior-id>`; → Step 2                                             |
 
 All re-claims, migrations, and takeovers must use A5 race-safe verification
 from `idd-claim.instructions.md`. Forced-handoff recovery never waives the
 normal A5 branch-collision and open-PR safety checks.
 
-A branch left by a stale or released claim is inheritable. An open PR or
-remote branch may be reused when it matches the branch in the stale active
-claim, the latest released claim, or trusted forced-handoff evidence whose
-branch and linked PR fields still match live GitHub state.
+A branch left by a stale or released claim is inheritable only when no
+matching local worktree is occupied, unreadable, or unknown. An open PR or
+remote branch may then be reused when it matches the branch in the stale
+active claim, the latest released claim, or trusted forced-handoff evidence
+whose branch and linked PR fields still match live GitHub state.
 
 After routing, repair a missing or stale digest from the parsed claim state,
 PR state, CI state, and review activity when safe under the claim

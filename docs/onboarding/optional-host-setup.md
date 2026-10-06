@@ -1,9 +1,17 @@
+---
+type: reference
+title: Onboarding Reference — Optional Host Setup
+description: Documents the optional host-level setup steps (worktree guard, idd-doctor CI gate, advisory-convergence CI workflow, vendored-bundle linguist attributes) that ONBOARDING.md now only points to.
+tags: [onboarding, host-setup]
+---
+
 # Onboarding Reference — Optional Host Setup
 
-Use this reference alongside `idd-template/ONBOARDING.md` when you want to
-enable one of the optional host-level integrations it mentions but does not
-walk through inline. None of these steps are required to finish the hearing
-or the core import.
+Use this reference alongside
+[`ONBOARDING.md`](https://github.com/kurone-kito/idd-skill/blob/v0.14.0/idd-template/ONBOARDING.md)
+when you want to enable one of the optional host-level integrations it
+mentions but does not walk through inline. None of these steps are
+required to finish the hearing or the core import.
 
 This page is the detailed companion for:
 
@@ -51,29 +59,25 @@ To enable it in the target repository:
    rule to be covered too.
 
 4. Native-Windows adopters chaining fork-heavy tooling after the guard
-   (a linter, `lint-staged`, and similar) are more exposed to a class
-   of Cygwin/MSYS `fork()` fragility unrelated to this template
-   (observed in `kurone-kito/builder-config`, 2026-08-14, cited in
+   (a linter, `lint-staged`, and similar) are more exposed to a class of
+   Cygwin/MSYS `fork()` fragility unrelated to this template (observed
+   in `kurone-kito/builder-config`, 2026-08-14, cited in
    kurone-kito/idd-skill#2068 — a native-Windows commit failed inside
-   `.githooks/pre-commit` with a Cygwin `dofork` failure ("died
-   unexpectedly"); root cause is generic Git-for-Windows/Cygwin
-   `fork()` emulation fragility, not a defect in this template or
-   repository — see
+   `.githooks/pre-commit` with a Cygwin `dofork` "died unexpectedly"
+   failure; root cause is generic Git-for-Windows/Cygwin `fork()`
+   emulation fragility, not a template defect — see
    [git-for-windows/git#1176](https://github.com/git-for-windows/git/issues/1176)).
-   Standard host-level remediations, none of them actionable from
-   inside this repository, and each a temporary, last-resort
-   mitigation requiring the operator's own administrator approval —
-   restore the affected protection immediately once the guard's
-   commit or push succeeds, and scope any antivirus exclusion as
-   narrowly as the antivirus product allows (ideally just the
-   `.githooks/` directory, not the whole repository or Git-for-Windows
-   install tree, if the product supports that granularity): exclude
-   the affected path(s) from antivirus real-time scanning; remove any
-   duplicate or stale MSYS/Cygwin runtime DLL (`msys-2.0.dll` for Git
-   for Windows itself, or `cygwin1.dll` if a separate Cygwin install is
-   also on `PATH`) from `PATH`; and disable Mandatory ASLR for the
-   affected `sh.exe`/`bash.exe` via Windows Security's Exploit
-   Protection settings.
+   Remediation is host-level, not actionable from inside this
+   repository, and each mitigation below is temporary and last-resort,
+   needing the operator's own administrator approval —
+   restore the affected protection immediately once the guard's commit
+   or push succeeds: exclude the narrowest possible path (`.githooks/`,
+   not the whole repository or install tree, where the antivirus
+   product allows it) from real-time scanning; remove any duplicate or
+   stale MSYS/Cygwin runtime DLL (`msys-2.0.dll`, or `cygwin1.dll` for a
+   separate Cygwin install) from `PATH`; and disable Mandatory ASLR for
+   `sh.exe`/`bash.exe` via Windows Security's Exploit Protection
+   settings.
 
 When `worktreeGuard.enabled` is absent or `false`, the hooks are a
 no-op. To bypass the guard for a single intentional commit or push,
@@ -135,31 +139,24 @@ above, and confirms the referenced `.githooks/<hook>` script itself
 genuinely sources the guard (observed 2026-08-11 during PR #1948's
 review; [#1951](https://github.com/kurone-kito/idd-skill/issues/1951)).
 A setup that follows the recipe above for **both** hooks now reads as
-wired, not enabled-but-inert. The check still does not trace an
-arbitrary hook manager's own dispatch machinery beyond that one
-documented level: it confirms a hook file exists **and is executable**
-at `core.hooksPath` — since git itself silently skips a non-executable
-one — but does not verify that file's own content genuinely hands off
-to the parent sibling it trusts, so a present-but-inert or corrupted
-dispatcher stub can still read as wired even though git never reaches
-the parent chain (preventive; no observed incident yet). Conversely, a
-manager using a different indirection shape entirely can still warn
-even when the guard is genuinely reachable through it; a warning while
-only one hook is chained, or while the chain targets a missing or
-incorrect `.githooks/*` script, remains actionable as intended either
-way.
+wired, not enabled-but-inert. The check does not trace dispatch beyond
+that one level: it confirms a hook file exists **and is executable** at
+`core.hooksPath`, but not that its content genuinely hands off to the
+parent sibling, so a corrupted dispatcher stub can still read as wired
+(preventive; no observed incident yet). A manager using a different
+indirection shape can likewise warn even when the guard is genuinely
+reachable; treat either false signal as actionable rather than assumed
+noise.
 
-Recognizing the two chain forms above is itself a bounded lexical
-heuristic, not a shell parser: it matches the documented forms as an
-ordinary standalone physical line and deliberately does not evaluate
-quoting edge cases, variable expansion, here-docs, `eval`, subshell
-wrapping, or other adversarial or unusual shell constructions that
-could reach one of the two forms at runtime while lexically evading
-this check, or vice versa (preventive; no observed incident yet). This
-is a warning-level misconfiguration diagnostic, not a security
-boundary — an operator who wants to fool it can simply not enable the
-guard — so hardening against constructions beyond the documented
-recipe stays out of scope absent an observed incident.
+Recognizing the two chain forms above is a bounded lexical heuristic,
+not a shell parser: it matches them as an ordinary standalone physical
+line and does not evaluate quoting, variable expansion, here-docs,
+`eval`, subshell wrapping, or other constructions that could reach one
+of the two forms at runtime while lexically evading this check, or vice
+versa (preventive; no observed incident yet). This is a warning-level
+misconfiguration diagnostic, not a security boundary — an operator who
+wants to fool it can simply not enable the guard — so hardening beyond
+the documented recipe stays out of scope absent an observed incident.
 
 Fully replacing an existing hook manager instead of chaining it removes
 that tool from the repository outright, so treat it as an alternative
@@ -174,20 +171,16 @@ instead:
 git rev-parse --git-dir > /dev/null 2>&1 || exit 0; git config core.hooksPath .githooks && chmod +x .githooks/pre-commit .githooks/pre-push
 ```
 
-Neither path — chaining or fully replacing — is wired automatically by
-this template: the operator (or an agent following this guide) has to
-author and commit the chaining line or the replacement script
-explicitly. Once committed, propagation to a future clone happens
-through whichever install/prepare lifecycle now owns it there. For
-chaining, that's the existing hook manager's own lifecycle — never
-repoint git directly at `.githooks` there by manually repeating the
-base activation step above, since a manager is still present and that
-step would bypass it. For fully replacing, that's the repository's own
-replacement lifecycle script; repeating the base activation step there
-is harmless, since no manager remains to bypass and the step sets the
-identical value the replacement script would. That base step stays the
-right standalone action only for a clone with no hook manager involved
-at all, where there is no lifecycle script to carry it forward.
+Neither path — chaining or fully replacing — is wired automatically:
+the operator (or an agent following this guide) must author and commit
+the chaining line or replacement script explicitly, after which a
+future clone's own install/prepare lifecycle propagates it. For
+chaining, never repoint git directly at `.githooks` by repeating the
+base activation step — a manager is still present and that step would
+bypass it. For fully replacing, repeating the base step is harmless,
+since it sets the same value the replacement script would. That base
+step is the right standalone action only for a clone with no hook
+manager involved at all.
 
 ### Activation in a coding-agent / ephemeral environment
 
@@ -222,28 +215,22 @@ git config core.hooksPath .githooks && chmod +x .githooks/pre-commit .githooks/p
 
 For the direct or fully-replacing path, because the agent re-runs this
 every task, the guard stays active for the whole session — confirm it
-actually took effect with `idd-doctor`, which surfaces an
-**enabled-but-inert** finding when `worktreeGuard.enabled` is `true`
-but `core.hooksPath` is not pointed at `.githooks` and no recognized
-chain is present, the signal that the setup step silently did not run
-(the chaining path below intentionally keeps `core.hooksPath` pointed
-at the manager's own directory instead, so that condition alone does
-not fire there). For the chaining path, `idd-doctor`'s
-confirmation now covers the documented recipe the same way it covers
-the direct/fully-replacing path above — a correctly chained setup
-reads as wired once the manager's lifecycle has actually run.
-Chain-line presence alone still isn't a safe substitute for running
-`idd-doctor`, though: a fresh ephemeral clone checks out the committed
-chain lines immediately, even when the setup lifecycle never ran and
+actually took effect with `idd-doctor`, whose enabled-but-inert check
+(above) fires when `worktreeGuard.enabled` is `true` but `core.hooksPath`
+is not pointed at `.githooks` and no recognized chain is present, the
+signal that the setup step silently did not run. The chaining path
+intentionally keeps `core.hooksPath` pointed at the manager's own
+directory, so that same condition alone does not fire there — the check
+instead confirms the documented recipe once the manager's lifecycle has
+actually run. Committed chain-line presence alone is not a safe
+substitute for running `idd-doctor`: a fresh ephemeral clone checks out
+those lines immediately even when the setup lifecycle never ran and
 `core.hooksPath` is still unset, which `idd-doctor` still correctly
-reports as enabled-but-inert (`core.hooksPath = (unset)`; preventive,
-no observed incident yet). If a custom dispatch shape falls outside
-the documented one-level recipe (above; also preventive, no observed
-incident yet), fall back to verifying both explicitly: that the
-committed chain lines are present in the manager's hook files, and that
-`git config --get core.hooksPath` resolves to the manager's own hooks
-directory (not empty), confirming its lifecycle actually ran and wired
-that value rather than just that the files exist. This is activation
+reports as enabled-but-inert (preventive; no observed incident yet). If
+a custom dispatch shape falls outside the documented one-level recipe,
+verify both explicitly instead: the chain lines are present in the
+manager's hook files, and `git config --get core.hooksPath` resolves to
+the manager's own hooks directory (not empty). This is activation
 guidance only; the adopter default stays opt-in **off**.
 
 ## Optional — run idd-doctor as a CI health gate
@@ -251,10 +238,12 @@ guidance only; the adopter default stays opt-in **off**.
 Running `idd-doctor` in CI catches repository-health regressions
 (config/schema drift, unresolved placeholders, marker-prefix
 inconsistency, missing required files) on every change. It is opt-in —
-add a workflow such as one of the profile-specific examples below,
-matching the repository's confirmed helper-runtime profile.
-
-**`vendored-node`** — the helper bundle is copied into `scripts/`:
+add a workflow matching the repository's confirmed helper-runtime
+profile. Every profile shares the same trigger, permissions, and
+checkout step below; only the steps that run the helper differ, shown
+per profile beneath it — indent each profile's step list to match the
+`- uses: actions/checkout@v4` step above (formatters strip the
+standalone snippets below back to column 0):
 
 ```yaml
 name: IDD doctor health gate
@@ -272,10 +261,16 @@ jobs:
         with:
           ref: ${{ github.sha }} # detached HEAD keeps the worktree check inert
           persist-credentials: false
-      - run: node scripts/idd-doctor.mjs
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_ENTERPRISE_TOKEN: ${{ github.token }}
+      # <helper-invocation-steps> -- paste your profile's steps here
+```
+
+**`vendored-node`** — the helper bundle is copied into `scripts/`:
+
+```yaml
+- run: node scripts/idd-doctor.mjs
+  env:
+    GH_TOKEN: ${{ github.token }}
+    GH_ENTERPRISE_TOKEN: ${{ github.token }}
 ```
 
 **`package-manager`** — the helper ships as an installed
@@ -285,31 +280,16 @@ invoke commands for npm or yarn equivalents if the repository uses a
 different package manager:
 
 ```yaml
-name: IDD doctor health gate
-on:
-  pull_request:
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read
-jobs:
-  idd-doctor:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }} # detached HEAD keeps the worktree check inert
-          persist-credentials: false
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.x
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec idd-doctor
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_ENTERPRISE_TOKEN: ${{ github.token }}
+- uses: pnpm/action-setup@v4
+- uses: actions/setup-node@v4
+  with:
+    node-version: 24.x
+    cache: pnpm
+- run: pnpm install --frozen-lockfile
+- run: pnpm exec idd-doctor
+  env:
+    GH_TOKEN: ${{ github.token }}
+    GH_ENTERPRISE_TOKEN: ${{ github.token }}
 ```
 
 **`ephemeral-npx`** — no helper files or `devDependency` are vendored;
@@ -319,28 +299,13 @@ other helper invocations use (see
 [Onboarding Reference — Policy Decisions](policy-decisions.md#helper-runtime-profile)):
 
 ```yaml
-name: IDD doctor health gate
-on:
-  pull_request:
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read
-jobs:
-  idd-doctor:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }} # detached HEAD keeps the worktree check inert
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.x
-      - run: npx --yes --package <reviewed-helper-spec> idd-doctor
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_ENTERPRISE_TOKEN: ${{ github.token }}
+- uses: actions/setup-node@v4
+  with:
+    node-version: 24.x
+- run: npx --yes --package <reviewed-helper-spec> idd-doctor
+  env:
+    GH_TOKEN: ${{ github.token }}
+    GH_ENTERPRISE_TOKEN: ${{ github.token }}
 ```
 
 Both the extra `permissions:` scopes and a host-matching token are
@@ -359,45 +324,34 @@ it keeps warning even with these scopes added.
 
 **Setting `GH_TOKEN` and `GH_ENTERPRISE_TOKEN` together.** `gh`'s
 environment-variable auth resolution is host-scoped (`gh help
-environment`): `GH_TOKEN`/`GITHUB_TOKEN` apply only when a command
-targets `github.com` or a `ghe.com` subdomain, while a self-hosted
-GitHub Enterprise Server (GHES) host reads
-`GH_ENTERPRISE_TOKEN`/`GITHUB_ENTERPRISE_TOKEN` instead. `gh` only
-reads the variable that matches its resolved host, so the three
-examples above set both — harmless on `github.com` and additive on
-GHES — instead of branching per host. If you copy one of these
-examples onto a GHES-hosted repository, keep both lines rather than
-deleting `GH_ENTERPRISE_TOKEN` as apparently redundant (preventive; no
-observed incident yet).
+environment`): `GH_TOKEN`/`GITHUB_TOKEN` apply only on `github.com` or a
+`ghe.com` subdomain, while a self-hosted GitHub Enterprise Server (GHES)
+host reads `GH_ENTERPRISE_TOKEN`/`GITHUB_ENTERPRISE_TOKEN` instead. `gh`
+only reads the variable matching its resolved host, so the three
+examples above set both — harmless on `github.com`, additive on GHES —
+instead of branching per host. Keep both lines on a GHES-hosted
+repository rather than deleting `GH_ENTERPRISE_TOKEN` as apparently
+redundant (preventive; no observed incident yet).
 
 **Setting the token alone is not sufficient by itself on GHES.** `gh
 api`/`gh api graphql` resolve their target host from `GH_HOST`/
 `--hostname` (or the CLI's configured default), not from the
 checked-out repository's Git remote the way `gh pr view`/`gh issue
-edit` do — so on a GHES-hosted repository, an unset `GH_HOST` would
-otherwise send these calls to `api.github.com` using `GH_TOKEN`, with
-`GH_ENTERPRISE_TOKEN` never read at all (observed 2026-08-11, a Codex
-advisory review on
+edit` do — so on GHES, an unset `GH_HOST` would send these calls to
+`api.github.com` using `GH_TOKEN`, never reading `GH_ENTERPRISE_TOKEN`
+at all (observed 2026-08-11, a Codex advisory review on
 [kurone-kito/idd-skill#1959](https://github.com/kurone-kito/idd-skill/pull/1959)).
 `src/scripts/gh-exec.mts`'s shared `ghApiJson`/`ghGraphql` wrappers now
-resolve the correct `--hostname` automatically
-([kurone-kito/idd-skill#1962](https://github.com/kurone-kito/idd-skill/issues/1962)),
-preferring an explicit `GH_HOST` when set (in which case no
-`--hostname` is added — `gh` already resolves it correctly on its
-own) and otherwise, in GitHub Actions, deriving the host from the
-`GITHUB_SERVER_URL` default environment variable (no workflow `env:`
-change needed, and no behavior change at all on `github.com`, where it
-already equals the default host). Outside Actions (a local
-`idd-doctor` run) with neither signal set, they defer to `gh`'s own
-single-authenticated-host default, same as `gh` itself.
-`idd-advisory-convergence` (both the CI-hosted
-required-check workflow and its underlying `advisory-convergence.mts`
-GitHub-API calls) goes through these shared wrappers, so it is covered
-end to end. `idd-doctor.mts`'s own few direct `gh api` call sites do
-not route through `gh-exec.mts` and are **not** covered by this fix —
-a GHES adopter relying on `idd-doctor`'s GitHub-API-backed checks
-(post-merge cleanup backlog, autopilot-suitability) should still treat
-host resolution there as an open gap.
+resolve `--hostname` automatically
+([kurone-kito/idd-skill#1962](https://github.com/kurone-kito/idd-skill/issues/1962)):
+an explicit `GH_HOST` wins when set, otherwise Actions derives the host
+from `GITHUB_SERVER_URL` (no behavior change on `github.com`), and
+outside Actions they defer to `gh`'s own single-authenticated-host
+default. `idd-advisory-convergence` goes through these wrappers end to
+end; `idd-doctor.mts`'s own direct `gh api` call sites do **not**, so a
+GHES adopter relying on its GitHub-API-backed checks (post-merge
+cleanup backlog, autopilot-suitability) should still treat host
+resolution there as an open gap.
 
 This gate checks repository **health**, not the disposable-worktree rule:
 CI cannot detect a primary-worktree B1 violation (it leaves no trace in
@@ -423,156 +377,159 @@ workflow turns "Copilot's review converged on the current PR HEAD" from
 an instruction the execution model must choose to honor into a
 status check GitHub itself can enforce. It is opt-in — the template
 already mirrors the workflow at
-[`idd-template/.github/workflows/idd-advisory-convergence.yml`](../../.github/workflows/idd-advisory-convergence.yml)
+[`idd-template/.github/workflows/idd-advisory-convergence.yml`](https://github.com/kurone-kito/idd-skill/blob/v0.14.0/idd-template/.github/workflows/idd-advisory-convergence.yml)
 and its comment-refresh companion
-[`idd-template/.github/workflows/idd-advisory-convergence-comment.yml`](../../.github/workflows/idd-advisory-convergence-comment.yml);
-copy both files into your repository's `.github/workflows/` to
-enable it. Register only the required job id
-`idd-advisory-convergence` as a status check — the companion is
-non-required. They are not wired in automatically by importing the
-rest of `idd-template/`, since adding a new required-status-check-able
-workflow is a deliberate adopter decision, not a default.
+[`idd-template/.github/workflows/idd-advisory-convergence-comment.yml`](https://github.com/kurone-kito/idd-skill/blob/v0.14.0/idd-template/.github/workflows/idd-advisory-convergence-comment.yml);
+copy both files into `.github/workflows/`, then register only the required
+job id `idd-advisory-convergence` — the companion is non-required.
+Importing does not register required checks.
+The probe is not imported by default; copy
+`idd-advisory-convergence-probe.yml` there only if needed.
 
-Adjust the command to your helper-runtime profile, and the
-`actions/checkout` version if needed — the mirrored file intentionally
-uses the floating `@v4` form. The shipped runner default is
-`ubuntu-slim`; override it via the `runner` workflow input or the
-`CI_RUNNER_LABEL` repository variable (Settings > Secrets and
-variables > Actions > Variables) rather than hand-editing `runs-on`.
-Setting a self-hosted label is **required**, not optional, on GitHub
-Enterprise Server, which does not support GitHub-hosted runners at
-all — the same override also covers any organization that mandates
-self-hosted runners even on github.com/GHEC. This
-source repository's own copy at
-`.github/workflows/idd-advisory-convergence.yml` instead pins a
-specific `actions/checkout` SHA and hardcodes a custom runner label,
-which is appropriate for its own hardened, dogfooded CI but not a
-requirement for adopters. This workflow is read-only: it never mutates GitHub
-state, only queries the GitHub API for reviews, review threads, and
-waiver markers. `issues: read` is required in addition to
-`pull-requests: read` because the helper reads the PR's own
-conversation comments via the issue-comments REST endpoint, which
-GitHub gates under the Issues permission category even when the issue
-number is a pull request.
+Adjust commands for your helper-runtime profile; the template uses
+floating `@v4`. Its runner defaults to `ubuntu-slim`; choose a `runner`
+input or `CI_RUNNER_LABEL` variable instead. GHES and orgs requiring
+self-hosted runners need a self-hosted label. This repo's copy pins
+checkout and uses a custom runner; adopters need neither. The workflow
+reads reviews, threads, waiver markers and PR comments. GitHub gates its
+issue-comment endpoint on `issues: read`, alongside
+`pull-requests: read`.
 
-**Protect the workflow definition with CODEOWNERS.** A
-`pull_request`-triggered workflow runs its definition from the pull
-request's synthetic merge commit/ref before any job step can perform the
-trusted `main` checkout. That checkout protects the helper and
-configuration that the job runs, but it cannot protect a workflow
-definition changed in the pull request. This is preventive guidance; no
-observed incident is being claimed here.
+### Waiver probe
+
+Optional, non-required. Copy `idd-advisory-convergence-probe.yml` to
+`.github/workflows/idd-advisory-convergence-probe.yml` on the default
+branch. `issue_comment` runs the default-branch copy.
+
+Post this on the target PR:
+
+```text
+/idd-probe-token-scopes
+```
+
+New PR comments by `OWNER`, `MEMBER`, or `COLLABORATOR` run; plain-issue
+comments, edits, other text, other casing, and other associations do not. It
+gets PR number and repo from the event. No ref input, checkout, PR code,
+comment write, or required-gate change occurs.
+
+`closingIssuesReferences` needs an Actions check, legacy status, and linked
+issue. Permissions:
+
+| Read scope            |
+| --------------------- |
+| `contents: read`      |
+| `issues: read`        |
+| `pull-requests: read` |
+| `actions: read`       |
+| `checks: read`        |
+| `statuses: read`      |
+
+Success confirms this run's token access here. Denied reads point to token or
+Actions settings. `issues: read` covers
+`closingIssuesReferences`. Public success does not prove private access; test
+privately. Waiver writes need `issues: write` and `pull-requests: write`;
+the probe has neither.
+
+**Protect the required workflow definition with CODEOWNERS.** A
+`pull_request`-triggered workflow runs its definition from the PR's
+synthetic merge ref before any job step can perform the trusted `main`
+checkout, so that checkout protects the helper and config the job runs
+but not the workflow definition itself changed in the PR (preventive
+guidance; no observed incident is being claimed here).
 
 Add CODEOWNERS coverage for the workflow and for the active CODEOWNERS
-file itself. GitHub searches for `CODEOWNERS` in `.github/`, the
-repository root, then `docs/`, so add the self-ownership entry at the
-location that is active. For example, with `.github/CODEOWNERS`:
+file itself. GitHub searches `.github/`, the repository root, then
+`docs/`, in that priority order — add the self-ownership entry wherever
+the active file lives. For example, with `.github/CODEOWNERS`:
 
 ```text
 /.github/workflows/idd-advisory-convergence.yml @maintainer-user
 /.github/CODEOWNERS @maintainer-user
 ```
 
-Replace `@maintainer-user` with an eligible non-author maintainer who has
-write access. For a team, use the full `@organization/team-name` form;
-the team must be visible and have explicit write access. The autonomous
-pre-merge helper currently resolves direct user owners, not team
-membership, so a team-only owner can leave Code Owner approval ambiguous;
-use a direct user owner for autonomous merging or plan for a human merge
-until team-membership resolution is supported (preventive; no observed
-incident yet). An approval from the PR author does not count toward
-required review or Code Owner gates, so choose a separate eligible owner
-or document the intended reviewer or ruleset-bypass topology.
+Replace `@maintainer-user` with an eligible non-author maintainer who
+has write access. For a team, use the full `@organization/team-name`
+form; the team must be visible and have explicit write access. The
+autonomous pre-merge helper resolves direct user owners only, so a
+team-only owner leaves Code Owner approval ambiguous (use a direct
+owner for autonomous merging, or plan for a human merge until team
+resolution is supported; preventive, no observed incident yet). The
+PR author's own approval never counts toward required review or Code
+Owner gates. An approval
+from an owner of some other changed path can satisfy a repository-wide
+Code Owner review without that owner having resolved for the protected
+paths — keep every possible owner within the same trust boundary, or
+add a gate that verifies the approval specifically covers the protected
+paths (preventive; no observed incident yet).
 
-CODEOWNERS can nominate owners for other changed paths as well; an
-approval from one of those owners can satisfy a repository-wide Code Owner
-review without proving that the owner resolved for the protected workflow
-or input paths approved. Keep every owner reachable through those changed
-paths within the same trust boundary, or require a gate that verifies
-approval from the owner resolved for the protected paths (preventive; no
-observed incident yet).
-
-Place these protection entries after broader or overlapping patterns. When
-extending the file, move them after any new rule that also matches these
-paths; CODEOWNERS uses the last matching rule. If the active file is
-`/CODEOWNERS` or
-`/docs/CODEOWNERS`, also add ownership entries for every higher-priority
-supported location that could replace it (`/.github/CODEOWNERS`, and for
-`/docs/CODEOWNERS`, `/CODEOWNERS` as well) (preventive; no observed
-incident yet).
-
-For every candidate location that an adopter may activate, copy the
-complete workflow, broad-workflow, trusted-input, and active-CODEOWNERS
-protection set into that candidate file before introducing it. Put its
-self-ownership entry in that same complete set:
-`/.github/CODEOWNERS @maintainer-user` in `.github/CODEOWNERS`,
-`/CODEOWNERS @maintainer-user` in the repository-root file, and
-`/docs/CODEOWNERS @maintainer-user` in the docs file, where each file is
-used. A higher-priority file becomes active as soon as it exists, so a
-candidate containing only its self-entry would replace the lower-priority
-file and drop the workflow or trusted-input protections. Perform this
-complete preparation in the trusted preliminary change as well, and keep
-each self-ownership entry after overlapping rules in its own file
+**Placement and coverage.** CODEOWNERS uses the **last** matching
+rule, so place these protection entries after any broader or
+overlapping pattern, and re-place them whenever the file is extended.
+If the active file is `/CODEOWNERS` or `/docs/CODEOWNERS`, also add the
+same entries to every higher-priority location that could later replace
+it (`/.github/CODEOWNERS`, and for `/docs/CODEOWNERS`, `/CODEOWNERS`
+too) — prepare the **complete** protection set (workflow, broad
+`/.github/workflows/`, trusted-input paths, and active-CODEOWNERS
+self-entry) in each candidate location before introducing it, not just
+its self-entry, since a higher-priority file becoming active would
+otherwise silently drop the others' protections. Do this preparation in
+the same trusted preliminary change that establishes the active file
 (preventive; no observed incident yet).
 
 Establish the active CODEOWNERS file and the **Require review from Code
-Owners** setting in a trusted preliminary change before introducing this
-workflow or registering its required check. If bootstrapping both in one
-PR is unavoidable, require equivalent explicit maintainer validation;
-GitHub evaluates CODEOWNERS from the base branch when it requests
-reviews, so a new CODEOWNERS file in the same PR cannot protect that
-bootstrap change (preventive; no observed incident yet).
+Owners** setting in that trusted preliminary change, before introducing
+this workflow or registering its required check — GitHub evaluates
+CODEOWNERS from the base branch when requesting reviews, so a new
+CODEOWNERS file added in the same PR cannot protect that bootstrap
+change itself. If bootstrapping both in one PR is unavoidable, require
+equivalent explicit maintainer validation instead (preventive; no
+observed incident yet).
 
-Also protect every trusted input that the workflow checks out from
-`main`, not only the workflow file — for example `/.github/idd/`,
-`/scripts/advisory-convergence.mjs`, and its transitive runtime inputs
-(or an immutable protected artifact). The exact set depends on the
-adopter's imports; inspect the workflow and helper before finalizing
-the entries. The current PR run cannot be weakened by PR copies of
-these paths because it checks out `main`, but later runs would trust
-them after merge (preventive; no observed incident yet).
-
-Also review repository or organization variables that select the runner,
-such as `CI_RUNNER_LABEL`, together with self-hosted runner administration
-and runner integrity. Require an equivalent protected trust boundary for
-any self-hosted runner label (preventive; no observed incident yet).
-
-Before enabling the required check, either pin every action used by this
-merge gate to a verified full commit SHA, or explicitly accept and record the
-action publishers and tag-movement trust scope for any mutable references.
-The shipped workflow's `@v4` references are portable examples only; do not
-treat CODEOWNERS as sufficient protection for mutable action references
+Beyond the workflow file, also protect every trusted input it checks
+out from `main` — for example `/.github/idd/`,
+`/scripts/advisory-convergence.mjs`, and their transitive runtime
+inputs (the exact set depends on the adopter's imports; inspect the
+workflow and helper before finalizing) — plus any repository or
+organization variable that selects the runner (`CI_RUNNER_LABEL`)
+together with self-hosted runner administration and integrity. The
+current PR run is unaffected by PR-local copies of these paths, since
+it checks out `main`, but a later run would trust them post-merge
 (preventive; no observed incident yet).
 
-Protect `/.github/workflows/` (or `/.github/`) regardless of whether
-the required check uses `app_id: -1` or a producer-pinned Actions
+Before enabling the required check, either pin every action this gate
+uses to a verified full commit SHA, or explicitly accept and record the
+publisher and tag-movement trust scope for any mutable reference — the
+shipped workflow's `@v4` pins are portable examples only, and
+CODEOWNERS alone does not protect a mutable action reference
+(preventive; no observed incident yet).
+
+Protect `/.github/workflows/` (or `/.github/`) broadly regardless of
+whether the required check uses `app_id: -1` or a producer-pinned
 integration, unless that integration is dedicated exclusively to this
-check. An `app_id` identifies an integration, not an individual
-workflow, so broad workflow ownership remains necessary to prevent
-another workflow from emitting the same required-check name under the
-accepted integration (preventive; no observed incident yet). For
-`app_id: -1` (any producer), a single-file
-rule does not bind the check to that workflow. A credential holder with
-`statuses: write` or `checks: write` can still publish that name
-directly; CODEOWNERS covers workflow-file changes only (preventive; no
-observed incident yet). Either explicitly trust every credential that
-can publish checks, or use a producer-pinned required check with a
-specific integration `app_id`
-after verifying that IDD can read and enforce that topology. A ruleset
-`workflows` rule is not a drop-in source-bound alternative here
-(preventive; no observed incident yet): IDD
-cannot correlate its unnamed result to a check run and will keep CI
-unresolved, so plan for a human merge or hold until the runtime supports
-it. Then enable **Require review from Code Owners** on the protected
-default branch, or the equivalent repository-ruleset requirement, and
-enable **Dismiss stale pull request approvals when new commits are
-pushed** (or its equivalent) so approval applies to the workflow
-revision that will merge. Without those settings, CODEOWNERS only
-requests or routes a review and does not make approval a merge gate.
-The [dry-run — Readiness assessment](https://github.com/kurone-kito/idd-skill/blob/main/idd-template/ONBOARDING.md#dry-run--readiness-assessment)
+check — an `app_id` identifies an integration, not one workflow, so
+another workflow under the same accepted integration could still emit
+the identical required-check name (preventive; no observed incident
+yet). Under `app_id: -1` (any producer), a single-file rule does not
+bind the check to this workflow either: any credential with
+`statuses: write` or `checks: write` can publish that name directly,
+and CODEOWNERS only covers workflow-file changes (preventive; no
+observed incident yet). Either explicitly trust every credential able
+to publish checks, or switch to a producer-pinned required check with a
+specific `app_id` once verified that IDD can read and enforce that
+topology — a ruleset `workflows` rule is not a drop-in substitute here,
+since IDD cannot correlate its unnamed result to a check run and CI
+would stay unresolved; plan for a human merge or hold until supported
+(preventive; no observed incident yet).
+
+Then enable **Require review from Code Owners** on the protected
+default branch (or the equivalent ruleset requirement) together with
+**Dismiss stale pull request approvals when new commits are pushed**,
+so approval always applies to the revision that actually merges —
+without both settings, CODEOWNERS only routes a review request rather
+than gating merge. The [dry-run — Readiness assessment](https://github.com/kurone-kito/idd-skill/blob/v0.14.0/idd-template/ONBOARDING.md#dry-run--readiness-assessment)
 report's `CODEOWNERS present` item checks only that a CODEOWNERS file
-exists; it does not verify workflow-path coverage, producer binding, or
-these required-review settings (preventive; no observed incident yet).
+exists, not path coverage, producer binding, or these review settings
+(preventive; no observed incident yet).
 
 **Trusted-code checkout.** The checkout step pins `ref: main` (adjust
 if your default branch differs) rather than the PR's own head, for
@@ -586,55 +543,47 @@ drives every live GitHub API call the script makes (reviews, threads,
 comments), independent of what is checked out locally, so pinning the
 checkout to the trusted branch costs nothing functionally.
 
-Two automatic trigger types keep the required verdict current:
-`pull_request` for the normal push case, and `pull_request_target` as
-its tamper-resistant counterpart (see Trusted-code checkout above --
-a same-repository PR cannot edit `pull_request_target`'s own copy of
-this workflow file, unlike `pull_request`). Review-thread comments are
-**not** on that required job, and neither is Copilot's review
-submission (`pull_request_review`) — both instead refresh the
-existing HEAD-associated required run from the non-required companion
-`idd-advisory-convergence-comment.yml` workflow: an IDD-originated
-comment (a disposition prefix, the reply-identity stamp, or an
-operational marker the check already honors) calls
-`rerun-advisory-convergence --apply`, while a review submission calls
-`rerun-advisory-convergence --refresh-latest --apply` instead — a
-review needs a fresh evaluation even if the gate is already green or
-its rerun-once budget is already spent, which the plain `--apply`
-path does not provide. Neither call reports `ready` itself. Ordinary
-human prose (`LGTM`) does not create or
-cancel the required check.
+Only `pull_request_target` triggers the verdict now:
+evaluated against the base branch's copy, so a same-repository PR
+cannot edit its own copy to force the check green (see Trusted-code
+checkout above). A PR that first adds this workflow gets no run --
+register the check only once it exists on the default branch.
+Likewise, a PR that adds a permission scope to the
+`idd-advisory-convergence-self-waiver` job is judged by the base copy,
+which lacks it, so that job can be red on it; see
+[the self-referential-bootstrap-auto section](../idd-helper-scripts.md#automated-self-referential-bootstrap-auto-waiver-kurone-kitoidd-skill2657).
+Review-thread comments and Copilot's review submission
+(`pull_request_review`) are **not** on that required job — both
+instead refresh the existing HEAD-associated required run via the
+non-required companion `idd-advisory-convergence-comment.yml`
+workflow: an IDD-originated comment (a disposition prefix, the
+reply-identity stamp, or an operational marker the check already
+honors) calls `rerun-advisory-convergence --apply`, while a review
+submission calls `rerun-advisory-convergence --refresh-latest --apply`
+instead — a review needs a fresh evaluation even when the gate is
+already green or its rerun-once budget is spent, which plain `--apply`
+does not provide. Neither call reports `ready` itself, and ordinary
+human prose (`LGTM`) does not create or cancel the required check.
 
-A thread being resolved or unresolved via the "Resolve conversation"
-button (`pull_request_review_thread`) is a real GitHub webhook event,
-but it is **not** one of the events GitHub Actions supports as a
-workflow `on:` trigger — including it makes the whole workflow file
-fail GitHub's schema validation (confirmed both against GitHub's own
+A thread resolved or unresolved via the "Resolve conversation" button
+(`pull_request_review_thread`) is a real GitHub webhook event, but not
+one GitHub Actions supports as a workflow `on:` trigger — including it
+fails GitHub's schema validation (confirmed both against GitHub's own
 trigger-events reference and empirically). Residual gap: if a
 Copilot-authored thread is resolved or reopened with no accompanying
-comment, push, or fresh Copilot review, this check keeps reporting
-its last computed verdict until a push, a Copilot review, an
-IDD-originated comment refresh, or a maintainer `workflow_dispatch`
-fires.
+comment, push, or fresh Copilot review, the check keeps reporting its
+last computed verdict until a push, a Copilot review, an IDD-originated
+comment refresh, or a maintainer `workflow_dispatch` fires.
 
 **Human-reply retrigger.** A casual human reply used to start the
 required `idd-advisory-convergence` job, fail or cancel the SHA
 verdict, and look like "the reply got linted." That path is now the
 companion comment workflow above, and only IDD-originated comments
-refresh the required run. This is `idd-advisory-convergence`, not
-`lint.yml`.
-The shipped hybrid contract is present-tense: IDD replies carry
-`<!-- {markerPrefix}-review-reply -->` after the visible
-disposition body (this is **not** the E1 `review-watermark`);
-unmarked human replies on human threads are presence-only and do
-not let the owning session post bare prose on its own items;
-Copilot threads still need an IDD disposition;
-`reviewPolicy: human-required` / `no-advisory` makes Copilot clauses
-`not_applicable`. See
-[Hybrid review-reply identity](../idd-review-policy-profiles.md#hybrid-review-reply-identity-shipped).
-Repositories that want human-led or gradual IDD adoption should
-leave the check unregistered until they intend the Copilot-advisory
-loop.
+refresh the required run — this is `idd-advisory-convergence`, not
+`lint.yml`. See [Hybrid review-reply identity](../idd-review-policy-profiles.md#hybrid-review-reply-identity-shipped)
+for the full reply-marking contract governing which comments qualify.
+Repositories that want human-led or gradual IDD adoption should leave
+the check unregistered until they intend the Copilot-advisory loop.
 
 **Register it as a required status check.** Hosting the workflow alone
 does not block merge — a maintainer must separately register
@@ -707,21 +656,13 @@ the snippet unqualified on a branch that already has required checks
 silently drops them, weakening the merge gate to only the newly added
 check.
 
-`app_id: -1` also trades away GitHub's producer-identity enforcement
-for the check it names (preventive; no observed incident yet). It also
-allows any credential with `statuses: write` or `checks: write` to publish
-that literal name. Use it only when the adopter explicitly accepts that
-trust scope and separately protects all workflow paths that could produce
-the name; it is not a blanket recommendation for every required check.
-A producer pin does not identify an individual workflow; keep broad
-workflow ownership unless the integration is dedicated exclusively to
-this check.
-Keep a specific `app_id` pin
-on any check where verifying the producer matters, and opt in to
-`ciGate.trustSourcePinnedRequiredChecks: true` (see the row in
-[Customizing IDD](../customization.md)) instead, once the operator
-has verified out-of-band that the pinned integration is the sole
-producer.
+Choosing `app_id: -1` here carries the same producer-identity trade-off
+already covered under CODEOWNERS above — it is not a blanket
+recommendation for every required check. Keep a specific `app_id` pin
+instead on any check where verifying the producer matters, and opt in
+to `ciGate.trustSourcePinnedRequiredChecks: true` (see the row in
+[Customizing IDD](../customization.md)) once the operator has verified
+out-of-band that the pinned integration is the sole producer.
 
 **Waiver-after-deadline escape path.** `--assert` exits non-zero for
 any not-ready verdict, including the ordinary case where the primary
@@ -740,55 +681,39 @@ That path only exists once `ciGate.externalCheckWaivers.mode` is
 `maintainer-authorized` **and** `idd-advisory-convergence` is itself
 registered under `ciGate.externalChecks.waivable`; enabling waiver mode
 for some other external check never silently makes this one waivable
-too. **Posting the waiver comment alone does not always turn the
-check green**: a PR comment is not one of the **required**
-`idd-advisory-convergence` workflow's own trigger events, and a
-completed run's conclusion never changes on its own. A repository that
-also hosts the companion `idd-advisory-convergence-comment.yml`
-workflow (with its `issue_comment` trigger — as this repository does;
-the workflow itself was added via kurone-kito/setup.windows#124,
-reconciled to add that trigger in kurone-kito/setup.windows#163) gets
-the check refreshed automatically instead: a posted
-maintainer-authorized waiver comment classifies as an IDD-originated
-operational marker and reruns the existing HEAD-associated required
-run through that companion, the same as any other IDD-originated
-regular PR comment — or, for a same-repository PR, an IDD-originated
-review-thread reply (the companion skips that trigger for
-fork-originated PRs, and an ordinary human reply is never
-IDD-originated). If that automatic rerun does not land, re-run the
-**existing** PR-linked required run **for the current HEAD SHA**
-manually instead — the Actions UI "Re-run jobs" button, or
-`gh run rerun <run-id>` — to force it to reflect the waiver.
+too. **Posting the waiver comment does not by itself turn the check
+green**: a PR comment is not one of this workflow's trigger events and
+a completed run's conclusion never changes on its own, so after
+posting the waiver a maintainer must also trigger a new run — push, a
+fresh review, the Actions UI "Re-run jobs" button on the _existing_
+PR-linked run for the **current HEAD SHA**, or `gh run rerun <run-id>`
+on that same run — for the required check to actually reflect it.
 `workflow_dispatch` does **not** reliably do this: a dispatched run has
 no `pull_request` context of its own, so GitHub associates it with the
 dispatch ref rather than the PR's HEAD SHA, and the resulting run's
 conclusion can be invisible to that PR's required-check rollup. See
-[kurone-kito/idd-skill's own dogfooded copy of `.github/workflows/idd-advisory-convergence.yml`](https://github.com/kurone-kito/idd-skill/blob/main/.github/workflows/idd-advisory-convergence.yml)'s
-header comment for the full finding — this deliberately links the
-upstream source repository's copy, not your own vendored workflow
-file: the fuller investigation prose lives only in that dogfooded
-original, and the portable stub this template mirrors at
-`.github/workflows/idd-advisory-convergence.yml` in your own
-repository does not carry it.
+this upstream repository's own dogfooded
+[`.github/workflows/idd-advisory-convergence.yml`](https://github.com/kurone-kito/idd-skill/blob/main/.github/workflows/idd-advisory-convergence.yml)
+header comment for the full finding — the fuller investigation prose
+lives only there, not in the portable stub your own vendored copy
+mirrors.
 
 **The self-waiver provenance artifact is unavailable on GHES.** The
 `idd-advisory-convergence-self-waiver` job's "Upload the posted
 marker's provenance artifact" step pins `actions/upload-artifact` v4+
-(currently `v7.0.1`), which needs the newer Artifacts service backend
-that GitHub Enterprise Server does not support; GHES instead needs the
-`v3.2.2` (or `v3.2.2-node20`) release, itself deprecated on
-github.com. Because the
-self-waiver mechanism fails closed, this never lets a forged waiver
-through on GHES — the upload step simply fails, or produces no
-artifact — but it does mean the self-referential-bootstrap-auto
-mechanism can never actually complete on a GHES-hosted adopter,
-degrading every genuine attempt to "no auto-waiver" and leaving only
-the maintainer-authorized waiver path for every such PR (found by a
-Codex review of kurone-kito/idd-skill#2914 during the
-kurone-kito/idd-skill#2912 fix cycle, 2026-09-11). See
-kurone-kito/idd-skill#2918 for the full tradeoff discussion and the
-rationale for keeping the pinned version rather than adding a
-runner-detection branch.
+(currently `v7.0.1`), needing the newer Artifacts service backend GHES
+does not support; GHES instead needs the `v3.2.2` (or `v3.2.2-node20`)
+release, itself deprecated on github.com. The self-waiver mechanism
+fails closed, so this never lets a forged waiver through — the upload
+step simply fails or produces no artifact — but it does mean the
+self-referential-bootstrap-auto mechanism can never actually complete
+on a GHES-hosted adopter, degrading every genuine attempt to
+"no auto-waiver" and leaving only the maintainer-authorized waiver
+path for every such PR (found by a Codex review of
+kurone-kito/idd-skill#2914 during the kurone-kito/idd-skill#2912 fix
+cycle, 2026-09-11). See kurone-kito/idd-skill#2918 for the tradeoff
+discussion and the rationale for keeping the pinned version rather
+than adding a runner-detection branch.
 
 ## Optional — mark the vendored helper bundle `linguist-vendored`
 
@@ -798,9 +723,13 @@ bundle is third-party code, so marking it `linguist-vendored` drops it
 from your repository's language statistics and de-prioritizes it in code
 search — useful when your own code is mostly docs or another language and
 you do not want the copied `.mjs`/schema files to dominate the language
-bar. (This is the adopter-side counterpart of the source repository's
-`linguist-generated` artifacts; the semantics differ deliberately:
-generated = first-party build output, vendored = copied third-party code.)
+bar. Do **not** mark those copied files `linguist-generated=true`
+(generated = first-party build output; vendored = copied third-party
+code; observed 2026-09-13, issue `#2958`, when
+`template-distribution.md` told adopters to copy the source
+repository's generated-output stanza onto this third-party set). The
+source repository uses `linguist-generated` only for its own built
+`.mjs` artifacts, not for this copied set.
 
 The helper-runtime manifest emits the exact lines from the same
 `managedFiles` import-graph it uses to vend the bundle, so the attribute

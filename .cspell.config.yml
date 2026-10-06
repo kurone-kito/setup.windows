@@ -1,9 +1,15 @@
 allowCompoundWords: true
+cache:
+  cacheFormat: universal
+  cacheLocation: node_modules/.cache/cspell/.cspell.cache
+  cacheStrategy: metadata
+  useCache: true
 dictionaries:
   - cpp
   - en_US
   - en-gb
   - fonts
+  - fullstack
   - git
   - lorem-ipsum
   - markdown
@@ -20,12 +26,16 @@ ignorePaths:
   - .github/CODE_OF_CONDUCT.*
   - .vscode/extensions.json
   - cspell.config.yml
+  - pnpm-lock.yaml
+# Winget product ids are opaque uppercase tokens, not prose.
 ignoreRegExpList:
   - '\b[0-9A-Z]{12,14}\b'
 language: en,ja
 useGitignore: true
 version: "0.2"
 words:
+  # Windows setup vocabulary. The v0.14.0 template word list does not
+  # include these, and dropping them fails this repository's cspell gate.
   - ajeetdsouza
   - antlr
   - aquaproj
@@ -34,7 +44,6 @@ words:
   - chezmoi
   - choco
   - dbrgn
-  - dedup
   - dind
   - dosbox
   - farah
@@ -47,25 +56,18 @@ words:
   - izotope
   - jqlang
   - junegunn
-  - kito
-  - kuron
-  - kurone
-  - kuroné
   - mikefarah
   - mkcert
   - mojang
   - msix
-  - nektos
   - ngrok
   - nvme
-  - nvmrc
   - oldj
   - ollama
   - pixiv
   - pkgs
   - posh
   - psscriptanalyzer
-  - rollup
   - sharkdp
   - slik
   - steamcmd
@@ -75,20 +77,33 @@ words:
   - twpayne
   - unigetui
   - vcredist
-  - vrchat
   - vrcx
   - vroid
   - webp
   - wekyb
   - yazi
-  # IDD workflow terms (imported from upstream idd-skill core template)
+  # IDD terms from the v0.14.0 template, plus local terms the template
+  # no longer lists.
+  - dedup
+  - deinitialized
+  - deprioritize
   - desync
   - desynced
   - dofork
   - esync
   - ghec
   - ghes
+  - idd
   - isort
+  - kiro
+  - kito
+  - kuron
+  - kurone
+  - kuroné
+  - minimizable
+  - ministral
+  - nektos
+  - nvmrc
   - onnx
   - pylint
   - pyproject
@@ -96,11 +111,18 @@ words:
   - qwen
   - remediations
   - resynced
+  - rollup
   - toctou
+  - tsfile
   - undispositioned
   - unioned
+  - unmigrated
+  - unmirrored
   - unpushed
   - unreplied
+  - unrouted
   - unscored
   - unwaived
+  - vrchat
   - waivable
+  - whatwg

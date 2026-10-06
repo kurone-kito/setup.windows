@@ -6,18 +6,18 @@ pushing, PR creation, and waiting for CI.
 
 Before the D1 sync and D2 push, apply the
 [shared claim revalidation gate](idd-overview-core.instructions.md#claim-revalidation-gate).
-`{development-branch}` below is the value resolved in
-`idd-work.instructions.md`'s B1
-[Resolve the development branch](idd-work.instructions.md#b1--create-worktree-with-branch)
-step — re-resolve it here if this file is entered directly (for
-example, on resume) without a fresh B1 pass.
+`{development-branch}` below is the value resolved by
+`idd-work.instructions.md`'s
+[B1 Worktree creation Step 2](idd-work.instructions.md#b1--create-worktree-with-branch)
+— re-resolve it here if this file is entered directly (for example,
+on resume) without a fresh B1 pass.
 
 ## D1 — Sync {development-branch} before first push
 
 If the branch has not been pushed yet, sync it onto `{development-branch}`
 before the first push — the routine pre-publication history cleanup step.
-First run `git fetch origin {development-branch}`, then check whether the
-branch is **already current** with `origin/{development-branch}`: if
+First run `git fetch origin`, then check whether the branch is
+**already current** with `origin/{development-branch}`: if
 `git merge-base HEAD origin/{development-branch}` equals
 `origin/{development-branch}` (behind-count 0), the branch already
 contains every commit on `{development-branch}`, so the rebase would be a
@@ -25,13 +25,12 @@ pure no-op. **Skip the rebase entirely and proceed to D2** — D1's
 pre-publication synchronization goal is already met. In a
 sibling-worktree setup a no-op `git rebase origin/{development-branch}`
 can still detach HEAD at the upstream tip without replaying the local
-commit, and re-running that no-op rebase re-detaches every time, so the
-bounded recovery below cannot converge for the no-op case; skipping it is
-the clean exit.
+commit, and retrying that no-op re-detaches every time, so skip it.
+Post-rebase verification cannot converge for that no-op.
 
 Otherwise the branch **is** behind `origin/{development-branch}`: rebase
 it onto `{development-branch}` (`git rebase origin/{development-branch}`),
-then apply the post-rebase verification and bounded recovery below.
+then apply Post-rebase verification below.
 
 After the first D-phase push, do not reuse D1 as the normal
 synchronization path. Later branch updates should return through the
@@ -58,13 +57,24 @@ to `git` before the subcommand — `git -c … rebase`, not `git rebase -c …`
 — or use a repo alias that wraps any subcommand; a commit-only alias like
 `git commit-ssh` will not run `rebase`),
 **run the initial `git rebase origin/{development-branch}` above
-through that wrapper — not the plain command — and continue it with
-the wrapper's own
-`--continue` form**; the wrapper must own the whole operation. Plain
-`git rebase --continue` re-signs the replayed commit through the
-configured primary signing, which stalls non-interactively right after
-the conflict is already resolved. This is the normal-path complement to
-the recovery-path re-signing in Post-rebase verification below.
+through that wrapper, and continue a staged content conflict with
+the wrapper's own `--continue`**. Plain `git rebase --continue`
+re-signs through primary signing and stalls non-interactively.
+
+Failed write (observed 2026-09-26, issue `#3491`): rebase still in
+progress, the index holds the replay, and the branch tip is still the
+pre-rebase commit, so no commit object was written. No staged content
+conflict: use this path; use wrapper's `--continue` for one. Abort with
+`git rebase --abort` to restore the pre-rebase branch tip, then restart
+the **full** rebase from that branch through the same configured
+fallback wrapper's `rebase origin/{development-branch}` form. The
+wrapper may be the explicit SSH `-c` form or a repository alias. This
+replays the
+complete pre-rebase commit range, including every earlier commit in a
+stack; do not replace it with a cherry-pick of only one commit. Do not
+run `git commit --amend -S` or `git commit --amend '-S'`, including
+when Git prints that hint. Post-rebase verification below covers a finished
+rebase with HEAD detached at the upstream tip.
 
 ### Post-rebase verification
 
@@ -80,22 +90,13 @@ D2, verify both:
    origin/{development-branch}..HEAD` lists it) — `origin/`-prefixed
    since a local `{development-branch}` branch may not exist.
 
-If HEAD is detached (current branch empty), **auto-recover once**: re-attach
-to the claimed branch with `git checkout {branch-name}` (the local commit is
-preserved on the branch ref), re-run the D1 rebase, then re-verify both
-checks. The re-rebase re-signs through the configured commit-signing path —
-do not hardcode an ad-hoc key. On the signed-commit repos in the rebase
-note above, run the re-rebase through that same fallback wrapper (the
-repo's blessed fallback, not an ad-hoc pin), since the plain re-rebase
-would stall on the non-interactive primary signing. If
-recovery still fails (HEAD still detached or the
-expected commit absent), post a hold note documenting the branch state and
-stop; do not push.
-
-This is the same divergence the shared
-[claim revalidation gate](idd-overview-core.instructions.md#claim-revalidation-gate)
-catches at the next mutation (current branch ≠ claimed branch); detecting it
-here turns a confusing later failure into an immediate, recoverable signal.
+If HEAD is detached, **auto-recover once**: `git checkout {branch-name}`
+(the commit stays on the branch ref), then re-run the D1 rebase through
+the configured signing path. Use the fallback wrapper above when
+primary signing is non-interactive-hostile; otherwise use the repo's
+normal signing path, not an ad-hoc key. Re-verify both checks. If HEAD
+is still detached or the expected commit is absent, post a hold note
+naming the branch state and stop; do not push.
 
 ## D2 — Verify claim, lint, test, push
 
@@ -108,22 +109,22 @@ here turns a confusing later failure into an immediate, recoverable signal.
    (E2E tests are verified by CI; do not run them locally.)
 
    The same conservative scoping discretion as post-fix re-validation
-   (`idd-ci.instructions.md`'s Wake-up discipline) applies here: skip an
-   individual command in the chain only when the diff's changed paths
-   provably fall entirely outside that command's input surface, never
-   as a default shortcut. Run the full chain whenever that exclusion
-   cannot be established.
-3. Push the branch to the remote. On the first publication push, use a
-   normal push. If you are recovering an already-published branch under
-   an explicit force-push exception, use `--force-with-lease` only when
-   repository policy permits it and the exceptional route already
-   required a rebase; otherwise stop and return to the merge-based sync
-   path.
+   (`idd-ci.instructions.md`'s Wake-up discipline) applies here: skip a
+   command in the chain only when the diff's changed paths provably
+   fall entirely outside that command's input surface, never as a
+   default shortcut. Run the full chain whenever that exclusion cannot
+   be established.
+3. Push the branch. On the first publication push, run
+   `git push -u origin {branch-name}`. If you are recovering an
+   already-published branch under an explicit force-push exception, use
+   `--force-with-lease` only when repository policy permits it and the
+   exceptional route already required a rebase; otherwise stop and
+   return to the merge-based sync path.
 
 Once the branch is pushed, treat it as published review history. A PR
-that is merely `BEHIND` does not force a branch update by itself unless
-branch protection or explicit repository policy requires an up-to-date
-head before merge.
+that is merely `BEHIND` does not force a branch update unless branch
+protection or explicit repository policy requires an up-to-date head
+before merge.
 
 ### Adding a new CI job
 
@@ -218,8 +219,10 @@ template's sections when one exists:
 must never call `gh issue create` (or the REST issues API) itself.
 Recommended follow-ups stay in the PR body's own prose above. If a
 follow-up is important enough to file in-repo now, invoke the
-`issue-authoring` skill (its Stage 1 hold) instead of improvising a
-body. Do not add a parallel "worker-lite authoring" contract.
+`issue-authoring` skill (its Stage 1 hold; when the published body
+carries the `review-fix-loop-cutoff` defer-source marker, continue
+at once to that skill's Stage 2 narrow auto-release exception)
+instead of improvising a body. Do not add a parallel "worker-lite authoring" contract.
 
 ### Live-operator-directed immediate-fix carve-out
 
@@ -474,65 +477,67 @@ completion.
 
    - **An extra entry** (a `closingIssuesReferences` issue outside the
      deliberate set) is most often the negation-blind false-positive
-     documented above, where an unrelated `#M` reference ends up
-     adjacent to a recognized keyword elsewhere in the body. Edit the
-     PR body to separate the keyword from that `#M` reference.
-   - **A missing entry** (a deliberate multi-issue-close target absent
-     from `closingIssuesReferences`) means its keyword did not
-     register — apply the same edit-and-recheck path as step 4 for
-     that issue number.
+     documented above (an unrelated `#M` adjacent to a recognized
+     keyword elsewhere in the body). Edit the PR body to separate the
+     keyword from that `#M` reference.
+   - **A missing entry** (a deliberate closing target absent from
+     `closingIssuesReferences`) whose keyword matches step 3's regex for
+     that number, on a PR whose `createdAt` (`gh pr view <pr-number>
+     --json createdAt`) is under 4 hours before now (UTC), is GitHub's
+     asynchronous registration (`kurone-kito/idd-skill#3632`), not a
+     body defect: do not edit the body, toggle draft, or close and
+     reopen; continue to D4 and poll `closingIssuesReferences` the same
+     way while F2's `closing-set` gate waits. Otherwise (keyword absent,
+     or the entry still missing at 4 hours) apply step 4's
+     edit-and-recheck path, re-placing the keyword line.
 
-   Repeat this step once after either fix. If it still fails, post a
-   hold note on the issue citing the PR URL and stop. Do not proceed to
-   D4.
+   Repeat this step once after any edit. If it still fails (pending
+   registration excepted), post a hold note on the issue citing the PR
+   URL and stop. Do not proceed to D4.
 
 7. **Scan the branch's own commit messages**: GitHub's merge-time
-   closing-keyword scan also reads commit messages (subject and body),
-   not only the PR body, so a stray keyword there can auto-close an
-   issue outside the deliberate set even when the PR body is clean.
-   List the branch's own commits, using a visible delimiter rather
-   than a NUL byte so common terminals and search tools don't treat
-   the output as binary:
+   closing-keyword scan reads commit subjects and bodies as well as the
+   PR body. List them with a visible delimiter, then apply step 3's
+   keyword regex to any issue number:
 
    ```sh
    git log origin/{development-branch}..HEAD --pretty=format:'%H%n%B%n===commit-boundary==='
    ```
 
-   For each commit's full message, search using step 3's same keyword
-   alternation, generalized to any issue number instead of the fixed
-   `<N>`:
-
    ```text
    (?im)\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\s+#(\d+)\b
    ```
 
-   A match against any issue number in the deliberate closing set from
-   D3 is expected (deliberate — this covers both the single-issue `<N>`
-   case and "Multiple closing issues" above); only a captured number
-   **outside** that set is a stray commit-message close.
+   Numbers in D3's deliberate closing set are expected; any other
+   number is a stray commit-message close. When rewording a stray match,
+   use `git commit --amend` for the tip or an interactive rebase for an
+   earlier commit. Preserve merge commits with `--rebase-merges`, and
+   use the D1 signing wrapper (including its continuation) when primary
+   signing is non-interactive-hostile. Force-push with
+   `--force-with-lease` only when repository policy permits it; otherwise
+   hold. Amend before merge, repeat this step once, and if the match
+   remains, post a hold note on the issue citing the PR URL and stop
+   before D4.
 
-   **On a stray match**: amend the offending commit (`git commit
-   --amend` for the tip commit, or an interactive rebase for an
-   earlier one) using the same safe reordering as the Mirror
-   false-positive example above. If the branch already carries a merge
-   commit (for example, from an E-phase `{development-branch}` sync), rebase with
-   `--rebase-merges` instead of a plain interactive rebase, so the
-   merge and its recorded conflict resolution aren't silently
-   linearized or dropped. On a signed-commit repo whose primary
-   signing is non-interactive-hostile, run the amend or rebase through
-   the same D1 fallback-signing wrapper noted above, including any
-   rebase continuation — the plain command can stall the same way D1
-   already documents. Then force-push the correction (`git push
-   --force-with-lease`) only when repository policy permits
-   force-pushing a published branch, mirroring D2's own force-push
-   restriction; if it does not, hold for operator intervention instead
-   of rewriting published history. **Amend before merge** — this scan
-   runs at merge time, so the fix must land before the PR merges; a
-   commit message caught only after merge cannot be amended, and
-   recovery requires reopening the affected issue by hand. Repeat this
-   step once after the amendment. If it still finds a stray match,
-   post a hold note on the issue citing the PR URL and stop. Do not
-   proceed to D4.
+   **Scripted-rebase hazards**: `rebase.abbreviateCommands=true` can
+   make a non-interactive todo list use `p`/`r` instead of
+   `pick`/`reword`; check `git config --get rebase.abbreviateCommands` or
+   match both forms. Disable `rebase.updateRefs` process-wide so an
+   inner rebase launched by a signing wrapper cannot move a safety
+   backup or sibling branch:
+
+   ```sh
+   GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=rebase.updateRefs \
+   GIT_CONFIG_VALUE_0=false GIT_SEQUENCE_EDITOR='...' git rebase -i ...
+   ```
+
+   An outer `-c rebase.updateRefs=false` may not reach that subprocess.
+   After any scripted reword or rebase, verify that the target message
+   changed and rerun the stray-keyword scan; do not trust only the exit
+   status or `Successfully rebased` text.
+
+   These hazards were observed while recovering [PR #3431](https://github.com/kurone-kito/idd-skill/pull/3431)
+   for issue #3285; the field report is tracked in issue #3552.
 
    **Re-run before merge**: this scan only covers commits present at
    D3.5 time. Later branch commits — accepted review fixes
@@ -631,15 +636,15 @@ confirmed condition above. Delegate polling mechanics to
   [canonical `advisory-wait-state`
   invocation](idd-advisory-wait.instructions.md#1-canonical-path-helper-first)
   for this PR first and read `outcome`: only `REQUEST_NEEDED` triggers
-  new action here, and it splits on `copilotPending`. When `false`,
-  request a review now and post the same-head `advisory-wait:` marker
-  in the same step (helper-first: the profile-selected
-  `post-idd-marker` command per **AW3-R**, which documents
-  `--type advisory` as this same request-marker form), matching E14's
-  `REQUEST_NEEDED`
-  marker step — without it, `requestMarkerCount` never advances and
-  every resumed D4 pass reads `REQUEST_NEEDED` again instead of
-  progressing toward the cap. When `copilotPending` is `true` instead
+  new action here, and it splits on `copilotPending`. When `false`, exit
+  CI-wait and request a review now by entering E14's guarded registration
+  procedure directly. Its status-0 branch must immediately rerun the final
+  claim/HEAD gate and post the same-head `advisory-wait:` marker with the
+  profile-selected marker command using `--type advisory`; statuses 1/2/3
+  stop without a marker. D4 must not inline or separately repeat those
+  calls; this covers the no-review-items case without a silent-success
+  marker.
+  When `copilotPending` is `true` instead
   (a pending reviewer with unproven HEAD coverage and no same-head
   marker), this is **AW3-S**'s own pending entry — the fuller
   remove/re-request cycle this bullet does not reimplement — exit
