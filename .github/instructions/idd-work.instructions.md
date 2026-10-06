@@ -100,8 +100,8 @@ repository root. Compute the path as
 `../<repo-name>.<normalized-branch>` where `<normalized-branch>` is the
 branch name with every `/` replaced by `-`.
 
-Example: repo `kurone-kito/setup.windows`, branch `issue/123-add-foo` → path
-`../kurone-kito/setup.windows.issue-123-add-foo`.
+Example: repo `setup.windows`, branch `issue/123-add-foo` → path
+`../setup.windows.issue-123-add-foo`.
 
 **Harness-native worktree tools**: an agent harness's own worktree
 primitive (e.g. Claude Code's `EnterWorktree`) is a third path outside
