@@ -169,7 +169,7 @@ jobs:
           # content classification.
           COMMENT_BODY: ${{ github.event.review.body || github.event.comment.body }}
         run: |
-          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/ae16f497434a5023dfaa28f965fc2af92ebf055d \
             idd-review-comment-origin
       - name: Check for newer qualifying event
         id: debounce
@@ -204,7 +204,7 @@ jobs:
           # this is safe for the created-event case too.
           TRIGGERED_AT: ${{ github.event.comment.updated_at || github.event.comment.created_at }}
         run: |
-          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/ae16f497434a5023dfaa28f965fc2af92ebf055d \
             idd-advisory-comment-debounce --pr "$PR_NUMBER" --triggered-at "$TRIGGERED_AT"
       - name: Rerun required HEAD check
         # The explicit `success() &&` on the comment-family branch is
@@ -241,5 +241,5 @@ jobs:
           fi
           # shellcheck disable=SC2086 # REFRESH_FLAG is a single trusted
           # word ("--refresh-latest" or empty); see env: above.
-          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/ae16f497434a5023dfaa28f965fc2af92ebf055d \
             idd-rerun-advisory-convergence --pr "$PR_NUMBER" $REFRESH_FLAG --apply
