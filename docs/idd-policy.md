@@ -397,31 +397,40 @@ npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/ae1
 - **Maintainer approval actor policy**:
   `owners-and-maintainers-only`
 - **Approval signals**: the issue author may self-authorize when they
-  satisfy the configured actor policy, or a maintainer-applied
-  `idd:ready` label or a qualifying `IDD ready` approval comment may
-  authorize work. The label uses the distributed `presence-only`
-  freshness default; see A3.5 in
+  satisfy the configured actor policy, or an `idd:ready` label or a
+  qualifying `IDD ready` approval comment may authorize work. The label
+  uses the distributed `presence-only` freshness default; see A3.5 in
   [Discover instructions](../.github/instructions/idd-discover.instructions.md).
   If the collaborator permission API is unavailable, the issue's live
   `author_association` substitutes for the author self-authorization
   signal only (`OWNER` always qualifies, `MEMBER` qualifies under both
-  actor policies). The `IDD ready` comment signal still needs a
-  successful permission read for its author; the label signal performs
-  no permission read (see Ready-label guard).
-- **Ready-label guard**: the approval helper never checks who applied the
-  label, in either freshness mode, so
+  actor policies). The author of an `IDD ready` comment needs a
+  successful permission read. The ready label's applier needs a
+  successful permission read the same way, and the helper counts the
+  label only when that applier satisfies the configured actor policy
+  (see Ready-label guard).
+- **Ready-label guard**: helper pin
+  `ae16f497434a5023dfaa28f965fc2af92ebf055d`
+  (kurone-kito/idd-skill#3254) checks the applier of the latest
+  ready-label `labeled` event in both freshness modes, including
+  `presence-only`. The applier must satisfy
+  `maintainerApprovalActorPolicy` as the helper resolves it. A label
+  applied by an actor who does not satisfy
+  `maintainerApprovalActorPolicy`, such as a bot or non-collaborator,
+  does not count as approval, whether or not this guard removes it. An
+  applier login or a permission that cannot be read is ambiguity, not a
+  pass.
   [`strip-untrusted-labels.yml`](../.github/workflows/strip-untrusted-labels.yml)
   also removes `idd:ready` when one of the configured untrusted labelers
-  (`labels.untrustedLabelerLogins`) applies it. This is a best-effort
-  blocklist, not an actor check. The removal runs after GitHub has
-  applied the label, so an issue can briefly carry it. Any actor that is
-  not listed but may label issues, such as a write collaborator or a
-  newly installed app, is not covered. The guard also does not control
+  (`labels.untrustedLabelerLogins`) applies it. That removal is defense
+  in depth: it removes a label applied by a configured untrusted
+  labeler so the label does not linger as an approval signal for
+  tooling or readers that look at label presence alone, while the
+  helper's applier check is the actual control. The guard remains a
+  best-effort blocklist. The removal runs after GitHub has applied the
+  label, so an issue can briefly carry it. The guard does not control
   which actors can create the label in the repository, which stays a
-  maintainer action. Validating the label actor belongs in the approval
-  helper upstream; until then, keep the collaborator list and the
-  installed apps minimal, and prefer the `IDD ready` comment signal,
-  whose author is permission-checked and which needs no label.
+  maintainer action.
 - **Missing-approval behavior**: an issue without a qualifying signal
   remains in the `approval-needed` route and is excluded from the A4
   candidate set. An explicit-target (A0-T) run on an execution leaf stops
@@ -713,9 +722,15 @@ optional fields upstream (`kurone-kito/idd-skill`) added to
   hand-copied from the recipe's manual path (no local `idd-skill` clone
   is available in this environment for the generated-guard path via
   `idd-onboard --substitute`). The guard's reserved set also includes
-  `status:authoring` and `idd:ready`, which the generated-guard path
-  (built only from the three `labels.*` names) would not carry over;
-  re-add both by hand if the guard is ever regenerated.
+  `status:authoring` and `idd:ready`. The generated-guard path (built
+  only from the three `labels.*` names) does not carry
+  `status:authoring`, so that entry is hand-maintained and must be
+  re-added by hand if the guard is regenerated. `idd:ready` remains an
+  entry of this hand-copied guard as defense in depth: it removes a
+  label applied by a configured untrusted labeler so the label does not
+  linger for tooling or readers that look at label presence alone,
+  while the helper's applier check is the actual control. The guard
+  stays a best-effort blocklist.
 - **`issueAuthoring.journalIssue`**: `"kurone-kito/setup.windows#175"`
   — see the [Issue-Authoring Companion](#issue-authoring-companion)
   section above for the full rationale (#172).

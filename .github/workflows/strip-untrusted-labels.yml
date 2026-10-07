@@ -24,14 +24,19 @@ jobs:
     # guard skips A0/A3 for any issue carrying it, the same
     # semantic-labeler risk this workflow otherwise guards), plus the
     # issue-author approval gate's ready label
-    # (approvalSignals.readyLabelName, also unset -- default `idd:ready`):
-    # claim-approval-gate never checks who applied the label, in either
-    # freshness mode, so a semantic labeler applying it would approve an
-    # unapproved issue. For this label the guard is a best-effort
-    # blocklist, not an actor check: removal runs after the label is
-    # applied, and unlisted actors are not covered (see docs/idd-policy.md's
-    # Ready-label guard). See docs/customization.md's "Reserved-label guard
-    # recipe" for the full rationale.
+    # (approvalSignals.readyLabelName, also unset -- default `idd:ready`).
+    # The pinned helper checks the applier of the latest ready-label
+    # labeled event against maintainerApprovalActorPolicy, including in
+    # presence-only mode, so an applier that does not satisfy that policy
+    # does not approve the issue. For `idd:ready` this guard is defense
+    # in depth and remains a best-effort blocklist: it removes the label
+    # when a configured untrusted labeler applies it, so the label does
+    # not linger for tooling or readers that look at label presence
+    # alone, while the helper's applier check is the actual control.
+    # Removal still runs after the label is applied. Actors outside the
+    # blocklist remain subject to that applier check (see
+    # docs/idd-policy.md's Ready-label guard). See docs/customization.md's
+    # "Reserved-label guard recipe" for the full rationale.
     if: |-
       contains(fromJSON('["coderabbitai[bot]", "reviewpad[bot]"]'), github.event.sender.login) && (github.event.label.name == 'roadmap' || github.event.label.name == 'status:blocked-by-human' || github.event.label.name == 'status:needs-decision' || github.event.label.name == 'status:authoring' || github.event.label.name == 'idd:ready')
     # ubuntu-latest here for maximum portability across time and
