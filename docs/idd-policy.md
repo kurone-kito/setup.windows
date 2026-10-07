@@ -18,8 +18,9 @@ This repository uses the following IDD policies:
 
 **Profile**: `copilot-advisory`
 
-Advisory bots: `copilot-pull-request-reviewer[bot]`,
-`coderabbitai[bot]`.
+Advisory bots: `coderabbitai[bot]`,
+`chatgpt-codex-connector[bot]`. The review profile stays
+`copilot-advisory`; that name is not the advisory-bot login list.
 
 ### Review-Thread Resolution Policy
 
@@ -27,15 +28,25 @@ Advisory bots: `copilot-pull-request-reviewer[bot]`,
 
 ### Critique-Loop Profile
 
-**Profile**: distributed defaults (no `critiqueLoopProfile` override
-recorded in `.github/idd/config.json`)
+Recorded as `critiqueLoop` in
+[`.github/idd/config.json`](../.github/idd/config.json). The v0.14.0
+dogfood values are kept, and the local delegate is added:
+
+- **`deferAfterRounds`**: `5`
+- **`deferByUrgency`**: `severity-tiered`
+- **`telemetryHook.command`**: `idd-critique-telemetry`
+- **`delegate`**: `node .github/idd/critique-delegate.mjs`, mode
+  `combined` (rationale under the adopted-field list below)
+
+No `critiqueLoopProfile` key is set. Dogfood does not set one.
 
 ### Claim Timing
 
-- **claim-stale-age**: `PT12H` (repository override; distributed
-  default is `PT24H`)
-- **claim-heartbeat-interval**: `PT6H` (repository override;
-  distributed default is `PT12H`)
+Aligned with the v0.14.0 dogfood policy. The earlier local override
+(`PT12H` / `PT6H`) is retired.
+
+- **claim-stale-age**: `PT24H`
+- **claim-heartbeat-interval**: `PT12H`
 
 ### Forced Handoff
 
@@ -62,7 +73,7 @@ recorded in `.github/idd/config.json`)
   broaden a forced handoff, and a chat approval never replaces the
   helper's `y/N` confirmation. This is a procedural invariant, not an
   identity-enforced one: IDD sessions authenticate as the maintainer's
-  account (see [Credential Scope](#credential-scope)), so the marker
+  account (see [Worker and merge actor](#worker-and-merge-actor)), so the marker
   rules cannot tell a helper-posted marker from a hand-posted one.
 - **Authority**: being listed under
   [Trusted Marker Actors](#trusted-marker-actors) lets an actor's markers
@@ -139,9 +150,11 @@ evidence.
 
 ### CI Wait Policy
 
-- **running timeout**: `PT10M` (repository override; distributed
-  default is `PT30M`)
-- **generation timeout**: `PT10M` (matches the distributed default)
+`ciWait` is omitted, so the distributed defaults apply. The earlier
+local `runningTimeout` of `PT10M` is retired.
+
+- **running timeout**: `PT30M`
+- **generation timeout**: `PT10M`
 - **rerun policy**: `rerun-once`
 
 ### CI Gate (External Checks)
@@ -182,18 +195,17 @@ evidence.
   that hosts this companion no longer requires a separate manual
   `gh run rerun` step to take effect.
 - **`ciGate.externalChecks.waivable`**: `[{ "selector":
-  "idd-advisory-convergence" }]` — this repository's only waivable
-  external check.
-- **`ciGate.externalCheckWaivers.mode`**: `maintainer-authorized`
-  (repository override; distributed default is `disabled`). All other
-  `externalCheckWaivers` fields (`authorityPolicy`, `maxValidity`) are
-  not overridden and use the bundle's distributed defaults
-  (`owners-and-maintainers-only`, `PT24H`).
+  "idd-advisory-convergence", "matchMode": "exact" }]` — this
+  repository's only waivable external check. `matchMode` is the v0.14.0
+  dogfood value.
+- **`ciGate.externalCheckWaivers`**: `mode` `maintainer-authorized`,
+  `authorityPolicy` `owners-and-maintainers-only`, and `maxValidity`
+  `PT24H`. These are the v0.14.0 dogfood values, recorded explicitly.
 - **Waiver path**: when installed, prefer the helper facade over
   hand-writing marker comments:
 
   ```sh
-  npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
+  npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/ae16f497434a5023dfaa28f965fc2af92ebf055d \
     idd-external-check-waiver --pr <number> \
     --check idd-advisory-convergence \
     --reason "<short reason>" \
@@ -289,18 +301,19 @@ correctly 404s — that is not a misconfiguration).
   distributed default is `false`). This repository has no classic
   branch protection at all — only the `main`/`features` rulesets above
   — so `GET .../branches/master/protection` genuinely 404s. Per this
-  repository's own [Credential Scope](#credential-scope) policy, no
-  separate least-privilege worker identity exists: every IDD session in
-  this repository (interactive or delegated) authenticates as the same
-  account that registered the ruleset above. Read with `--include`
-  under that exact identity: the ruleset read returns a raw `HTTP/2.0
-  200 OK`, and the classic-protection read returns a raw `HTTP/2.0 404
-  Not Found` (not a `403` reported as `404`) — confirmed
+  repository's own [Worker and merge actor](#worker-and-merge-actor)
+  policy: the worker and the merge actor stay inside the permissions
+  this repository already uses, and no other actor is added. Every IDD
+  session in this repository (interactive or delegated) authenticates
+  as the same account that registered the ruleset above. Read with
+  `--include` under that exact identity: the ruleset read returns a raw
+  `HTTP/2.0 200 OK`, and the classic-protection read returns a raw
+  `HTTP/2.0 404 Not Found` (not a `403` reported as `404`) — confirmed
   2026-08-14. This is not a permission-scope artifact for *this*
-  identity; a differently-scoped credential without `administration:
-  read` (for example, a third-party review bot's own sandboxed
-  credential, unrelated to any identity that actually runs
-  `pre-merge-readiness` in this repository) could still see a `403` on
+  identity; a token that lacks `administration: read` (for example, a
+  third-party review bot's own sandboxed token, unrelated to any
+  identity that actually runs `pre-merge-readiness` in this repository)
+  could still see a `403` on
   the same endpoint, which is exactly the ambiguity
   `idd-ci.instructions.md`'s required-check-discovery step 4 is
   designed to fail closed on for an *unverified* identity — it does not
@@ -311,16 +324,16 @@ correctly 404s — that is not a misconfiguration).
   required-status-checks rule above fully satisfied. Opting in here is
   the documented escape hatch for exactly this verified case.
 
-### Credential Scope
+### Worker and merge actor
 
-**Worker credentials**: same scope as any other IDD session running in
-this repository — no separate least-privilege worker identity is
-configured.
+**Worker**: every IDD session in this repository stays inside the
+permissions this repository already uses. Do not add another actor.
 
-**Merge-capable credentials**: same as worker. `mergePolicy` is
-`fully_autonomous_merge`, so no `separate_merge_agent` identity or
-elevated merge-only credential set exists; any session holding a valid
-claim may carry it through to merge.
+**Merge actor**: same as the worker. `mergePolicy` is
+`fully_autonomous_merge`, so no `separate_merge_agent` identity
+exists. Do not add a rule that requires the branch head to already
+contain the latest base commits. Any session holding a valid claim may
+carry it through to merge.
 
 ### Trusted Marker Actors
 
@@ -360,7 +373,7 @@ change is justified at this time. Revisit the decision only if a
 controlled comparison under comparable load provides stronger evidence.
 
 **`helperRuntime.packageSpec`**:
-`https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037`
+`https://codeload.github.com/kurone-kito/idd-skill/tar.gz/ae16f497434a5023dfaa28f965fc2af92ebf055d`
 (repository override; distributed default is the mutable `main`
 archive URL). Recorded explicitly so every helper-emitted
 `ephemeral-npx` invocation string — not only a hand-typed one-shot
@@ -373,13 +386,14 @@ rather than being vendored into this repository or installed as a
 project dependency:
 
 ```sh
-npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 <idd-command>
+npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/ae16f497434a5023dfaa28f965fc2af92ebf055d <idd-command>
 ```
 
 ### Issue-Author Approval Gate
 
 - **Gate posture**: enabled
-- **Gate state**: `skipIssueAuthorApprovalGate: false`
+- **Gate state**: `skipIssueAuthorApprovalGate` is absent, so the gate
+  stays enabled
 - **Maintainer approval actor policy**:
   `owners-and-maintainers-only`
 - **Approval signals**: the issue author may self-authorize when they
@@ -456,12 +470,12 @@ discovery. Revisit it if new evidence appears.
 ### Issue-Authoring Companion
 
 **Status**: `installed` at
-[`.claude/skills/issue-authoring/`](../.claude/skills/issue-authoring/SKILL.md),
-resynced to the current
-[Upstream pin](#upstream-pin) commit
+[`.claude/skills/issue-authoring/`](../.claude/skills/issue-authoring/SKILL.md).
+This v0.14.0 import does not edit `.claude/skills/**` and does not
+resync the bundle. The installed tree remains
 `1f90787ebf4021673ce6e5eb69741df331fd2037` (v0.11.0, 2026-09-12; #153),
-up from the v0.7.0 commit this bundle was still pinned to before this
-resync. Bundle-internal maintenance-doc links stay relinked to upstream
+the tree it was resynced to from v0.7.0. Bundle-internal
+maintenance-doc links stay relinked to upstream
 URLs — see the in-file note in `SKILL.md` — and the local-only
 `agents/openai.yaml` file (no upstream counterpart) is untouched.
 
@@ -555,12 +569,9 @@ the v0.7.0 → v0.11.0 pin resync (#152 and related issues).
 (v0.11.0, 2026-09-12). This was a fresh install with no prior local
 copy to keep in lockstep, so it was pinned independently of the
 repository-wide pin bump (#152 and related issues) rather than blocked
-on it; that pin bump has since landed at the same commit, and the
-three CI workflow YAML files (reconciled separately in #163) now agree
-too, so this companion and the rest of the repository's
-`idd-template/`-derived files are all at the same pin; see
-[Upstream pin](#upstream-pin) below for the authoritative,
-currently-landed repo-wide pin record.
+on it. This v0.14.0 import does not edit `.claude/skills/**`, so this
+companion stays on that tree while the repository-wide helper pin in
+[Upstream pin](#upstream-pin) moves to v0.14.0.
 
 ### IDD Label Names
 
@@ -579,10 +590,8 @@ below for the separate `labels.untrustedLabelerLogins` override that
 
 This section records, per field, the maintainer decision on the
 optional fields upstream (`kurone-kito/idd-skill`) added to
-`schemas/policy.schema.json` between this repository's previous pin
-(v0.7.0) and its current one (v0.11.0), following the resync tracked
-by #152 and related issues. Adopted here (recorded in
-`.github/idd/config.json`):
+`schemas/policy.schema.json`. The current pin is v0.14.0. Adopted here
+(recorded in `.github/idd/config.json`):
 
 - **`authoringLanguage`**: `"en"`. This field predates the v0.7.0 →
   v0.11.0 pin gap itself (it already existed at v0.7.0) but had never
@@ -616,28 +625,33 @@ by #152 and related issues. Adopted here (recorded in
   only — silences an `idd-doctor` warning confirming the maintainer
   has re-reviewed `mergePolicy: fully_autonomous_merge` without
   changing any merge-authority behavior.
-- **`provider`**: `"github"`. GitHub is the only implemented and fully
-  exercised provider — this repository's helpers use `gh`, `jq`, and
-  `curl` for GitHub operations; non-GitHub adapters remain future
-  work. Recording the selection carries zero behavioral risk.
-- **`providerHealth`**: `{ minCorroboratingPrs: 2, samplingWindow:
-  "PT24H" }`. Both values match the read-only provider-health
-  classifier's own distributed defaults — recorded here for
-  self-documentation, not to change behavior.
-- **`localValidationEvidence`**: `{ maxAge: "PT4H" }`. Matches the
-  existing default freshness window for an `idd-local-validation-evidence`
-  marker — recorded for self-documentation.
-- **`advisoryConvergence`**: `{ copilotReviewPollMaxWait: "PT60S" }`.
-  This is the genuine pre-existing default (documented as matching the
-  pre-`kurone-kito/idd-skill#2333` hardcoded 60000ms ceiling) —
-  recording it changes nothing.
-  `copilotReviewPollInterval` is deliberately left unset; see below.
+- **`provider`**: omitted. The schema treats an absent value as
+  `github`, which is still the only implemented provider. The previous
+  explicit `"github"` record is retired because dogfood omits it and it
+  was not a confirmed local overlay.
+- **`providerHealth`**, **`localValidationEvidence`**, and
+  **`advisoryConvergence`**: removed. They were v0.11
+  self-documentation of distributed defaults and are not v0.14.0
+  dogfood fields. `advisoryConvergence.copilotReviewPollInterval` stays
+  unset for the reason in the intentionally-unset list below.
 - **`upstreamEscalation`**: `{ enabled: true }`. Opt-in toggle allowing
   a session to flag a high-confidence `idd-skill` upstream defect as a
   local `status:upstream-candidate` issue. The maintainer enabled this
-  (2026-09-12) given this repository's ongoing upstream-tracking work
-  (the v0.7.0 → v0.11.0 resync and its follow-ups) makes this kind of
-  discovery routine going forward.
+  (2026-09-12) given this repository's ongoing upstream-tracking work.
+  Dogfood omits the key; this repository keeps the local opt-in.
+- **`developmentBranch`**: `"master"`. Confirmed for this import. The
+  field is a short branch name, not a `refs/heads/` ref.
+- **`advisoryBotLogins`**: `coderabbitai[bot]` and
+  `chatgpt-codex-connector[bot]`, the v0.14.0 dogfood list.
+- **`advisoryWait`**: `convergenceScope` `idd-claimed`,
+  `convergenceDeadline` `PT9H`, `secondaryBotLogin`
+  `coderabbitai[bot]`, `secondaryQuietWindow` `PT1H`.
+- **`discover.selectionDesync`**: `session-offset`.
+- **`githubApi`**: `readCache.enabled` true, and `loadControl.enabled`
+  true with `maxConcurrent` 4.
+- **`ciGate`**: dogfood values, including `matchMode` `exact`,
+  `authorityPolicy` `owners-and-maintainers-only`, `maxValidity`
+  `PT24H`, and `trustEmptyProtectionReads` true. See CI Gate above.
 - **`critiqueLoop.delegate`**: the `command` invokes the repository-local
   Node wrapper `node .github/idd/critique-delegate.mjs`, and `mode` remains
   `"combined"`. The wrapper invokes each executable without relying on the
@@ -710,10 +724,6 @@ by #152 and related issues. Adopted here (recorded in
 
 Recorded here so a later session does not "fix" these as an oversight:
 
-- **`developmentBranch`** — this repository has a single long-lived
-  branch (`master`); the field's purpose (distinguishing a
-  feature-integration branch from a trusted default branch) does not
-  apply.
 - **`discover.milestoneScope`** — this repository does not use GitHub
   milestones; this field's tie-break only has an effect when a
   matching-title OPEN milestone exists.
@@ -730,24 +740,16 @@ Recorded here so a later session does not "fix" these as an oversight:
   history, and `declarationTarget` has no meaningful default (it must
   name a real issue). Fabricating one now would add an unused process
   with no benefit.
-- **`advisoryWait.secondaryQuietWindow`** /
-  **`advisoryWait.providerOutage.terminalWindow`** — both only take
-  effect when `advisoryWait.secondaryBotLogin` is configured or an
-  outage declaration is active; this repository configures no
-  secondary advisory bot (`advisoryBotLogins` lists Copilot and
-  CodeRabbit as advisory reviewers, not a separate `secondaryBotLogin`
-  supplement) and has no outage-declaration history, so both remain
-  no-ops either way.
-- **`critiqueLoop.deferAfterRounds`** — the distributed default (`15`)
-  is documented upstream as a provisional starting point pending real
-  usage data; this repository has none yet to justify overriding it.
-- **`critiqueLoop.telemetryHook`** — this repository has no external
-  notification system to receive per-round critique telemetry.
-- **`worktreeGuard.refuseBaseBranchCommits`** — a no-op as long as
-  `developmentBranch` stays unset (the schema itself documents that
-  this pure-POSIX-sh hook has no network access to resolve the live
-  GitHub default branch, so it stays inert without `developmentBranch`
-  set); kept unset in lockstep with that field.
+- **`advisoryWait.providerOutage.terminalWindow`** — takes effect only
+  when an outage declaration is active. This repository has no
+  outage-declaration history, so it stays unset.
+  `advisoryWait.secondaryQuietWindow` is now set to `PT1H` with
+  `secondaryBotLogin` `coderabbitai[bot]`.
+- **`worktreeGuard.refuseBaseBranchCommits`** — stays absent. Dogfood
+  does not set it, and it was not a confirmed overlay. Absence does
+  not refuse commits on `master`. The hook refuses that branch only
+  when this field is `true`. `developmentBranch` is now `master`, which
+  does not by itself enable that refusal.
 - **`issueAuthoring.heartbeatCoalesceWindow`** — no operational data
   justifies overriding the distributed default (`PT2M`).
 
@@ -775,13 +777,16 @@ clone.
 Template files and helper scripts are pinned to:
 
 ```text
-kurone-kito/idd-skill @ 1f90787ebf4021673ce6e5eb69741df331fd2037 (v0.11.0, 2026-09-12)
+kurone-kito/idd-skill @ ae16f497434a5023dfaa28f965fc2af92ebf055d (v0.14.0, 2026-10-03)
 ```
 
-This repository additionally hosts the following template workflow
-files as dogfooded copies, kept in sync manually on each pin bump.
-All three are pinned to the same commit as above (issue #163
-reconciled them up from the previous v0.7.0 pin):
+The annotated tag object is
+`9888e2ac259e7ed08a95493ffed69f638a1b4b98`; it peels to the commit
+above. This repository additionally hosts the following template
+workflow files as local forks, kept in sync manually on each pin bump.
+`post-merge-cleanup.yml` is the imported v0.14.0 manifest file. The
+two advisory workflows keep their local event, permission, and
+safeguard constraints and now use this same helper commit:
 
 - `.github/workflows/idd-advisory-convergence.yml` — also adds the
   `pull_request_target` trigger and the
@@ -804,14 +809,14 @@ reconciled them up from the previous v0.7.0 pin):
   status and the current run's own outcome to be converged
   (`kurone-kito/idd-skill#2213`) before skipping a repeat post
 
-When a future change bumps this pin, treat it as a **named-gap
-import**, not a blind resync: reconcile only the specific files that
-changed between the old and new pinned commit against this repository's
-recorded policy values above (do not let an upstream default silently
-overwrite an intentional local override such as the claim-timing or
-CI-wait values), then re-run the onboarding verification checklist and
-`idd-doctor` after reconciling, using the same pinned `npx` form shown
-above:
+When a future change bumps this pin, reconcile the files that changed
+between the old and new pinned commit against the policy recorded
+above. Claim timing and CI wait now follow the v0.14.0 dogfood and
+distributed defaults recorded on this page; do not restore the retired
+`PT12H` / `PT6H` claim-timing override or the retired `PT10M` running
+timeout unless a new hearing accepts that override. Then re-run the
+onboarding verification checklist and `idd-doctor`, using the same
+pinned `npx` form shown above:
 
 ```sh
 npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/<new-pinned-SHA> idd-onboard.mjs --verify

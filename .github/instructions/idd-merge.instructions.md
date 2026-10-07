@@ -1,15 +1,13 @@
 # IDD — Merge Execution Phase (F3–F5)
 
-Read only after `idd-merge-handoff.instructions.md` routes the current
-claim to the autonomous merge path. Covers executing the merge (F3),
-cleanup (F4), and looping back to discover (F5).
+Read after `idd-merge-handoff.instructions.md` routes the claim.
+Covers executing the merge (F3), cleanup (F4), and F5.
 
-The final merge-gate timing defaults are named in
-[IDD policy constants](../../docs/policy-constants.md); the merge logic
-itself stays here.
+See [IDD policy constants](../../docs/policy-constants.md).
 
 Before any mutating action in F3, apply the
 [shared claim revalidation gate](idd-overview-core.instructions.md#claim-revalidation-gate).
+F3 apply follows [the livelock rule](idd-review-triage.instructions.md#merge-development-branch-livelock-under-fast-moving-development-branch).
 
 ## F3 — Merge
 
@@ -127,7 +125,9 @@ Before any mutating action in F3, apply the
    **Preferred path (helper runtime enabled)**: run the F3 merge helper
    documented in
    [`docs/idd-helper-scripts.md`](../../docs/idd-helper-scripts.md#merge-execution-f3).
-   First run it in dry-run (no `--apply`) and confirm `ready: true` with
+   Pass `--closing-issues <n>,<m>` for a multi-issue close
+   (forwarded to the collector). First run it in dry-run
+   (no `--apply`) and confirm `ready: true` with
    an empty `blockers[]` — it wraps the read-only `pre-merge-readiness`
    gate and adds no new authority. Then re-run with `--apply`: when
    `ready`, it re-fetches the head SHA and re-validates the claim
@@ -154,22 +154,37 @@ Before any mutating action in F3, apply the
    - advisory `f3Outcome` is `SATISFIED` (the authoritative advisory
      gate — do not add stricter sub-conditions; e.g. a pending-window
      `SATISFIED` can keep `copilotPending` true and
-     `LAST_COPILOT_COMMIT` off the head);
+     `LAST_COPILOT_COMMIT` off the head). **Manual-fallback
+     equivalent** (helper unavailable or discarded): the AW1/AW2/AW3
+     decision table (`idd-advisory-wait.instructions.md`), run in full
+     for `PR_HEAD_SHA_F3`, returns `SATISFIED` — not merely any step 3
+     branch that says "proceed with the merge";
    - no unwaived `copilot-terminal-unavailable` in the helper's
      `blockers[]` — separate from `f3Outcome`, not a stricter
      sub-condition on it
-     ([Terminal routing](idd-advisory-wait.instructions.md#terminal-routing-1570));
+     ([Terminal routing](idd-advisory-wait.instructions.md#terminal-routing-1570)).
+     **Manual-fallback equivalent**: apply that Terminal routing
+     section in full — satisfied only when its **Unwaived** hold does
+     not apply to this HEAD; its waiver/declaration validity rules are
+     not paraphrased here;
    - all required CI checks pass for the current head;
    - claim ownership still uses your `{claim-id}`;
    - D3.5 steps 6-7 and D3.7 (`idd-pr-submit.instructions.md`) have
      been re-run against `${PR_HEAD_SHA_F3}` (#2749) — covers commits
      that landed between F2 and this final gate, for example a
-     required `{development-branch}` sync. Before running them,
+     required `{development-branch}` sync. `closing-set` (readiness)
+     evidences steps 6-7 here; D3.7 stays local. Before running them,
      confirm the local worktree is checked out at `${PR_HEAD_SHA_F3}`
-     exactly (`git fetch` plus `git checkout`/`git reset --hard` if a
-     resumed or external-push session left it stale) — D3.5 step 7's
-     `git log` and D3.7's inherited `git diff` both read local git
-     state, not the remote PR directly. Skip D3.5 steps 6-7 under the
+     exactly (after fetch, the claim gate must confirm
+     `git branch --show-current` is `{branch-name}`; else hold).
+     Require empty `git status --porcelain` and
+     `git merge-base --is-ancestor HEAD "${PR_HEAD_SHA_F3}"`;
+     else hold. Run F2's
+     shadow-path check against `${PR_HEAD_SHA_F3}`; any output or failure
+     holds. Use `git switch {branch-name}` (not
+     detached), recheck; reset on pass) — D3.5/D3.7 read local state, not
+     the remote PR. Skip
+     D3.5 steps 6-7 under the
      same non-default-`{development-branch}` exemption D3.5 itself
      carries. On a mismatch, fix it per D3.5/D3.7's own documented
      handling. Any fix here — whether or not it changes HEAD, since a
@@ -354,21 +369,56 @@ Before any mutating action in F3, apply the
    unchanged: it reads whatever that run may have posted and decides
    ownership from the marker's own recorded status.
 
-   **Duplicate-success-record skip rule**: before posting any evidence
-   comment below, skip it if the PR already carries a
-   `<!-- idd-cleanup-evidence:` comment recording a successful outcome
-   (`applied` or `clean`) **whose author is a trusted marker actor**
-   (`github-actions[bot]`, the identity `post-merge-cleanup.yml` posts
-   under, or a configured `trustedMarkerActors` login) — for example one
-   the `post-merge-cleanup` workflow posted within seconds of the merge —
-   to avoid a duplicate success record. An untrusted commenter's
-   marker-prefixed comment never counts as evidence and must not suppress
-   this post — the same trust-scoping every other IDD operational marker
-   already applies (see the shared
-   [Trusted marker actors](idd-overview-core.instructions.md#trusted-marker-actors)
-   rule). Otherwise post (a fresh success record, or a correction of an
-   existing `failed` / `incomplete` / `permission-blocked` record, or a
-   correction of an untrusted-author record).
+   **Duplicate-success-record skip rule**: do not treat an earlier
+   dry-run or apply-time read as the skip. Immediately before the
+   actual POST — no other GitHub-mutating call in between — run this
+   fresh re-check (mirrors `post-merge-cleanup.yml` including issue
+   `#2213`; `bash`):
+
+   ```sh
+   TRUSTED_LOGINS=$(
+     {
+       jq -r '(.trustedMarkerActors // [])[]' .github/idd/config.json 2>/dev/null || true
+       echo 'github-actions[bot]'
+     } | tr '[:upper:]' '[:lower:]'
+   )
+   COMMENTS_FETCH_FAILED=0
+   if ! COMMENTS_TSV=$(gh api --paginate \
+     "repos/{owner}/{repo}/issues/<pr-number>/comments" \
+     --jq '.[] | select(.body | startswith("<!-- idd-cleanup-evidence:")) | [.id, .user.login, (.body | split("\n")[0])] | @tsv'); then
+     COMMENTS_FETCH_FAILED=1
+   fi
+   EXISTING_STATUS=""
+   while IFS=$'\t' read -r candidate_id candidate_login candidate_marker_line; do
+     [ -z "$candidate_id" ] && continue
+     lower_login=$(printf '%s' "$candidate_login" | tr '[:upper:]' '[:lower:]')
+     if printf '%s\n' "$TRUSTED_LOGINS" | grep -Fxq "$lower_login"; then
+       EXISTING_STATUS=$(printf '%s' "$candidate_marker_line" \
+         | sed -n 's/^<!-- idd-cleanup-evidence: \([^ ]*\) .*/\1/p')
+     fi
+   done <<< "$COMMENTS_TSV"
+   THIS_RUN_STATUS="<this-run-status>"
+   if [ "$COMMENTS_FETCH_FAILED" = "1" ]; then
+     echo "RECHECK_RESULT=FETCH_FAILED"
+   elif { [ "$EXISTING_STATUS" = "applied" ] || [ "$EXISTING_STATUS" = "clean" ]; } \
+     && { [ "$THIS_RUN_STATUS" = "applied" ] || [ "$THIS_RUN_STATUS" = "clean" ]; }; then
+     echo "RECHECK_RESULT=SKIP"
+   else
+     echo "RECHECK_RESULT=POST"
+   fi
+   ```
+
+   Substitute `<pr-number>` and `<this-run-status>`. Guard the `gh api`
+   assignment (`if ! …`) or a failed fetch reads as "no prior record".
+   Do not POST from this print. Re-run at each evidence POST below and
+   act on `RECHECK_RESULT`: `FETCH_FAILED` → post `recheck-failed`
+   (never relabel the apply) per
+   [docs/idd-comment-minimization.md](../../docs/idd-comment-minimization.md#re-check-fetch-failure-comment);
+   `SKIP` → do not post; `POST` → that branch's evidence. Residual REST
+   TOCTOU is accepted — see that same doc's server-side fallback
+   section. SKIP requires the latest record **whose author is a
+   trusted marker actor**. An untrusted commenter's marker-prefixed
+   comment never counts as evidence.
 
    Evaluate the dry-run `status` field (this is a dry-run status; apply
    mode emits different values and is never invoked unless dry-run
@@ -389,33 +439,21 @@ Before any mutating action in F3, apply the
      After apply, record the outcome by the apply `status`. See
      `docs/idd-comment-minimization.md` for the exact formats:
 
-     If the apply `status` is `applied` (residual candidates minimized)
-     or `clean` (no-op, nothing left to minimize): apply the
-     duplicate-success-record skip rule above; otherwise post the
-     evidence comment (`status`, `applied`, `failed`, `skipped`,
-     `viewer-cannot-minimize` counts for `applied`, or a converged
-     `clean` record) so this run's work is recorded. Proceed to step 4.
+     If the apply `status` is `applied` or `clean`: run the fresh
+     re-check above **now** and act on `RECHECK_RESULT`. Proceed
+     to step 4.
 
-     The helper internally retries a whole scan-and-minimize pass, bounded,
-     when a fresh rescan still reports candidates after applying (a
-     candidate that only became eligible after the previous pass, e.g.
-     GraphQL read-after-write lag) — the common case still converges to
-     `applied`/`clean` within this one invocation. If the output also
-     reports `retryBoundExhausted: true` (visible as
-     `retryBoundExhausted=true` in table format), the retry bound was
-     reached while a rescan still found candidates. Route by the apply
-     `status` exactly as above, even then: if `status` is still
-     `applied`/`clean`, follow that evidence-comment path and note the
-     `retryAttempts` count as an informational, non-blocking
-     residual-lag signal rather than a defect; if `status` came back
-     `incomplete` (the fresh rescan found a genuine permission-blocked
-     remainder) or `failed`, follow the `failed`/`incomplete`
-     cleanup-failure path below instead — `retryBoundExhausted: true`
-     never overrides a non-success `status`.
+     The helper may retry a scan-and-minimize pass, bounded, when a
+     rescan still reports candidates (read-after-write lag). Route by
+     apply `status` even when `retryBoundExhausted: true`:
+     `applied`/`clean` still post evidence (`retryAttempts` is
+     informational); `incomplete`/`failed` still take the
+     cleanup-failure path below.
 
      If the apply `status` is `failed`, `incomplete`, or
-     `rescan-failed`: post the cleanup-failure comment format instead,
-     including the `viewer-cannot-minimize` count when non-zero.
+     `rescan-failed`: re-check, then post cleanup-failure (or
+     `recheck-failed`) as above, including the
+     `viewer-cannot-minimize` count when non-zero.
      `rescan-failed` means the confirming rescan itself errored after a
      mutation (already-applied work is preserved in the report but
      convergence was never confirmed) — note that distinction in the
@@ -425,112 +463,139 @@ Before any mutating action in F3, apply the
 
    - **`permission-blocked`**: skipped items exist with
      `viewerCanMinimize: false` and no apply-eligible candidates found.
-     Post a cleanup-permission-blocked comment listing the blocked
-     candidates and the count, then proceed to step 4.
+     Re-check, then post cleanup-permission-blocked (or
+     `recheck-failed`) listing the blocked candidates and the count,
+     then proceed to step 4.
 
    For the GraphQL fallback (helper unavailable): check
    `viewerCanMinimize` and `isMinimized` before minimizing; skip
    already-minimized comments and ones the viewer cannot minimize.
-   Re-validate the active claim before each mutation. Afterward, apply
-   the duplicate-success-record skip rule above; otherwise post an
-   evidence comment summarizing the outcome (status, applied/skipped
-   counts with reasons). If the viewer cannot minimize any detected
+   Re-validate the active claim before each mutation. Before every
+   evidence POST (success or permission-blocked), re-check and act on
+   `RECHECK_RESULT`. If the viewer cannot minimize any detected
    candidates, post a cleanup-permission-blocked comment instead of
    exiting silently.
 
    See `docs/idd-comment-minimization.md` for the evidence comment
    format, cleanup-failure comment format, permission-blocked comment
    format, and fallback GraphQL commands.
-4. Concurrent workers sharing one clone: serialize this step's fetch
-   and step 5's `worktree remove` behind the
+4. Concurrent workers sharing one clone: serialize this fetch and
+   step 5's `worktree remove` behind the
    [clone-scoped lock](../../docs/idd-helper-scripts.md#clone-scoped-lock).
-   From the **primary worktree** — the worktree being cleaned up is
-   still checked out to its issue branch at this point, so running
-   this elsewhere would fast-forward the wrong branch — switch to
-   `{development-branch}` (the PR's own validated target branch;
-   resolved in `idd-work.instructions.md`'s B1
-   [Resolve the development branch](idd-work.instructions.md#b1--create-worktree-with-branch)
-   step) explicitly before fast-forwarding it, rather than assuming it
-   is already checked out there:
+   From the **primary worktree** (elsewhere would fast-forward the
+   wrong branch), switch to `{development-branch}` (the PR's
+   validated target; see
+   [B1 Worktree creation Step 2](idd-work.instructions.md#b1--create-worktree-with-branch))
+   and fast-forward it:
 
    ```sh
-   git fetch origin {development-branch}
-   git switch {development-branch} || git switch -c {development-branch} --track origin/{development-branch}
-   git merge --ff-only origin/{development-branch}
+   git fetch origin
+   git switch {development-branch} || git switch -c {development-branch} --track origin/{development-branch} \
+     && git merge --ff-only origin/{development-branch}
    ```
 
-   The switch falls back to creating a local tracking branch when the
-   primary worktree has no local `{development-branch}` yet (expected
-   whenever it differs from the repository default, since B1 branches
-   new worktrees straight from `origin/{development-branch}` without
-   ever checking it out in the primary worktree).
+   The switch falls back to a local tracking branch if the primary
+   worktree has none yet (non-default `{development-branch}`: B1
+   branches worktrees from origin).
 
-   Doing this before worktree/branch deletion (next step) ensures
-   WorkTrunk's own merge-status check, which reads the local
-   `{development-branch}` rather than `origin/{development-branch}`,
-   sees the just-merged branch as already merged on its first attempt
-   instead of reporting `branch_outcome: retained_unmerged` and
-   declining to delete it (`#2331`). This local checkout is a plain git
-   operation over the merged feature branch's own target and is
-   unrelated to the trusted-checkout-source concern in B1 Step 1 — if
-   `{development-branch}` differs from the repository's default branch,
-   switch the primary worktree back to the default branch
-   (`git switch <default-branch>`) once the remaining F4 cleanup steps
-   below complete, so the next B1 pass finds the primary worktree on
-   its expected trusted checkout.
-5. Run from the **primary worktree**, never from inside the worktree
-   being removed. Any removal (plain or `--force`) silently discards
-   ignored files too, including inside a submodule. Scope Git
-   commands to `<path>`. Inspect leftover files under a `-`
-   submodule path directly (not a repo).
+   If the switch or fast-forward refuses over dirty primary-worktree
+   paths, re-validate the claim, hold per
+   [Hold / suspend](idd-overview-appendix.instructions.md#hold--suspend)
+   as `primary-worktree-dirty` (the operator cleans those paths — never
+   stash/discard them — then re-run step 4 through step 7), and
+   stop before step 5 — primary-worktree state, so never remove the
+   issue worktree because of it.
 
-   Use `--untracked-files=normal` (not `all`). A clean submodule
-   worktree can still hide a stash or unpushed commit:
+   Two more failures (stop before step 5; see
+   [detail](../../docs/idd-helper-scripts.md#f4-branch-failure-routes)):
+
+   - `already used by worktree` → hold as `development-branch-in-use`;
+     name the path, don't touch it.
+   - `Not possible to fast-forward, aborting.` → hold as
+     `development-branch-diverged`; don't reset/rebase.
+
+   Off-default `{development-branch}`: `git switch <default-branch>`
+   once F4 completes/holds, for B1's checkout.
+5. Run from the **primary worktree**, not one being removed.
+   Removal discards ignored submodule data. Scope
+   to `<path>`. Inspect leftovers under `-` (not a repo).
+
+   Use `--untracked-files=normal` (not `all`). A clean submodule can
+   still hide a stash or unpushed commit; tag-only detached history is
+   not counted; local refs are:
 
    - `git -C <path> status --porcelain --ignored --untracked-files=normal`
    - `git -C <path> submodule status --recursive`
-   - `git -C <path> submodule foreach --recursive 'git status
-     --porcelain --ignored --untracked-files=normal; git stash list;
-     git rev-list --all --not --remotes --count'`
+   - Probe:
 
-   Generated output is disposable only if a configured project
-   command can reproduce it. Preserve anything else first. Copy
-   secrets (e.g. `.env`) out only — never commit or push them.
-   Non-secret work may go to a **different** ref or be copied out —
-   not to `<branch-name>` itself, which this step deletes next.
-   Immediately before each `worktree remove`, re-validate this
-   session's claim and worktree lock (`idd-claim.instructions.md`);
-   stop if either is no longer ours.
-   Then delete the worktree, then the branch:
+     ```sh
+     git -C <path> submodule foreach --recursive 'git status
+     --porcelain --ignored --untracked-files=normal; git stash list; git rev-list --exclude=refs/tags/\* --glob=refs/\* --count --not --remotes || exit; git symbolic-ref -q HEAD >/dev/null || git rev-list HEAD --not --remotes --tags --count'
+     ```
 
-   - `git worktree remove <path>`. If it fails with `fatal: working
-     trees containing submodules cannot be moved or removed`, retry
-     with `git worktree remove --force <path>`. Use `--force` only
-     after that review finds nothing worth preserving.
-   - `git branch -d <branch-name>` (the baseline permission profile
-     denies `-D`; see `docs/permissions.md`). Local `{development-branch}`
-     was already fast-forwarded to the merge commit by the previous
-     step, so this should not fail with `error: the branch
-     '<branch-name>' is not fully merged`; if it still does,
-     investigate before retrying rather than assuming a stale local
-     `{development-branch}` is the cause.
+   Discard only reproducible configured-command output; preserve all else.
+   Copy secrets (`.env`) outside `<path>` — never commit or push them.
+   Preserve work in backup ref or external path. Before removal, `cd`
+   to primary; stay; revalidate:
+
+   ```sh
+   node scripts/resume-claim-routing.mjs --issue <issue-number> \
+     --claim-id <claim-id> --nonce <nonce> \
+     --worktree <issue-worktree-path>
+   ```
+
+   `keep` / `already_owned` plus a matching lock means ours. Omitting
+   `--worktree` (`owner_evidence_required` /
+   `claim-id-match-without-independent-owner-evidence`) is incomplete:
+   re-run with the flag. A remaining `stop` means do
+   not remove the worktree. `git worktree remove --force` runs only
+   after failure `working trees containing submodules cannot be moved
+   or removed`, and only after leftovers are preserved. Revalidate
+   `--worktree` immediately before that retry.
+   [Removed-cwd](../../docs/idd-helper-scripts.md#f4-branch-failure-routes).
+   Then:
+
+   - `git worktree remove <path>`.
+   - `git branch -d <branch-name>` (`-D` is denied; see
+     `docs/permissions.md`). Local `{development-branch}`
+     was fast-forwarded in step 4, so this shouldn't fail with
+     `error: the branch '<branch-name>' is not fully merged`. If it
+     still does, compare `git rev-parse <branch-name>` with `gh pr
+     view {pr-number} --json state,headRefOid`: matching `MERGED`
+     head → keep it, re-validate claim, comment: operator may run
+     `git branch -D <branch-name>`, continue to step 6 (`Next action:
+     none`); otherwise hold `local-branch-unmerged-commits`, stop
+     before step 7, keep claim.
 
 6. If GitHub auto-delete is disabled: delete the remote branch too.
-   (WorkTrunk may be used for steps 5–6, the deletion steps —
-   step 4's local `{development-branch}` update is a plain git
-   operation, not a WorkTrunk one.)
-7. Re-validate the active claim one final time. If it still uses your
-   `{claim-id}`, post `unclaimed-by` for your own `{agent-id}` /
-   `{claim-id}` (see
+   (WorkTrunk may run steps 5–6; step 4 stays a plain git operation.)
+7. Re-validate the active claim before each mutation below. If it
+   still uses your `{claim-id}`, upsert the claimed issue's own digest
+   with `Phase: F4 complete`, `Claim: none`, `Branch: none`, `Open
+   blockers: none`, `Next action: none`, and `Authoritative by`
+   pointing to the merge commit — mirroring F3's own PR-digest
+   upsert, but for the issue, so a closed/merged issue never sticks
+   at a stale digest phase (`#3079`). Proceed only when
+   the upsert reports `create`, `update`, or `noop`; on `duplicate` or
+   any other failure, keep the claim, re-validate, then post a hold
+   comment with the helper output, and stop for repair. Re-validate
+   again; if it still uses your `{claim-id}`, for each issue in step
+   1's closing set (none: skip), read
+   `gh issue view {issue-number} --json state` once; if open,
+   re-validate, then close it as step 1 does (a racing close counts); if
+   either fails, hold as above with its error (no `unclaimed-by`, no
+   retry). Then post `unclaimed-by` for your own
+   `{agent-id}` / `{claim-id}` (see
    [Unclaim format](idd-overview-core.instructions.md#unclaim-format))
-   to release the claim now that cleanup is complete (`#2220`). If it
-   no longer uses your `{claim-id}`, do not post a release comment —
-   another session already took over.
+   to release the claim now that cleanup is complete (`#2220`). If
+   either re-validation finds anything other than your `{claim-id}`
+   — including no active claim — stop that mutation: the claim was
+   lost.
 
 ## F5 — Loop
 
-Return to `idd-discover.instructions.md` and pick the next issue.
+Return to `idd-discover.instructions.md` only when continuing in-process.
 F4-complete/F5 is the **safe session-exit boundary**: under context
-pressure, exit here for a fresh Discover session rather than looping
-in-process — see the autopilot operating model in
+pressure, exit directly here; a fresh session re-enters Discover — see
+the autopilot operating model in
 [`docs/idd-workflow.md`](../../docs/idd-workflow.md).

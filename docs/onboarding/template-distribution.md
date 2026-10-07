@@ -1,3 +1,10 @@
+---
+type: reference
+title: Template Distribution Maintainer Reference
+description: Explains how the template's generated file-distribution lists in ONBOARDING.md stay correct as files are added, removed, or moved.
+tags: [onboarding, template-distribution]
+---
+
 # Template Distribution Maintainer Reference
 
 Use this page when maintaining the file distribution surface for
@@ -198,36 +205,33 @@ under `pnpm run lint`'s full test suite (`node --test`), which
 `audit-docs.mjs --check` can still break `idd-onboard.mjs`. This needs a
 maintainer decision, not a mechanical file-list edit.
 
-## `.gitattributes` linguist-generated convention (`vendored-node`)
+## `.gitattributes` linguist-vendored convention (`vendored-node`)
 
-Review bots (Copilot/CodeRabbit/etc.) read both a vendored `.mts`
-source file and its generated `.mjs` build output independently,
-producing duplicate findings for the same defect. The `idd-skill`
-source repository solves this for itself with a `.gitattributes`
-stanza marking every vendored `scripts/` file individually (plus a
-`bin/**/*.mjs` glob for the `bin/` shim directory)
-`linguist-generated=true` (see the root `.gitattributes`) — but
+The copied `vendored-node` helper files are third-party code, not
+first-party build output. Mark them `linguist-vendored` in the
+adopter's `.gitattributes` — the same recommendation as
+[Optional — mark the vendored helper bundle `linguist-vendored`](optional-host-setup.md#optional--mark-the-vendored-helper-bundle-linguist-vendored).
+Do **not** mark that copied set `linguist-generated=true`; that
+attribute is for first-party generated output (the `idd-skill` source
+repository uses it for its own `scripts/*.mjs` built from `.mts`
+sources — see the root `.gitattributes`; observed 2026-09-13,
+issue `#2958`, when this page previously recommended the
+generated-output stanza for the same copied files).
+
 `idd-template/` ships no `.gitattributes` file, since an adopter's own
 `.gitattributes` (if any) is theirs to own, and the import mechanism
 above has no safe way to merge into a file the adopter may already
 maintain (`resolveImportFiles`'s `new`/`unchanged`/`overwrite`/
 `blocked-non-file` classification would treat a pre-existing
 `.gitattributes` as a blocked overwrite, or silently clobber one with
-`--force`).
+`--force`). Append the exact lines from the helper-runtime manifest
+instead of a hand-written `scripts/*.mjs` glob (a target `scripts/`
+directory may also contain hand-written `.mjs` files):
 
-Adopters who vendor the `vendored-node` helper bundle should instead
-add an equivalent stanza to their own `.gitattributes` by hand, listing
-each vendored generated file individually rather than a bare
-`scripts/*.mjs` glob — a target repository's `scripts/` directory may
-also contain hand-written `.mjs` files that must not be mis-marked as
-generated:
-
-```gitattributes
-# Generated from TypeScript sources by `pnpm run build`; see
-# https://github.com/kurone-kito/idd-skill/blob/main/docs/typescript-sources.md
-scripts/advisory-convergence.mjs linguist-generated=true
-scripts/claim-approval-gate.mjs linguist-generated=true
-# ... one line per vendored helper file actually present in this repo
+```sh
+node scripts/helper-runtime-manifest.mjs --profile vendored-node \
+  | node -e 'const m=JSON.parse(require("node:fs").readFileSync(0,"utf8"));process.stdout.write(m.profiles["vendored-node"].recommendedGitattributes.join("\n")+"\n")' \
+  >> .gitattributes
 ```
 
 `idd-template/ONBOARDING.md`'s vendored-node profile guidance links

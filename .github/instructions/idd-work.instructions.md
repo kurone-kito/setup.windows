@@ -29,7 +29,7 @@ for when this applies).
    commits. Run this from the primary worktree while on `main`:
 
    ```sh
-   git fetch origin main
+   git fetch origin
    git log origin/main..main --oneline
    ```
 
@@ -125,8 +125,8 @@ resolve it first: read `developmentBranch` from
 defaultBranchRef --jq .defaultBranchRef.name`; validate the result
 ([defaults](../../docs/policy-constants.md#branch-synchronization-defaults)),
 fail closed if invalid/absent on `origin`, never fall back. Then
-`git fetch origin {development-branch}` (may be missing/stale
-otherwise). Use **WorkTrunk** if available (create verb:
+`git fetch origin` (may be missing/stale otherwise). Use **WorkTrunk**
+if available (create verb:
 `wt switch --create`; `wt new` was removed):
 
 - macOS/Linux: `wt switch --create -b <base-branch> <branch-name>`
@@ -204,7 +204,9 @@ are installed:
 - **WorkTrunk with a pre-start install hook** (e.g.,
   `[pre-start].install` in `.config/wt.toml`): The hook must acquire the
   lock before installing, as described above; after the hook succeeds,
-  skip this step.
+  skip this step. `-x <noop>` never changes the caller's directory —
+  `cd` into the new sibling (from `git worktree list`) before later
+  steps.
 - **Manual `git worktree add`, WorkTrunk without a hook, or a
   compliant pinned harness-native tool**: `cd` into the newly created
   worktree, then run **install-deps**.
@@ -275,7 +277,7 @@ under concurrent execution, so re-check once the B1 worktree exists and
 **before writing any code or drafting the plan below**, using a
 mechanical file/close-based signal stronger than A4.5's title/
 declaration heuristic (a weak **title-only** match is **not** a hit
-here). Keep it cheap: one fetch plus a bounded merged-PR scan.
+here).
 
 1. `git fetch origin {development-branch}` (concurrent workers sharing
    one clone: behind the
@@ -300,13 +302,15 @@ here). Keep it cheap: one fetch plus a bounded merged-PR scan.
    gh pr view <n> --json files --jq '.files[].path'
    ```
 
-**On a hit → verify-then-close** (never silent re-implementation, and never an
-auto-close on a weak signal): confirm the issue's acceptance criteria already
-hold on current `{development-branch}`, then close the issue with a
+**On a hit → verify-then-close**: confirm the issue's acceptance criteria
+already hold on current `{development-branch}`, then close the issue with a
 comment referencing the superseding PR. If the criteria only
 **partly** hold, keep the issue open,
 record the overlap, and plan only the genuinely-remaining work. On no hit,
 continue with the plan below.
+
+`gh issue close` is not completion: with no diff and no PR, only
+**verify-then-close** or F4 step 1 post-merge close may close it.
 
 ### B2.1 — Premise verification (decision-transcription issues)
 
@@ -344,11 +348,14 @@ Draft an implementation plan and post it as an issue comment, then run
 a critique pass for correctness and concreteness (see
 `idd-overview-appendix.instructions.md` for per-agent implementation),
 and post the refined final plan as a follow-up or update to the same
-comment. After the final plan comment is posted and claim ownership is
-re-validated, update the issue live status digest: `Phase` is `B2
-planned`, `Open blockers` is `none` unless the plan found a blocker,
-`Next action` is `B3 implement`, and `Authoritative by` points to the
-plan comment and verified claim.
+comment. After the final plan comment is posted, update the issue live
+status digest: `Phase` is `B2 planned`, `Open blockers` is `none`
+unless the plan found a blocker, `Next action` is `B3 implement`, and
+`Authoritative by` points to the plan comment and verified claim.
+
+Claim ownership revalidation needs no separate check here: it already
+applies to every B2 mutation via the
+[claim revalidation gate](idd-overview-core.instructions.md#claim-revalidation-gate).
 
 ## B3 — Implement
 
@@ -373,6 +380,9 @@ Implement the plan, running **fix-validate** before each atomic commit
 (one logical change per commit). Non-interactive-hostile signing: use
 the [signed-commit merge wrapper](../../docs/idd-helper-scripts.md#signed-commit-merge-wrapper-shared-git-procedure)
 instead.
+
+**Validate.** Judge the run by its own exit status — see
+[Project commands](idd-overview-core.instructions.md#project-commands).
 
 **Verify a commit actually landed before trusting a subsequent push.**
 A `commit-msg` hook (e.g. commitlint's body-max-line-length) can
@@ -570,8 +580,11 @@ anything it reports.
 
 An unmet floor is not a new failure class: run or fix **fix-validate**
 the same way the Project commands table handles a failing
-**pre-push-validate** ("If lint fails, run fix-validate, commit, then
-re-run pre-push-validate").
+**pre-push-validate**.
+
+Claim ownership revalidation needs no separate check here: it already
+applies to every C5 fix commit via the
+[claim revalidation gate](idd-overview-core.instructions.md#claim-revalidation-gate).
 
 If anything changed, commit atomically.
 

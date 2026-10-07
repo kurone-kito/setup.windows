@@ -1,3 +1,10 @@
+---
+type: reference
+title: Onboarding Reference — Policy Decisions
+description: Provides the detailed policy-decision guidance behind ONBOARDING.md's operator-confirmation steps.
+tags: [onboarding, policy-decisions]
+---
+
 # Onboarding Reference — Policy Decisions
 
 Use this reference alongside `idd-template/ONBOARDING.md` when you need
@@ -168,9 +175,9 @@ skill ID to multiple runtime roots by default (preventive; no observed incident
 yet); a mixed-runtime target should
 use one native copy plus an explicit manual route unless the operator
 deliberately accepts identical duplicates. The companion helps draft
-IDD-ready issues and roadmaps. By default, it publishes each drafted
-`ready` body directly under the configured authoring label once it
-passes the mechanical pre-publish gate and the critique pass — no
+IDD-ready issues and roadmaps. By default, it publishes each publishable
+drafted body directly under the configured authoring label once it
+passes the completed-draft review and then the mechanical pre-publish gate — no
 separate publish approval step — unless the current request explicitly
 asked for a preview instead. Releasing that authoring hold is the
 single boundary within the companion's own workflow that still needs an
@@ -215,6 +222,30 @@ pass `--package-manager <npm|pnpm|yarn>` explicitly. Pass
 emit a reviewed tag, commit, tarball, or internal mirror URL. Treat
 `refs/heads/main` as a manual opt-in when the repository explicitly
 wants a mutable helper source instead of a reviewed pinned spec.
+
+**Missing pin is a non-blocking advisory, not a blocking check.**
+Observed 2026-09-14, during the issue-mediated bootstrap of this
+template into `kurone-kito/kurone-kito` (`kurone-kito/kurone-kito#18` ->
+`#29`, merged; tracked upstream via issue `#2973` item 14): an adopter
+completed the whole hearing/import/substitute/record-policy sequence
+with `ephemeral-npx` or `package-manager` selected and simply never set
+`helperRuntime.packageSpec`, silently leaving every helper invocation
+backed by the mutable default archive URL — embedded directly in the
+`ephemeral-npx` invocation string, or resolved through
+`package-manager`'s installed dependency (see
+[Helper Runtime Profile](../idd-helper-scripts.md#profile-wiring-surface)
+for that distinction) — instead of an audited pin, caught only by a
+downstream reviewer independently reading `post-merge-cleanup.yml`'s
+own header comment about this same gap. The
+2026-09-15 Groom hearing for issue `#2987` chose to surface this as a
+non-blocking advisory rather than a blocking check: `idd-onboard.mjs
+--verify` (and its underlying `runVerify` / `checkPackagePinWarning`
+API) reports a stable, non-blocking warning whenever the effective
+`helperRuntime.profile` is `ephemeral-npx` or `package-manager` and no
+`helperRuntime.packageSpec` is configured, naming the mutable default
+archive URL and pointing back to this section — but it never fails
+`--verify` or changes its exit code, since a repository may deliberately
+accept the mutable default during early bootstrap.
 
 **pnpm `allowBuilds` requirement for a git-hosted pinned spec.** When a
 `package-manager` repository using pnpm pins the `devDependencies` entry
@@ -592,6 +623,19 @@ When the repository uses a non-default merge, review, or thread policy,
 describe the local effect in prose near the selected value so future
 agents do not need to infer what changed.
 
+**Recording resolved placeholder values.** If you hand-add content
+inside an imported template file — for example a table noting which
+placeholder resolved to which value — spell the placeholder name
+without doubled braces (for example `REPO_NAME`, not `{{REPO_NAME}}`);
+`idd-onboard.mjs --verify` flags a doubled-brace token there as
+leftover residue. This policy document is a fixed scanner exclusion
+(tokens here are skipped, never scanned); a custom
+`--write-policy-doc` target sits outside the imported set unless its
+path matches one, so its token usually lands under
+`outOfScopeTokens` instead. See
+[Onboarding Reference — Placeholder Values](placeholders.md) for the
+full placeholder list.
+
 ## Machine-readable policy file
 
 `.github/idd/config.json` is the machine-readable record of the same
@@ -631,7 +675,11 @@ Keep these rules in mind:
   runtime section when helper support is enabled
 - set `helperRuntime.packageSpec` only when the repository has pinned a
   reviewed tarball, mirror URL, or commit archive for its `ephemeral-npx`
-  helper install; omit it to keep the mutable default archive URL
+  or `package-manager` helper install; omit it to keep the mutable
+  default archive URL for either profile — an omitted `packageSpec`
+  under `ephemeral-npx` or `package-manager` is a deliberate, supported
+  choice, but `idd-onboard.mjs --verify` surfaces it as a non-blocking
+  reminder (see [Helper runtime profile](#helper-runtime-profile) above)
 
 The file validates against the canonical schema at:
 

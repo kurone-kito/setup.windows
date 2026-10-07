@@ -1,3 +1,10 @@
+---
+type: reference
+title: Onboarding Reference — Placeholder Values
+description: Provides the full derivation and replacement rules for every template placeholder used during onboarding.
+tags: [onboarding, placeholders]
+---
+
 # Onboarding Reference — Placeholder Values
 
 Use this reference with `idd-template/ONBOARDING.md` when you need the

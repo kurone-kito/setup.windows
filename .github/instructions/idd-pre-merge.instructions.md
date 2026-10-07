@@ -57,9 +57,10 @@ This check is read-only — F1 does not rebase, merge, or push.
   attempts, a few seconds apart), then route by the first settled
   result. Only if still `computing`/`unknown` after the budget, fall
   through to the terminal hold below.
-- **`dirty`** (`mergeStateStatus` is `DIRTY`) or **`unknown`**: hold;
-  post a PR comment documenting the branch state and stop. A
-  maintainer must clear the hold.
+- **`dirty`** (`mergeStateStatus` is `DIRTY`), **`unknown`**, or any
+  other state the bullets above do not name (for example
+  `force-push-exception`): hold; post a PR comment documenting the
+  branch state and stop. A maintainer must clear the hold.
 
 ## F2 — Pre-merge condition check
 
@@ -72,19 +73,19 @@ cover the full activity universe (human reviewers plus advisory bot
 surfaces such as Copilot, CodeRabbit, Codex connectors, and CI bots).
 
 The advisory-wait window is Copilot-only
-(`idd-advisory-wait.instructions.md`) and does not cover any
-repository-configured non-Copilot `advisoryBotLogins` (e.g. CodeRabbit
-or a Codex connector). F2/F3 MUST NOT merge on a bare CI-green signal:
-the **Review currency** check below must confirm a fresh snapshot whose
-`review-watermark` covers the latest activity timestamp, so a
-non-Copilot finding landing shortly after CI still returns the
-workflow to E1 instead of merging over it.
+(`idd-advisory-wait.instructions.md`) and does not cover non-Copilot
+`advisoryBotLogins`. That is this window, not all of F2: configured
+`secondaryQuietWindow` is the quiet-window blocker below (until
+`elapsed: true`, not until `secondaryBotLogin`'s logins review HEAD).
+F2/F3 MUST NOT merge on bare CI-green: **Review currency** must
+confirm a fresh `review-watermark` covers latest activity, so a late
+non-Copilot finding still returns to E1.
 
 **Nonce passthrough**: when invoking the readiness collector below
 (directly, or via the documented merge-gate helper reference), pass
 `--nonce {nonce}` — this session's own locally-recorded activation-nonce
 from claim time (`idd-claim.instructions.md`'s activation-nonce format) —
-alongside `--claim-id`, extending Claim-verification-step-5's nonce
+alongside `--claim-id`, extending Claim-verification-step-4's nonce
 collision check to this merge-time write-gate (Resume-phase cold
 recovery stays a distinct, not-yet-wired case — see
 [rationale](../../docs/idd-design-rationale.md#activation-nonce-why-a-separate-marker-and-what-stays-deferred),
@@ -92,28 +93,26 @@ kurone-kito/idd-skill#1529). Omitting `--nonce` silently skips the
 merge-time comparison rather than failing closed, so pass it whenever a
 nonce was recorded for the active claim.
 
-**No claimed issue**: the readiness collector requires either
+**No claimed issue**: the readiness collector requires
 `--claim-issue <issue-number>` (with `--claim-id`) or `--claimless`
-(kurone-kito/idd-skill#2017) — pass `--claimless` instead when this PR
-has no linked issue to claim (`closingIssuesReferences` empty); it
-cannot combine with `--claim-issue`/`--claim-id` and fails closed if
-`closingIssuesReferences` is non-empty. See
-[docs/idd-helper-scripts.md's Readiness command](../../docs/idd-helper-scripts.md)
-for the full flag reference.
+(#2017) — pass `--claimless` for a PR with no linked issue
+(`closingIssuesReferences` empty) or a valid `reason:bootstrap`
+out-of-loop marker; it cannot combine with `--claim-issue`/`--claim-id`,
+and otherwise fails closed on a non-empty `closingIssuesReferences`. See
+[docs/idd-helper-scripts.md's Readiness command](../../docs/idd-helper-scripts.md).
 
-**Polling loop failure mode**: a caller that repeats this invocation
-(directly, or via a delegated worker) until F2 is ready must branch on
-two distinct outcomes: a zero exit with the full readiness report JSON
-(`ready: false` with `blockers`) is an ordinary **not-ready-yet** result
-to keep polling on; a non-zero exit with a JSON `{ "error": ... }` object
-on stdout instead is a **call failure** — this covers both a call-time
-argument/usage error (e.g. the missing `--claim-issue`/`--claimless`
-case above, which also carries a `hint`) and a live `gh`-backed lookup
-failing (no `hint`); fix the invocation before retrying an argument
-error, and use judgment before abandoning the poll on a `hint`-less one
-(a live call can fail transiently). Conflating either kind of `{error}`
-response with an ordinary not-ready-yet result (kurone-kito/idd-skill#2707)
-turns an operator-visible failure into a silent stall.
+**Multi-issue close**: pass `--closing-issues <n>,<m>` (D3) with the
+full set (else a `closing-set` mismatch).
+
+**Polling loop failure mode**: a zero exit with the full readiness
+JSON (`ready: false` + `blockers`) is not-ready-yet — keep polling. A
+non-zero exit with `{ "error": ... }` is a **call failure**: a usage
+error (e.g. missing `--claim-issue`/`--claimless`) carries a `hint` —
+fix before retrying; a live `gh` lookup failure lacks one — use
+judgment (calls can fail transiently). Conflating either `{error}`
+shape with not-ready-yet (kurone-kito/idd-skill#2707) turns a real
+failure into a silent stall. A `deferred-followup-unreconciled` blocker
+never clears by polling: follow its `detail`.
 
 - **Review currency** (live re-fetch required, freshness gate): read the
   most recent `<!-- review-watermark: {agent-id} {claim-id} … -->`
@@ -275,17 +274,26 @@ turns an operator-visible failure into a silent stall.
   [Terminal routing](idd-advisory-wait.instructions.md#terminal-routing-1570);
   an unwaived `copilot-terminal-unavailable` in `blockers[]` stops here
   with that section's hold regardless.
-- **Secondary advisory bot quiet window** (opt-in, off by default): when
-  `advisoryWait.secondaryQuietWindow` (#2335) is configured, the readiness
-  report's `secondaryQuietWindow.elapsed` must be `true` before this check
-  is satisfied — a `secondary-quiet-window` entry in `blockers[]` means the
-  window has not yet elapsed since the last substantive review activity;
-  wait (poll per `advisoryWait.pollInterval`), then re-evaluate F2. Unset
-  (the off default) never adds this blocker.
+- **Secondary advisory bot quiet window** (opt-in; unset never blocks):
+  when `advisoryWait.secondaryQuietWindow` (#2335) is configured,
+  `secondaryQuietWindow.elapsed` must be `true`. A
+  `secondary-quiet-window` blocker means that window has not elapsed
+  since the last substantive review activity; wait (poll per
+  `advisoryWait.pollInterval`), then re-evaluate F2. When issue
+  `#2544`'s settled buffer clamps the wait, the blocker names that
+  buffer apart from the configured window.
 - **CI**: Current PR head SHA has all required CI checks generated and
   all passing (→ run CI wait per `idd-ci.instructions.md` using the
   same resolved `ciWait.runningTimeout`, `ciWait.generationTimeout`, and
-  `ciWait.rerunPolicy` values; on-success → re-evaluate F2).
+  `ciWait.rerunPolicy` values; on-success → re-evaluate F2; code-caused
+  → `Phase: F2 ci-failure`, E15's code-caused route).
+
+  `pre-merge-readiness` reads `.github/idd/config.json` from the PR's
+  trusted **base** ref, not the PR head. When this PR introduces a
+  `ciGate.*` key its own F2 evaluation needs, follow
+  [ciGate F2 bootstrap](../../docs/customization.md#cigate-f2-bootstrap).
+  F2 stays fail-closed here; the human off-ramp in that section is not
+  an F2/F3 action.
 
   **No required checks configured**: When `pre-merge-readiness` reports
   `ci.noRequiredChecksConfigured: true` (unprotected branch, or no
@@ -345,7 +353,7 @@ turns an operator-visible failure into a silent stall.
 
   | Condition                                                                                                       | Classification              |
   | --------------------------------------------------------------------------------------------------------------- | --------------------------- |
-  | IDD agent or PR author has the latest substantive comment, with no later reviewer comment, reopen, or AMD reply | `awaiting-reviewer`         |
+  | IDD/author latest substantive; no later reviewer comment, reopen, or AMD reply ("Awaiting maintainer decision") | `awaiting-reviewer`         |
   | Thread contains an IDD-agent reply starting `**Awaiting maintainer decision**`                                  | `AMD-thread` (not awaiting) |
   | Reviewer commented or reopened (with or without new text) after the latest IDD-agent/PR-author comment          | `not awaiting-reviewer`     |
   | Reviewer has the latest substantive comment (no later IDD-agent/PR-author reply)                                | `not awaiting-reviewer`     |
@@ -412,33 +420,42 @@ turns an operator-visible failure into a silent stall.
   condition in `idd-review-triage.instructions.md`'s "Disposition-evidence
   parity (advisory-only)" paragraph), autopilot may deterministically
   override `return-to-e1` and proceed on the current HEAD SHA. Distinct
-  from the `reviewCurrency` carve-out above (that covers E1-snapshot
-  staleness; this covers disposition evidence on already-resolved
-  threads) and applied by the agent, not `pre-merge-readiness`'s own
-  rollup. The signal never changes `route` itself; any other blocking
-  cause makes it `false`, and the gate still routes to E1/E4. Fails
-  closed: an unusable check makes this condition unmet.
-- **Closing-set and impact-checklist re-verification** (D3.5/D3.7
-  re-run against current HEAD, #2749): confirm the local worktree is
-  checked out at the PR's current HEAD exactly (`git fetch` plus
-  `git checkout`/`git reset --hard` if a resumed or external-push
-  session left it stale) — D3.5 step 7's `git log` and D3.7's
-  inherited `git diff` both read local git state, not the remote PR
-  directly. Then re-run `idd-pr-submit.instructions.md`'s D3.5 steps
+  from the `reviewCurrency` carve-out above (E1-snapshot staleness) and
+  applied by the agent, not `pre-merge-readiness`'s own rollup. The
+  signal never changes `route` itself; any other blocking cause makes it
+  `false`, and the gate still routes to E1/E4. Fails closed: an unusable
+  check makes this condition unmet.
+- **Closing-set and impact-checklist re-verification**:
+  `closingSet`/`closing-set` evidences this section's re-run of
+  D3.5 steps 6-7 only; re-derive D3.7 below locally.
+  After fetch, the claim gate must confirm
+  `git branch --show-current` is `{branch-name}`; else hold.
+  Require empty `git status --porcelain` and
+  `git merge-base --is-ancestor HEAD "$PR_HEAD_SHA"`; else hold. Under
+  `set -o pipefail`, run
+  `git ls-tree -r -z --full-tree --name-only "$PR_HEAD_SHA" |
+  (cd "$(git rev-parse --show-toplevel)" &&
+  GIT_LITERAL_PATHSPECS=1 xargs -0 git ls-files -z -o --exclude-standard --)`
+  and again with `-o -i`; any output or failure holds. Use
+  `git switch {branch-name}` (not
+  detached), recheck; reset on pass)
+  — D3.5/D3.7 read local state, not the remote PR. Then re-run
+  `idd-pr-submit.instructions.md`'s D3.5 steps
   6-7 (the `closingIssuesReferences` set comparison and the
   commit-message closing-keyword scan) and D3.7 (the
   IDD-impact-checklist re-derivation) against that HEAD. Skip D3.5
-  steps 6-7 under the same non-default-`{development-branch}`
-  exemption D3.5 itself carries. On a mismatch: for a closing-set
-  drift, apply D3.5 step 6's own remediation (reusing step 4's
-  edit-and-recheck mechanism for a missing entry); for a stray
+  steps 6-7 under D3.5's own non-default-`{development-branch}`
+  exemption. On a mismatch: for a closing-set drift, apply D3.5 step
+  6's own remediation, except a missing entry it classes as pending
+  registration (`kurone-kito/idd-skill#3632`), which is no drift: keep
+  polling the `closing-set` blocker, no repair or hold; for a stray
   commit-message match, apply D3.5 step 7's own remediation (amend or
   rebase); for a checklist drift, apply D3.7's own mismatch handling.
   If the fix amended or rebased a commit (changing HEAD), return to
-  this list's first condition instead of only repeating this one — the
-  new HEAD invalidates the conditions already checked above. Otherwise,
-  repeat this condition once. If it still fails, post a hold note and
-  stop — do not proceed to F3.
+  this list's first condition instead of only repeating it — the new
+  HEAD invalidates the checks above. Otherwise, repeat this condition
+  once. If it still fails (pending registration excepted), post a hold
+  note and stop — do not proceed to F3.
 
 When any F2 condition routes to a hold/stop or back to E1/E14, update
 the digest after recording the blocking evidence and before

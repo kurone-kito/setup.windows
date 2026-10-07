@@ -46,9 +46,9 @@ This check never rebases, merges, or pushes.
 
 1. Run the profile-selected branch-conflict-state helper: `node
    scripts/branch-conflict-state.mjs --pr <pr-number>`, or the
-   package-manager-profile `idd:branch-conflict-state` command
-   (resolve the exact command from `docs/idd-helper-scripts.md` if
-   unsure). Read `syncRecommendation`:
+   package-manager-profile `idd:branch-conflict-state` command, or the
+   ephemeral-npx equivalent (resolve the exact command from
+   `docs/idd-helper-scripts.md` if unsure). Read `syncRecommendation`:
    - `"none"`: the branch is conflict-free and, if branch protection
      requires an up-to-date head, already current — proceed to F2.
    - `"recheck"` (mergeability still computing, a transient state):
@@ -74,10 +74,14 @@ This check never rebases, merges, or pushes.
    from claim time, whenever one was recorded for the active claim —
    omitting it silently skips the merge-time activation-nonce
    comparison), or the package-manager-profile
-   `idd:pre-merge-readiness` command (resolve the exact command from
-   `docs/idd-helper-scripts.md` if unsure). This is the same helper the
+   `idd:pre-merge-readiness` command, or the ephemeral-npx equivalent
+   (resolve the exact command from `docs/idd-helper-scripts.md` if
+   unsure). This is the same helper the
    standard F2 treats as the authoritative source for the merge
-   decision.
+   decision. When D3 step 6 ("Multiple closes") closed more than one
+   issue, also add `--closing-issues <n>,<m>` with the full deliberate
+   set — otherwise the helper's `closing-set` gate reports the extra
+   issue as a mismatch.
 2. If the helper fails, returns invalid or incomplete JSON (missing any
    of the required top-level fields listed in
    `schemas/pre-merge-readiness.schema.json`), or its evidence disagrees
@@ -92,8 +96,10 @@ This check never rebases, merges, or pushes.
    `false`, every entry in `blockers[]` — each a `gate` name plus a
    `detail` string. Do not interpret, re-route, or attempt to remedy
    individual blockers yourself (for example, waiting out a `ci` or
-   `advisory-wait` blocker, or returning to E1 for a `review-currency`
-   or `disposition-evidence` blocker) — that
+   `advisory-wait` blocker, returning to E1 for a `review-currency` or
+   `disposition-evidence` blocker, or amending a commit or editing the
+   PR body for a `closing-set` blocker — this file never does either
+   remedy) — that
    per-blocker routing is exactly the standard file's prose-heavy part
    this lite file excludes.
 4. Proceed to `idd-merge-handoff-lite.instructions.md` (F2.5) with this

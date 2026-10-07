@@ -124,12 +124,12 @@ Ownership timing in this workflow uses the policy defaults
 `docs/policy-constants.md`.
 
 - **Stale**: an active claim whose latest **valid** `claimed-by`
-  comment's GitHub `created_at` is ≥ 12 h ago. Another session may take
+  comment's GitHub `created_at` is ≥ 24 h ago. Another session may take
   it over by posting a fresh `{claim-id}` whose `supersedes:` value is
   that active claim's `{claim-id}`.
 - **Heartbeat**: after re-validating ownership, re-post the claim
-  comment every 6 h while holding or when any phase is expected to
-  exceed 6 h. The latest **valid** `claimed-by` comment for the same
+  comment every 12 h while holding or when any phase is expected to
+  exceed 12 h. The latest **valid** `claimed-by` comment for the same
   `{claim-id}` resets the stale clock. Embed timestamps are ignored;
   only the GitHub `created_at` of the comment itself counts.
 - **Heartbeat-overdue**: diagnostic only; see
@@ -164,8 +164,8 @@ claim-id.
 In addition to the `{claim-id}` check, verify that the mutation is
 about to run from the worktree named in the active claim's `branch:`
 field. This **cwd-vs-claim check** applies only to mutations made
-from inside the implementation worktree contract (B3, D, E, and F2/F3
-phases):
+from inside the implementation worktree contract (B2, B3, C5, D, E,
+and F2/F3 phases):
 
 Scope — the check runs **only** when **all** of the following are
 true:
@@ -207,12 +207,10 @@ When in scope, run:
    sequence (each step must succeed before the next; `reacquired:
    true` required at both ends) -- else fails closed.
 
-**Recovery if a commit already landed on the wrong branch.** If this gate
-or `idd-doctor` finds a commit on the wrong branch, cherry-pick it onto
-the correct issue branch and restore the contaminated branch — **never**
-`git reset --hard` then force-push a pushed or shared branch to erase it.
-See [Wrong-branch commit recovery](../../docs/idd-design-rationale.md#wrong-branch-commit-recovery-cherry-pick-never-force-push)
-for the full procedure.
+**Wrong-branch recovery.** Cherry-pick onto the right branch and
+restore the contaminated one — never `git reset --hard` +
+force-push a pushed/shared branch;
+[full procedure](../../docs/idd-design-rationale.md#wrong-branch-commit-recovery-cherry-pick-never-force-push).
 
 Out of scope and explicitly **not** blocked:
 
@@ -272,8 +270,7 @@ enabled and default approval actors to
 | **orphan-first-policy** | `none` |
 <!-- dprint-ignore-end -->
 
-Non-shell rows (**issue-scope**, **orphan-first-policy**) are workflow
-settings — read them literally, not as commands.
+Non-shell rows are settings, not commands.
 
 `pre-push-validate` omits auto-fix. If lint fails, run
 **fix-validate**, commit, then re-run **pre-push-validate**.
@@ -285,26 +282,30 @@ commit before any push, rebase, or step needing a clean tree.
 recreated worktrees must not need manual cleanup or leave unexpected
 tracked changes.
 
-**Tool availability**: run commands only when tools exist. For Node.js:
+Judge a command-set run by exit status; when piping, check
+`${PIPESTATUS[0]}` or `pipefail` because filters can't prove success
+(#3139).
+
+**Tool availability**: run commands only when tools exist. For Node.js,
 prefer project scripts; use `npx <tool>` if Node.js and `npx` are available
 and no relevant script exists; else use `true`. For other tools, use
 `true` when absent.
 
 ## Phase routing table
 
-Start by reading this file for shared definitions, then load the phase
-file that matches your current situation.
+Read this file first, then load the phase file matching your situation.
 
 <!-- dprint-ignore-start -->
 | Situation | Read this file |
 | --- | --- |
 | Starting fresh (no active claim) | `idd-discover.instructions.md`, then `idd-claim.instructions.md` |
 | Starting fresh with one explicit issue target | `idd-discover.instructions.md` A0-T, then `idd-claim.instructions.md` |
+| Unsure mid E/F-phase while still owning claim | [Live-session E/F orientation](../../docs/idd-workflow.md#live-session-ef-orientation) |
 | Resuming after crash / rate-limit / handoff / operator-present deliberate pause | `idd-resume.instructions.md` |
 | Claimed, branch exists, no PR yet | `idd-work.instructions.md` |
 | PR open, CI running, no reviews yet | `idd-pr-submit.instructions.md` |
 | PR open, CI running, reviews exist | `idd-review-snapshot.instructions.md` (E1–E3) |
-| PR open, CI passed, no reviews yet | `idd-review-snapshot.instructions.md` (E3 empty-list → branch-sync → F1) |
+| PR open, CI passed, no reviews yet | `idd-review-snapshot.instructions.md` (E3 empty → branch-sync/F1 if ready; deferred → wait/E1) |
 | PR open, CI passed, reviews pending | `idd-review-snapshot.instructions.md` |
 | Snapshot done, ReviewItems_snapshot non-empty | `idd-review-triage.instructions.md` (E4–E8) |
 | Review feedback accepted, pushing fixes | `idd-review-fix.instructions.md` |

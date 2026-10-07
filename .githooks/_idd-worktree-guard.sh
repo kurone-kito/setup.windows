@@ -132,6 +132,13 @@ _IDD_WTG_EOF_
   esac
 
   matched=0
+  # This file is sourced by both hooks, so preserve the caller's shell
+  # option state while preventing pathname expansion of the pattern list.
+  noglob_was_set=0
+  case $- in
+    *f*) noglob_was_set=1 ;;
+    *) set -f ;;
+  esac
   for pattern in $patterns; do
     # Unquoted $pattern is intentional: it enables glob matching of the
     # configured branch pattern against the branch name.
@@ -140,6 +147,7 @@ _IDD_WTG_EOF_
       $pattern) matched=1; break ;;
     esac
   done
+  [ "$noglob_was_set" = 1 ] || set +f
   [ "$matched" = 1 ] || return 0
 
   printf 'IDD worktree guard: refusing to %s on "%s" from the primary worktree (%s).\n' \

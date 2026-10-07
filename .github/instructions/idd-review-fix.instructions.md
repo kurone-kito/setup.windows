@@ -5,9 +5,8 @@ Accepted PATH A items. Covers implementing fixes, validating, pushing,
 replying to reviewers, and waiting for CI — including E14's GitHub
 Copilot advisory-review step, which follows even when another local
 agent drives the workflow, since it depends on GitHub review state, not
-the local CLI. E14's timing defaults are named in
-[IDD policy constants](../../docs/policy-constants.md); refer there for
-values, but keep the phase logic here unchanged.
+the local CLI. E14's timing defaults live in
+[IDD policy constants](../../docs/policy-constants.md).
 
 Apply the
 [shared claim revalidation gate](idd-overview-core.instructions.md#claim-revalidation-gate)
@@ -16,19 +15,18 @@ before E9, the E12 push, and each E13/E14/E15 GitHub side effect
 
 ## E9 — Fix accepted issues
 
-Fix all Accepted PATH A items from ReviewItems_snapshot. Run
+Fix all Accepted PATH A items from ReviewItems_snapshot (cold:
+`idd-review-snapshot.instructions.md`'s Cold-start section). Run
 **fix-validate**. Commit fixes atomically — one logical change per
 commit.
 
 **Within-round batching.** All of this round's Accepted PATH A fixes
 travel as their own atomic commits, but push together in a single push
 at E12 — do not push after each individual fix. See E12 for the push
-step and the bounded cross-round allowance for comments arriving before
-that push.
+step and the bounded cross-round allowance.
 
-These fix-side rules complement the accept-side "Verify before accept"
-rule in `idd-review-triage.instructions.md` (E5); each cuts the
-advisory-review round count:
+These fix-side rules cut the advisory-review round count (complementing
+E5's "Verify before accept" rule):
 
 - **Fix the whole class, not just the flagged line.** Sweep the current
   diff (and adjacent sections) and fix every instance of a systemic
@@ -39,7 +37,9 @@ advisory-review round count:
   before committing.
 - **Already fixed via batching.** A PATH A item Accepted (E4/E5) may
   already be folded into a prior E12 push — confirm the commit
-  addresses it and let E13 cite that SHA, without duplicating the fix.
+  addresses it, applying the same file-path-touch check as
+  `idd-review-snapshot.instructions.md`'s Cold-start edge case 1, and
+  let E13 cite that SHA, without duplicating the fix.
 
 ## E10 — Validate fixes with critique pass
 
@@ -51,18 +51,9 @@ current E9 fix batch.
 
 A repository may also configure `critiqueLoop.delegate` to point this
 pass at a different reviewer instead of the per-agent mechanism, using
-the same resolution chain and `mode` semantics C1 already has. When
-helper runtime is enabled, resolve the effective `critiqueLoop.delegate`
-with the
-[`idd-critique-delegate`](../../docs/idd-helper-scripts.md#effective-c1-critique-delegate)
-helper: `node scripts/idd-critique-delegate.mjs` for source-repo /
-vendored-node profiles, or the profile-selected command named in
-`docs/idd-helper-scripts.md` for package-manager / ephemeral-npx
-profiles — never hardcode the bare binary name for those profiles.
-For `instructions-only` execution (no helper runtime), apply the
-resolution order directly: repo-local `critiqueLoop.delegate` always
-wins outright, and only when it is genuinely absent does a local
-runtime's user-global config file apply. `critiqueLoop.telemetryHook`
+the same resolution chain, `mode` semantics, and helper resolution
+(`idd-critique-delegate`) C1 (`idd-work.instructions.md`) already
+defines. `critiqueLoop.telemetryHook`
 remains C1-only and is never consulted here. Delegate findings enter
 this pass the way `mode`
 governs at C1 — see `docs/idd-workflow.md`'s "Critique pass invocation"
@@ -91,7 +82,12 @@ Convergence guardrails:
   redirected by a maintainer.
 - If the critique pass reports zero issues, proceed to E11.
 
-**Round-count heuristic for genuinely-new findings.** The guard above
+**No confidence exception.** Fix scope or confidence never excuses
+skipping this pass — always run it before E11. Pushed and skipped
+one? Disclose on the PR, name the round(s), run E10 on the
+accumulated diff to a clean pass, then return to E1.
+
+**Round-count heuristic for genuinely-new findings (Tier 1).** The guard above
 covers a _repeating_ finding; a different pattern is each round
 surfacing a genuinely new, real finding — that is convergence, not
 stagnation, so the no-progress guard never fires. This is a heuristic,
@@ -109,7 +105,7 @@ finding's root cause and further comments are speculative or
 non-blocking hardening, treat them as PATH B (disposition-only,
 E4-E7) rather than opening another E9-E10 round.
 
-**Second escalation tier (heuristic, not a hard rule): when the
+**Second escalation tier (Tier 2; heuristic, not a hard rule): when the
 structural fix itself doesn't converge.** The heuristic above names
 one escalation (patch-by-patch → one structural fix); it does not say
 what to do when that structural fix keeps drawing new same-area
@@ -179,9 +175,14 @@ mergeable,mergeStateStatus`) — reflects the last pushed head, not
 unpushed E9 fixes.
 
 - **`content-conflict`** (`mergeable` `CONFLICTING`): pass the active
-  review gate, merge `{development-branch}` into the feature branch
-  (`git fetch origin {development-branch} && git merge
-  origin/{development-branch}`), resolve, complete the merge.
+  review gate, merge `{development-branch}` into the feature branch,
+  resolve, complete the merge:
+
+  ```sh
+  git fetch origin +refs/heads/{development-branch}:refs/remotes/origin/{development-branch} \
+    && git merge origin/{development-branch}
+  ```
+
   Non-interactive-hostile signing: use the
   [signed-commit merge wrapper](../../docs/idd-helper-scripts.md#signed-commit-merge-wrapper-shared-git-procedure)
   instead.
@@ -192,6 +193,9 @@ unpushed E9 fixes.
 ## E12 — Lint, test, push
 
 Run **post-fix-validate**.
+
+**Validate.** Judge the run by its own exit status — see
+[Project commands](idd-overview-core.instructions.md#project-commands).
 
 Then push the feature branch normally (E11 uses merge commits, not
 rebase, so no force push is required).
@@ -206,9 +210,9 @@ fresh round per arrival, but only when **all** hold:
   advisory bot's login (default Copilot: `copilot` /
   `copilot-pull-request-reviewer*`, matched via `isCopilotReviewerLogin`
   in `scripts/protocol-helpers.mjs`) or an `advisoryBotLogins` login,
-  **regardless of PATH A/B** (Copilot's inline thread comments fall
-  through to PATH A under E4's ambiguous-default rule; a
-  `secondaryBotLogin` overlap still qualifies).
+  **regardless of PATH A/B** (Copilot's inline thread comments are
+  PATH A under E4; an overlap with any configured
+  `secondaryBotLogin` login still qualifies).
 - Each comment is a small, confirmable fix whose claim was checked
   against live evidence (linter run, actual file/runtime behavior)
   before folding it in — the same **verify-before-accept discipline** E5
@@ -230,11 +234,10 @@ falls outside the touched-file scope; or either bound is reached.
 **Non-goals**: never delays an in-flight CI wait (E15's mid-wait
 fold-in rule is unchanged); never changes PATH A/B routing or triage
 timing (still happens at the next E1 pass — only push timing changes);
-and relaxes nothing else — E14 still re-reviews every push, the
-per-HEAD `review-watermark` still invalidates on push, each E6 reply
-stays individual, and the
+and relaxes nothing else: E14 re-review, `review-watermark`
+invalidation, and individual E6 replies stay as before; the
 [claim revalidation gate](idd-overview-core.instructions.md#claim-revalidation-gate)
-still runs immediately before push.
+runs immediately before push.
 
 **PR body sync.** If this round's fix changes a claim the PR body
 makes (round count, a documented residual limitation, a scope
@@ -259,7 +262,11 @@ Start every reply with one of these prefixes so that disposition is
 unambiguous:
 
 - `**Accepted** — fixed in {commit-sha or comma-separated list}: {brief explanation}`
-  After that visible prefix, include the reply-identity stamp exactly as
+  Citing a commit that did not fix this item in the current round
+  requires it to already pass the file-path-touch check E9 applies
+  (`idd-review-snapshot.instructions.md`'s Cold-start edge case 1).
+  After that visible prefix, include the
+  reply-identity stamp exactly as
   `idd-review-triage.instructions.md`'s E6 defines it
   (`<!-- {markerPrefix}-review-reply -->`) — same stamp mechanics and
   constraints, applied here to the `**Accepted**`-only prefix this
@@ -304,7 +311,7 @@ gh pr edit {pr-number} --add-reviewer {reviewer-login}
 For an **advisory bot**, try the add-reviewer command with the bot's
 **login** first — on some `gh` versions the GraphQL mutation fails a
 bot login outright (`Could not resolve user with login '{login}'
-(requestReviewsByLogin)`); on failure, fall back to REST
+(requestReviewsByLogin)`); if registration evidence is absent, use REST
 `requested_reviewers` with the bot's real account login (REST also
 silently no-ops on a **display name**). See **Primary advisory bot**
 below for the exact login each path needs.
@@ -333,8 +340,10 @@ login).
    PR_HEAD_SHA=$(gh pr view {pr-number} --json headRefOid --jq '.headRefOid')
    ```
 
-2. Run **AW1** (`idd-advisory-wait.instructions.md`). **SATISFIED** →
-   E14 advisory-bot processing is done; proceed to E15.
+2. Run **AW1** using the profile-selected command from
+   `docs/idd-helper-scripts.md` with `--pr`, `--claim-id`, `--agent-id`,
+   and `--trusted-marker-logins`. **SATISFIED** → E14 advisory-bot
+   processing is done; proceed to E15.
 3. Run **AW2** to fetch markers.
 4. Apply the **AW3** decision table:
    - **SATISFIED**, `COPILOT_PENDING` `"false"`, `COPILOT_PENDING_COVERS_HEAD`
@@ -343,58 +352,56 @@ login).
      first. `"attempt"` runs its bounded cycle (non-pending entry: skip
      **Remove**, start at **Request**; a proven failure-to-register
      completes the cycle per the entry's inverted step 4/5 disposition),
-     then proceed to E15 either way (accumulates recovery-cycle evidence
-     toward `COPILOT_UNAVAILABLE`; `outcome` itself is unaffected).
-     `"cap-exhausted"` honors `advisoryWait.capExhaustedRoute` exactly
-     like the ordinary `CAP_EXHAUSTED` row below — `hold` posts AW4's
-     **Cap exhausted** hold and stops; `phase-specific` (default)
-     proceeds to E15 unchanged (`#2327` follow-up: cycle exhaustion from
-     this entry must not silently bypass a configured hold policy).
-     `"not-applicable"` → proceed to E15 unchanged.
-   - **SATISFIED** (otherwise) → proceed to E15.
+     then apply step 5, proceed to E15 either way (accumulates
+     recovery-cycle evidence toward `COPILOT_UNAVAILABLE`; `outcome`
+     itself is unaffected). `"cap-exhausted"` honors
+     `advisoryWait.capExhaustedRoute` exactly like the ordinary
+     `CAP_EXHAUSTED` row below, including its step-5 supplement
+     (`#2327` follow-up: cycle exhaustion from this entry must not
+     silently bypass a configured hold policy). `"not-applicable"` →
+     apply step 5, proceed to E15 unchanged.
+   - **SATISFIED** (otherwise) → apply step 5, proceed to E15.
    - **HOLD** → post the hold comment from **AW4** and stop.
    - **RECOVERY_NEEDED** (`COPILOT_PENDING` `"true"`, no same-head
      marker): post the recovery marker from **AW3-R**; do not
      re-request.
    - **CAP_EXHAUSTED** (`REQUEST_MARKER_COUNT` ≥ `REQUEST_CAP`, no
-     same-head marker): if `CAP_EXHAUSTED_ROUTE` is `hold`, post the
-     hold from **AW4** and stop; otherwise (`phase-specific`, default)
-     skip the wait and proceed to E15.
-   - **REQUEST_NEEDED**, `COPILOT_PENDING` `"false"` (cap not
-     exhausted): request the bot's review and immediately post:
+     same-head marker): apply step 5 regardless of route. Then, if
+     `CAP_EXHAUSTED_ROUTE` is `hold`, post the hold from **AW4** and
+     stop; otherwise (`phase-specific`, default) skip the wait,
+     proceed to E15.
+   - **REQUEST_NEEDED**, `COPILOT_PENDING` `"false"`: request via
+     add-reviewer/REST. Snapshot event/node before mutation; post only
+     with a newer event after HEAD or a fresh node absent from that
+     snapshot. Exit status is not evidence (issue `#3500`).
+     See the [registration fallback](../../docs/idd-advisory-wait-shell-fallback.md#registration-proven-review-request);
+     if absent, stop/ask; status `3` returns to E1, and primary `1`/`2`
+     are unproven/unreadable (only secondary `1`/`2` are non-gating).
 
-     ```sh
-     gh pr edit {pr-number} --add-reviewer "@{primary-advisory-bot}"
-     # on GraphQL login-resolution failure:
-     gh api repos/{owner}/{repo}/pulls/{pr-number}/requested_reviewers \
-       -X POST -f "reviewers[]={primary-advisory-bot-rest-login}"
-     ```
-
-     ```text
-     advisory-wait: {agent-id} {head-SHA} {ISO8601-requested-at}
-     ```
-
-     Use `PR_HEAD_SHA` as `{head-SHA}`; post as plain text, not HTML.
+     `advisory-wait: {agent-id} {PR_HEAD_SHA} {ISO8601-requested-at}`
    - **REQUEST_NEEDED**, `COPILOT_PENDING` `"true"` (unproven coverage —
      PR #1562): consult **`AW3-S`**'s `staleRequestRecovery` first —
      `"attempt"` runs its bounded remove/re-request/verify/mark cycle
      (independently capped, never the plain marker or `REQUEST_CAP`);
      `"cap-exhausted"` handles like **CAP_EXHAUSTED** above (no
-     remove/re-request); `"not-applicable"` falls through to the
+     remove/re-request, no step 5 — `outcome` here stays
+     `REQUEST_NEEDED`); `"not-applicable"` falls through to the
      polling loop unchanged (a same-head marker already anchors HEAD).
    - **WAIT**, or after a **REQUEST_NEEDED** / **RECOVERY_NEEDED** /
      **AW3-S** marker posts: enter the active polling loop below.
-5. **Secondary advisory bot (optional, non-gating).** Request it once
-   per HEAD when the helper reports `secondaryRequestNeeded: true` (or,
-   in the shell fallback, AW3 yields **CAP_EXHAUSTED** or a
-   stalled/rate-limited **SATISFIED**) and `advisoryWait.secondaryBotLogin`
-   is configured and not yet requested for this HEAD — same
-   gh-then-REST fallback as the primary, no `advisory-wait:` marker, and
-   no change to the AW3 route. Its review is ordinary advisory input,
-   returned by the E1 snapshot if it lands before merge; skipped when
-   unconfigured. Never poll/wait for it here, E1, or E2; only F2's
-   `secondary-quiet-window` blocker (`idd-pre-merge.instructions.md`)
-   waits.
+5. **Secondary advisory bot(s) (optional, non-gating), called from
+   every `apply step 5` reference in this file.**
+   `secondaryBotLogin` accepts one login or a list; request **every**
+   login the helper's `secondaryRequestLogins` reports (shell
+   fallback: every configured login not yet requested this HEAD). Use the
+   guarded procedure per login, replacing primary placeholders and
+   `BOT_REST_LOGIN`/bare form, with REST type selecting `botIds`/`userIds`;
+   `1`/`2` record/skip, `3` stops. No primary marker.
+   Each review is ordinary
+   advisory input, picked up by E1 if it lands before merge; skipped
+   when unconfigured. Never poll/wait for any of them here, E1, or E2;
+   only F2's `secondary-quiet-window` blocker
+   (`idd-pre-merge.instructions.md`) waits, folded across every login.
 
 Copilot and CI advisory bot comments are advisory; unanswered ones do
 not block merge.
@@ -411,11 +418,12 @@ Do not post a new marker if a same-head one already exists — reuse the
 **earliest** `createdAt` among same-head markers (the clock starts at
 the first request, not the last).
 
-Take a fresh activity snapshot (E1 Step 1's scope, excluding only
-trusted operational markers) and record its highest `updatedAt` as the
-**temporary polling watermark** — never post it as a `review-watermark`
-comment. If empty, use the latest trusted same-claim `review-watermark`
-comment's `createdAt` instead, or stop and return to E1 if none exists.
+Take an E1-scope activity snapshot (excluding trusted markers) and
+record highest `updatedAt` as **polling watermark** — never post it as a
+`review-watermark`. If a deferred baseline is older, return E1; otherwise
+use this maximum. If empty, use latest trusted same-claim watermark
+`createdAt`, then deferred E1 baseline, then latest trusted same-claim
+`review-baseline` `createdAt`; otherwise E1.
 
 Poll every `POLL_INTERVAL_MINUTES` minutes:
 
@@ -433,8 +441,9 @@ Poll every `POLL_INTERVAL_MINUTES` minutes:
 3. Run **AW1**/**AW2** (refresh `COPILOT_PENDING`, `LAST_COPILOT_COMMIT`,
    `EARLIEST_SAME_HEAD_AT`; apply **AW5** if the latter is empty), then
    **AW3**: **SATISFIED** → apply step 4's same non-pending
-   `staleRequestRecovery` consultation before exiting, then proceed to E15;
-   **HOLD** → post **AW4**/**AW5** hold and stop; **WAIT** → keep polling.
+   `staleRequestRecovery` consultation before exiting, then apply step
+   5, proceed to E15; **HOLD** → post **AW4**/**AW5** hold and stop;
+   **WAIT** → keep polling.
 
 Note: "advisory" means the agent need not accept every suggestion — not
 that it may skip a review it explicitly requested. Human
@@ -457,9 +466,9 @@ keys preserve the distributed defaults. The outcome paths below are
 authoritative and override the shared helper's generic outcomes for this
 phase:
 
-**While polling**: if new review threads or comments arrive during the
-CI wait, note them. After CI resolves (any outcome), return to E1 before
-proceeding to F — do not skip triage.
+**While polling**: new review threads/comments → return to E1
+immediately; otherwise, after CI resolves (any outcome), return to E1
+before F — never skip triage.
 
 - **On success** → return to `idd-review-snapshot.instructions.md` (E1)
 - **On failure / code-caused**: fix, run **fix-validate**, commit

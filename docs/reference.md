@@ -1,3 +1,10 @@
+---
+type: reference
+title: IDD Detailed Reference
+description: Maps each operational question to the authoritative phase file or policy page that answers it.
+tags: [reference, navigation]
+---
+
 # IDD Detailed Reference
 
 Use this page when you already know the IDD loop exists and need the

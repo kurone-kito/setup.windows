@@ -157,7 +157,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
         run: |
-          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/ae16f497434a5023dfaa28f965fc2af92ebf055d \
             idd-advisory-convergence --pr "$PR_NUMBER" --assert
 
   # kurone-kito/idd-skill#2657: optional companion job -- a PR that fixes
@@ -258,6 +258,9 @@ jobs:
         # API calls it would cost.
         if: steps.allowlist.outputs.touched == 'true' && github.event.pull_request.head.repo.full_name == github.repository
         id: post-waiver
+        # v0.14 sets bash so the tee pipe below fails when the CLI fails.
+        # The runner default shell does not enable pipefail.
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -274,7 +277,7 @@ jobs:
         # that response lacked a body -- the two `if:` conditions below
         # already fail closed on that via `body-digest != ''`.
         run: |
-          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037 \
+          npx --yes --package https://codeload.github.com/kurone-kito/idd-skill/tar.gz/ae16f497434a5023dfaa28f965fc2af92ebf055d \
             idd-external-check-waiver --pr "$PR_NUMBER" --check idd-advisory-convergence \
             --reason self-referential-bootstrap-auto --run-id "$GITHUB_RUN_ID" \
             --auto-bootstrap --apply --yes | tee /tmp/idd-waiver-report.json

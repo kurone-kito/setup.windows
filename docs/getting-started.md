@@ -1,3 +1,10 @@
+---
+type: guide
+title: Getting Started with IDD
+description: Walks a new adopter through the shortest safe path from deciding to adopt IDD to running the first Issue-Driven Development loop.
+tags: [getting-started, onboarding]
+---
+
 # Getting Started with IDD
 
 Use this guide when you want the shortest safe path from deciding a
@@ -31,20 +38,32 @@ already been copied, start from the local `ONBOARDING.md` file instead.
 
 The onboarding guide is a thin orchestrator: it copies the portable
 instruction files, asks for project-specific command values, and
-updates agent entry files such as `AGENTS.md` (Codex CLI, OpenCode, and
-Grok Build), `CLAUDE.md`, `GEMINI.md`, or Copilot instructions. When a
-capable helper runtime is available, it points the session at
-`idd-onboard --hear` instead of walking through the policy and
-placeholder companion docs by hand.
+updates agent entry files such as `AGENTS.md` (Codex CLI, OpenCode,
+Grok Build, and Cursor CLI), `CLAUDE.md`, `GEMINI.md`, or Copilot
+instructions. When a capable helper runtime is available, it points
+the session at `idd-onboard --hear` instead of walking through the
+policy and placeholder companion docs by hand.
 
 ### Validate the import with IDD doctor (optional)
 
-After importing IDD, run the doctor script once in a repository that
-has the helper installed to catch common setup drift:
+After importing IDD, use the command for the helper runtime profile
+selected by the repository to catch common setup drift. For the
+`vendored-node` profile, run:
 
 ```sh
 node scripts/idd-doctor.mjs
 ```
+
+For the `package-manager` profile, invoke the generated `idd:doctor`
+package.json script through the configured package manager, such as
+`npm run idd:doctor --`. For the `ephemeral-npx` profile, run:
+
+```sh
+npx --yes --package <helper-package-spec> idd-doctor
+```
+
+The `instructions-only` profile has no doctor helper, so skip this
+optional check.
 
 The report checks core IDD file presence, unresolved placeholders,
 marker-prefix consistency, command-table sanity, and (when `gh` access

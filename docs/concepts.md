@@ -1,3 +1,10 @@
+---
+type: concept
+title: Core IDD Concepts
+description: Introduces the loop-engineering vocabulary and mental model behind the IDD phase instructions before diving into phase-by-phase rules.
+tags: [concepts, mental-model]
+---
+
 # Core IDD Concepts
 
 Use this page when you want the mental model before reading the phase
@@ -75,12 +82,13 @@ for the exact marker format and collection rules.
 
 IDD separates review findings into two paths:
 
-- **PATH A** is actionable feedback. Human review comments, requested
-  changes, and critique findings belong here when they may require a
-  code change or maintainer decision.
-- **PATH B** is advisory feedback. Copilot and CI advisory bot comments
-  are tracked for traceability, accepted or rejected during triage, and
-  closed out without entering the review-fix phase.
+- **PATH A** is actionable feedback: human review comments, requested
+  changes, critique findings that require a code change or maintainer
+  decision, and Copilot's inline review-thread comments.
+- **PATH B** is advisory feedback. Copilot's and CI advisory bots'
+  review-summary bodies and regular comments are tracked for
+  traceability, accepted or rejected during triage, and closed out
+  without entering the review-fix phase.
 
 This split keeps advisory noise visible without letting it block the
 same way as human requested changes. When a source is ambiguous, IDD

@@ -1,31 +1,23 @@
 # IDD — Resume Phase (Lite)
 
-Lite profile for weak / local models. Same semantics as
-`idd-resume.instructions.md`. Prefer helpers over prose.
-
-**Load this file alone** for resume routing. Do not open the standard
-resume file in the same turn.
+Lite profile for weak/local models. Same semantics as
+`idd-resume.instructions.md`; load it alone for resume routing.
 
 ## Helper runtime contract
 
-1. **When helper runtime is enabled** (`package-manager`, vendored-node,
-   or any profile that ships the helpers): run the commands below first.
-   If a helper is **missing, fails, returns invalid JSON, or disagrees
-   with live GitHub state** → **stop and ask**. Do **not** fall through
-   to the written tables in that situation.
+1. **When helper runtime is enabled** (`package-manager`, `ephemeral-npx`
+   — see `docs/idd-helper-scripts.md` — or vendored-node): run the
+   commands below. If a helper is **missing, fails, returns
+   invalid JSON, or disagrees with live GitHub state** → **stop and
+   ask**. Do **not** fall through to the written tables.
 2. **When the repository is `instructions-only`** (no helper runtime
    shipped): skip the helper commands and use the written tables only.
-   That is the sole path where the tables below are the primary control
-   surface.
-
-Never invent forced-handoff markers. Unattended sessions only
-**consume** already-recorded human-gated forced-handoff evidence.
 
 ## Always run helpers first (helper-enabled profiles)
 
 ```sh
-# Claim state (required before any mutation)
-node scripts/resume-claim-routing.mjs --issue <N>
+# Claim state (before mutation)
+node scripts/resume-claim-routing.mjs --issue <N> [--claim-id <id>] [--nonce <nonce>] [--worktree <path>]
 
 # Fresh-claim gate immediately before any claim write
 node scripts/resume-claim-routing.mjs --issue <N> --fresh-claim-gate
@@ -34,71 +26,98 @@ node scripts/resume-claim-routing.mjs --issue <N> --fresh-claim-gate
 node scripts/resume-route-selection.mjs --issue <N>
 ```
 
+Pass `--claim-id` once this session recorded and verified one,
+`--nonce` if this session recorded one for that claim-id, and
+`--worktree` once the B1 worktree exists.
+
 Map helper fields to actions below.
 
 ## Required signals (collect once)
 
-1. Active claim: `{claim-id}`, agent, branch, latest trusted `claimed-by`
-   `created_at` — or unclaimed. Ignore untrusted marker authors.
-2. Forced-handoff evidence (when present): approving human actor,
-   displaced `{claim-id}`, branch, linked PR, evidence URL — only if
-   `forced-handoff: human-gated` is recorded and authored by a trusted
-   actor. When an open PR exists, require issue-plus-PR approval naming
-   that PR. Record mismatches against live claim/branch/PR as Step 0
-   STOP. Never invent or post forced-handoff markers from this session.
-3. Open PR number + HEAD SHA, or `none`.
-4. Latest activity `updatedAt` on issue/PR (comments, reviews, threads).
-5. CI states for PR HEAD (or `none`).
-6. `git worktree list`, local branch existence, worktree `git status`,
-   unpushed commits, local HEAD SHA.
+Collect once: active `{claim-id}`/agent/branch from trusted markers (or
+unclaimed); trusted `forced-handoff: human-gated` proof (actor, displaced
+claim, branch, PR, URL; mismatches are Step 0 STOP); open PR+HEAD or
+`none`; latest issue/PR activity; PR-HEAD CI; and local worktree/branch/
+status/HEAD. When an open PR backs the claim, the proof must also have
+`contextScope: issue-plus-pr` with `linkedPr` naming that live PR.
+Never invent or post forced-handoff markers.
 
-Use GitHub **server** timestamps only. Stale age: this repository's
-configured **12 h** (`claim-stale-age` / `claimTiming.staleAge`;
-distributed default `24 h`).
+Use GitHub **server** timestamps only. Stale age default: **24 h**
+(`claim-stale-age` / `claimTiming.staleAge`).
 
 ## Step 0 — Route classifier (first match wins)
 
-| Condition                                                      | Action                                                                 |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Issue closed or PR merged                                      | Step 1 cleanup only → STOP                                             |
-| Valid human-gated forced-handoff matching live claim/branch/PR | Step 1 forced-handoff path (skip stall)                                |
-| Forced-handoff evidence present but mismatches live state      | STOP — report mismatch; do not claim/push                              |
-| Non-owned active claim, no valid forced-handoff                | Open `idd-resume-stall-lite.instructions.md`; return here if unblocked |
-| Otherwise                                                      | Step 1                                                                 |
+| Condition                                                      | Action                                                            |
+| -------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Issue closed or PR merged                                      | STOP — report; do not remove worktree/branch                      |
+| Valid human-gated forced-handoff matching live claim/branch/PR | Step 1 forced-handoff path (skip stall)                           |
+| Forced-handoff evidence present but mismatches live state      | STOP — report mismatch; do not claim/push                         |
+| Non-owned active claim + operator-present + input received     | Operator-present path (below); skip stall                         |
+| Non-owned active claim, no valid forced-handoff                | `idd-resume-stall-lite.instructions.md`; then Step 1 if unblocked |
+| Otherwise                                                      | Step 1                                                            |
 
-Quiet-window evidence never bypasses the 12 h stale threshold.
+Quiet-window evidence never bypasses the 24 h stale threshold.
+
+### Operator-present release
+
+Predicate: claimant-authored comment after latest valid `claimed-by`
+that records a deliberate pause and the same awaited input now
+received here; no later trusted claimant heartbeat, branch/PR
+movement, or comment/review (this path's step-1 comment excepted).
+Else stall-lite. Steps 1-2 are pre-claim (stall windows do not apply).
+
+1. Post the operator input as a normal comment; ask a human to drop
+   any needs-decision/blocked-by-human label (never this session).
+2. Re-read; if claim and predicate still hold, post a trusted
+   `unclaimed-by` matching the held `{agent-id}` / `{claim-id}`.
+3. Confirm unclaimed; else STOP.
+4. Fresh-claim-gate; A5 `supersedes: none` → Step 1 with
+   `--claim-id`/`--nonce` of that claim.
 
 ## Step 1 — Claim state (helper-first)
 
-On helper-enabled profiles, run `resume-claim-routing.mjs --issue <N>`
-(and stop-and-ask on failure — do not use the written table). Map:
+On helper-enabled profiles, run the Claim-state command above
+(stop-and-ask on failure — do not use the written table). Map:
 
-| Helper `state` / `action`  | Action                                                                                           |
-| -------------------------- | ------------------------------------------------------------------------------------------------ |
-| `already_owned` / `keep`   | Keep same `{claim-id}` → Step 2 (if branch is `roadmap-audit/*`, A1.5 only → STOP)               |
-| `unclaimed` / `re_claim`   | Fresh A5 claim → Step 2                                                                          |
-| `stale` / `takeover`       | A5 takeover `supersedes: <prior-id>` → Step 2 (if branch is `roadmap-audit/*`, A1.5 only → STOP) |
-| `non_inheritable` / `stop` | STOP — live competitor claim                                                                     |
-| `disputed` / `stop`        | STOP — contested claim                                                                           |
+| Helper `state` / `action`          | Action                                                         |
+| ---------------------------------- | -------------------------------------------------------------- |
+| `already_owned` / `keep`           | Keep same `{claim-id}` → Step 2                                |
+| `owner_evidence_required` / `stop` | Retry `--worktree <path>` once; else STOP unless §FH successor |
+| `unclaimed` / `re_claim`           | Fresh A5 claim → Step 2                                        |
+| `stale` / `takeover`               | Forced-handoff: retry below; else A5 takeover                  |
+| `non_inheritable` / `stop`         | Forced-handoff: retry below; else STOP — live competitor claim |
+| `disputed` / `stop`                | STOP — contested claim                                         |
 
-After any helper map, still apply the `roadmap-audit/*` special case when
-the active claim branch field starts with `roadmap-audit/`: coordination
-only — re-run A1.5, skip worktree creation, STOP after roadmap-side
-effects. Child-issue execution is not locked by that claim.
+`local_worktree_occupied` / `stop` → STOP — see §LWR; verify claim-id
+against occupied, unreadable, or unknown local worktree state
+(#3141).
+
+Forced-handoff: pass `new_claim_id` into Step 1. On
+`non_inheritable`/`stop`, `stale`/`takeover`, or
+`local_worktree_occupied`/`stop` with `evidence.forced_handoff`, retry
+`--claim-id <evidence.forced_handoff.new_claim_id>` before STOP.
+Retry `already_owned`: STOP if `new_agent_id` is not this
+session or `old_claim_id` is this session's claim (displaced).
+Else adopt the pair; unless this session recorded a nonce for
+`new_claim_id`, post one; wait settle; confirm the nonce winner;
+Step 2.
+
+After any helper map, `roadmap-audit/*` is still A1.5-only (no
+worktree; child issues are not locked).
 
 Written table (`instructions-only` profile only): first matching row.
 
 | Claim state                                                                                 | Action                                                        |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Closed / PR merged                                                                          | Remove local worktree/branch → STOP                           |
 | Active claim = this session's verified `{claim-id}` and branch starts with `roadmap-audit/` | Re-run A1.5 only → STOP                                       |
 | Active claim = this session's verified `{claim-id}`                                         | → Step 2                                                      |
 | Forced-handoff names this session's verified `{claim-id}` as displaced                      | STOP — displaced; no push/comment/resolve/merge               |
 | Forced-handoff recovery confirmed for this session                                          | A5 re-claim after GitHub shows handoff → Step 2               |
+| Stale/released + local worktree occupied or unreadable                                      | STOP — see §LWR; verify owner                                 |
 | No active claim                                                                             | A5 re-claim → Step 2                                          |
-| Active non-stale claim (other session, < 12 h)                                              | STOP                                                          |
-| Active stale claim (other session, ≥ 12 h) and branch starts with `roadmap-audit/`          | A5 takeover `supersedes: <prior-id>`; re-run A1.5 only → STOP |
-| Active stale claim (other session, ≥ 12 h)                                                  | A5 takeover `supersedes: <prior-id>` → Step 2                 |
+| Active non-stale claim (other session, < 24 h)                                              | STOP                                                          |
+| Active stale claim (other session, ≥ 24 h) and branch starts with `roadmap-audit/`          | A5 takeover `supersedes: <prior-id>`; re-run A1.5 only → STOP |
+| Active stale claim (other session, ≥ 24 h)                                                  | A5 takeover `supersedes: <prior-id>` → Step 2                 |
 
 All claim writes use A5 post-and-verify (`post-idd-marker` / claim helper
 settle delay). Same-agent non-stale claims are **not** inheritable by
@@ -108,15 +127,16 @@ agent-id alone.
 
 `{branch}` = active claim `branch:` field **verbatim**.
 
-| Situation                               | Action                                                          |
-| --------------------------------------- | --------------------------------------------------------------- |
-| No worktree, PR or remote branch exists | Create sibling worktree for `{branch}` (B1 rules); install-deps |
-| Worktree dirty with open reviews        | Stop and report; do not discard uncommitted work                |
-| Worktree dirty, no reviews              | Finish or stash per operator policy; prefer stop-and-ask        |
-| Worktree clean with unpushed commits    | → D1 / push path after claim revalidation                       |
-| Worktree clean, no unpushed             | → Step 3                                                        |
-| Multiple open PRs for the claim branch  | STOP — ambiguous                                                |
-| No PR, no remote, no local branch       | → B1 fresh worktree                                             |
+| Situation                              | Action                                                          |
+| -------------------------------------- | --------------------------------------------------------------- |
+| PR exists, no worktree                 | Create sibling worktree (B1); install-deps, then re-match below |
+| Remote branch, no PR, no worktree      | Create sibling worktree (B1); install-deps                      |
+| Worktree dirty with open reviews       | Stop and report; do not discard uncommitted work                |
+| Worktree dirty, no reviews             | Finish or stash per operator policy; prefer stop-and-ask        |
+| Worktree clean with unpushed commits   | → D1 / push path after claim revalidation                       |
+| Worktree clean, no unpushed            | → Step 3                                                        |
+| Multiple open PRs for the claim branch | STOP — ambiguous                                                |
+| No PR, no remote, no local branch      | → B1 fresh worktree                                             |
 
 Primary worktree must stay on `main`. Never `git switch` the primary onto
 the issue branch.
@@ -134,21 +154,13 @@ On helper-enabled profiles, run `resume-route-selection.mjs --issue <N>`
 - `E1` → `idd-review-snapshot-lite.instructions.md`
 - `E15` → `idd-review-fix-lite.instructions.md` E15 (invokes
   `idd-ci-lite.instructions.md` for polling)
-- `Esync` → the standard `idd-review-triage.instructions.md`'s
-  **E-phase branch-sync check** for classification only — see note
-  below
+- `Esync` → `idd-review-triage.instructions.md` **E-phase
+  branch-sync check** (classification only). Redirect non-lite
+  exits: `clean` → `idd-pre-merge-lite.instructions.md`; step 6 →
+  `idd-review-snapshot-lite.instructions.md` (E1)
 - `F1` / `F2` → `idd-pre-merge-lite.instructions.md`, from the top
   (covers both F1 and F2)
 - `stop` → STOP — report helper `reason`
-
-`Esync` resumes at the standard
-`idd-review-triage.instructions.md`'s **E-phase branch-sync check**
-for branch-state classification only. Two of its exits point outside
-the lite profile: the `clean` exit continues to non-lite
-`idd-pre-merge.instructions.md` — go to
-`idd-pre-merge-lite.instructions.md` instead. The sync path's step 6
-returns to non-lite `idd-review-snapshot.instructions.md` — return to
-`idd-review-snapshot-lite.instructions.md` (E1) instead.
 
 Before any mutation after routing: re-validate claim ownership, PR HEAD,
 and CI live state.
@@ -165,11 +177,6 @@ Written table (`instructions-only` profile only):
 | Success | clean; branch behind only                  | → F1 then F2 or sync  |
 | Success | content conflict                           | → Esync               |
 
-Above, `E1` / `E15` / `Esync` route as in the Step 3 list and
-**E-phase branch-sync check** note above (which also names
-`idd-review-snapshot-lite.instructions.md` and
-`idd-ci-lite.instructions.md`).
-
 Forced-handoff recovery on an open PR: final success still → **E1** until
 this claim posts its own review-watermark and baseline.
 
@@ -184,12 +191,6 @@ If claim lost: STOP. Do not post further operational markers.
 
 ## Stop-and-ask
 
-Stop and ask the operator when:
-
-- helper runtime is expected but missing/failing;
-- claim state is ambiguous or disputed;
-- forced-handoff evidence is partial;
-- worktree is dirty with unclear ownership;
-- multiple PRs match the claim branch.
-
+Stop and ask when a helper is missing/failing, claim/forced-handoff
+is ambiguous, the worktree is dirty, or multiple PRs match.
 Do **not** run autonomous merge (F3+) on the lite tier.

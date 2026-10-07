@@ -1,31 +1,33 @@
 {
   "$schema": "https://kurone-kito.github.io/idd-skill/schemas/policy.schema.json",
-  "iddVersion": "0.11.0",
+  "iddVersion": "0.14.0",
   "markerPrefix": "setup-windows",
+  "authoringLanguage": "en",
+  "developmentBranch": "master",
   "mergePolicy": "fully_autonomous_merge",
   "mergePolicyAck": "fully_autonomous_merge",
   "reviewPolicy": "copilot-advisory",
   "threadResolutionPolicy": "fast-agent-resolve",
-  "authoringLanguage": "en",
-  "provider": "github",
   "claimTiming": {
-    "staleAge": "PT12H",
-    "heartbeatInterval": "PT6H"
+    "staleAge": "PT24H",
+    "heartbeatInterval": "PT12H"
   },
-  "forcedHandoff": {
-    "mode": "human-gated",
-    "authorityPolicy": "owners-and-maintainers-only"
-  },
-  "trustedMarkerActors": ["kurone-kito", "github-actions[bot]"],
+  "trustedMarkerActors": [
+    "kurone-kito",
+    "github-actions[bot]"
+  ],
   "labels": {
-    "untrustedLabelerLogins": ["coderabbitai[bot]", "reviewpad[bot]"]
+    "untrustedLabelerLogins": [
+      "coderabbitai[bot]",
+      "reviewpad[bot]"
+    ]
   },
   "advisoryBotLogins": [
-    "copilot-pull-request-reviewer[bot]",
-    "coderabbitai[bot]"
+    "coderabbitai[bot]",
+    "chatgpt-codex-connector[bot]"
   ],
   "workshop": {
-    "exampleRepository": ""
+    "exampleRepository": "kurone-kito/vrc-event-calendar"
   },
   "commands": {
     "install-deps": "true",
@@ -35,22 +37,37 @@
   },
   "helperRuntime": {
     "profile": "ephemeral-npx",
-    "packageSpec": "https://codeload.github.com/kurone-kito/idd-skill/tar.gz/1f90787ebf4021673ce6e5eb69741df331fd2037"
+    "packageSpec": "https://codeload.github.com/kurone-kito/idd-skill/tar.gz/ae16f497434a5023dfaa28f965fc2af92ebf055d"
   },
   "issueScope": "roadmap-first",
   "orphanFirstPolicy": "none",
-  "skipIssueAuthorApprovalGate": false,
   "maintainerApprovalActorPolicy": "owners-and-maintainers-only",
+  "issueAuthoring": {
+    "journalIssue": "kurone-kito/setup.windows#175"
+  },
   "advisoryWait": {
-    "convergenceScope": "all-prs"
+    "convergenceScope": "idd-claimed",
+    "convergenceDeadline": "PT9H",
+    "secondaryBotLogin": "coderabbitai[bot]",
+    "secondaryQuietWindow": "PT1H"
   },
-  "advisoryConvergence": {
-    "copilotReviewPollMaxWait": "PT60S"
+  "discover": {
+    "selectionDesync": "session-offset"
   },
-  "ciWait": {
-    "runningTimeout": "PT10M",
-    "generationTimeout": "PT10M",
-    "rerunPolicy": "rerun-once"
+  "critiqueLoop": {
+    "deferAfterRounds": 5,
+    "deferByUrgency": "severity-tiered",
+    "telemetryHook": {
+      "command": "idd-critique-telemetry"
+    },
+    "delegate": {
+      "command": "node .github/idd/critique-delegate.mjs",
+      "mode": "combined"
+    }
+  },
+  "forcedHandoff": {
+    "mode": "human-gated",
+    "authorityPolicy": "owners-and-maintainers-only"
   },
   "autopilotSuitability": {
     "floor": 3
@@ -58,30 +75,32 @@
   "worktreeGuard": {
     "enabled": true
   },
-  "ciGate": {
-    "externalChecks": {
-      "waivable": [{ "selector": "idd-advisory-convergence" }]
+  "githubApi": {
+    "readCache": {
+      "enabled": true
     },
-    "externalCheckWaivers": { "mode": "maintainer-authorized" },
-    "trustEmptyProtectionReads": true
-  },
-  "providerHealth": {
-    "minCorroboratingPrs": 2,
-    "samplingWindow": "PT24H"
-  },
-  "localValidationEvidence": {
-    "maxAge": "PT4H"
+    "loadControl": {
+      "enabled": true,
+      "maxConcurrent": 4
+    }
   },
   "upstreamEscalation": {
     "enabled": true
   },
-  "critiqueLoop": {
-    "delegate": {
-      "command": "node .github/idd/critique-delegate.mjs",
-      "mode": "combined"
+  "ciGate": {
+    "trustEmptyProtectionReads": true,
+    "externalChecks": {
+      "waivable": [
+        {
+          "selector": "idd-advisory-convergence",
+          "matchMode": "exact"
+        }
+      ]
+    },
+    "externalCheckWaivers": {
+      "mode": "maintainer-authorized",
+      "authorityPolicy": "owners-and-maintainers-only",
+      "maxValidity": "PT24H"
     }
-  },
-  "issueAuthoring": {
-    "journalIssue": "kurone-kito/setup.windows#175"
   }
 }
