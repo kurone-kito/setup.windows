@@ -184,17 +184,45 @@ jobs:
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Narrower than the verdict job's read-only posture above: this job
-    # additionally needs `pull-requests: read` (to diff and fetch the PR)
-    # and `issues: write` (to post the marker, and to read the linked
-    # issue's own comment stream to resolve its active claim -- the
-    # PR-conversation-comment endpoint and the linked-issue-comment
-    # endpoint are both gated under the Issues permission category, same
-    # as the verdict job's own header comment already notes for reads).
+    # Broader than the verdict job's read-only posture above: this job
+    # needs `pull-requests: write` (to diff/fetch the PR, and -- this is
+    # the load-bearing grant -- to actually post the marker below) and
+    # `issues: write` (to post the marker, and to read the linked issue's
+    # own comment stream to resolve its active claim).
+    # kurone-kito/idd-skill#2951: with only `pull-requests: read`, the
+    # marker POST failed with HTTP 403 "Resource not accessible by
+    # integration", confirmed by a live A/B test -- see the root
+    # `.github/workflows/idd-advisory-convergence.yml` of the upstream
+    # kurone-kito/idd-skill repository at the pinned v0.14.0 commit
+    # (`helperRuntime.packageSpec` in `.github/idd/config.json`; not its
+    # `idd-template/` copy, which only points back to it) for the full
+    # investigation, run evidence, and why `issues: write` stays
+    # unchanged rather than narrowed. Do not narrow `pull-requests` back
+    # to `read` without re-running an equivalent live test. The three
+    # read scopes below are carried over from the upstream v0.14.0
+    # workflow for parity; this repository has not been shown to need
+    # each of them separately.
+    # `checks: read` / `statuses: read` (kurone-kito/idd-skill#2995): the
+    # `--auto-bootstrap` path also reads `pr.statusCheckRollup`, which
+    # upstream reports needs both scopes explicitly (a third scope,
+    # `actions: read`, follows below) -- see the upstream root copy of
+    # this file for the full investigation and evidence.
+    # `actions: read` (kurone-kito/idd-skill#3683): the same `gh pr view
+    # --json statusCheckRollup` request also selects `checkSuite {
+    # workflowRun }` for each check-run context, which is an Actions
+    # resource. Upstream reports that a private adopter repository saw
+    # `Resource not accessible by integration (...checkSuite.workflowRun)`
+    # on every run of a pull request that touched an allowlisted path
+    # without it. Likely cause, not proven: no A/B probe was run and the
+    # public upstream repository cannot reproduce it -- see its root copy
+    # of this file for the full note.
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: write
+      actions: read
+      checks: read
+      statuses: read
     steps:
       - uses: actions/checkout@v7
         with:
