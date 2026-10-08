@@ -184,17 +184,21 @@ jobs:
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Narrower than the verdict job's read-only posture above: this job
-    # additionally needs `pull-requests: read` (to diff and fetch the PR)
-    # and `issues: write` (to post the marker, and to read the linked
-    # issue's own comment stream to resolve its active claim -- the
-    # PR-conversation-comment endpoint and the linked-issue-comment
-    # endpoint are both gated under the Issues permission category, same
-    # as the verdict job's own header comment already notes for reads).
+    # Match v0.14.0 upstream block (kurone-kito/idd-skill#2951, #2995,
+    # #3683): this job additionally needs `pull-requests: write` (to diff
+    # and fetch the PR), `issues: write` (to post the marker and read the
+    # linked issue's own comment stream to resolve its active claim), and
+    # `actions: read`, `checks: read`, `statuses: read` (read-only scopes
+    # that a private adopter required; included here for parity with the
+    # pinned template). Do not narrow `pull-requests` back to `read` without
+    # re-running an equivalent live test (upstream v0.14.0 guardrail).
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: write
+      actions: read
+      checks: read
+      statuses: read
     steps:
       - uses: actions/checkout@v7
         with:
