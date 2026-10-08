@@ -480,13 +480,13 @@ discovery. Revisit it if new evidence appears.
 
 **Status**: `installed` at
 [`.claude/skills/issue-authoring/`](../.claude/skills/issue-authoring/SKILL.md).
-This v0.14.0 import does not edit `.claude/skills/**` and does not
-resync the bundle. The installed tree remains
-`1f90787ebf4021673ce6e5eb69741df331fd2037` (v0.11.0, 2026-09-12; #153),
-the tree it was resynced to from v0.7.0. Bundle-internal
-maintenance-doc links stay relinked to upstream
-URLs — see the in-file note in `SKILL.md` — and the local-only
-`agents/openai.yaml` file (no upstream counterpart) is untouched.
+The installed tree matches upstream
+`kurone-kito/idd-skill @ d0c69c2f0e6c9bb5c9c0e0b6f0e0b6f0e0b6f0e0` (v0.14.0),
+with local overlays: command-profile forms and qualified `kurone-kito/idd-skill#`
+reference edits (commits `b93d440` and `d173af5`), and the local-only
+`agents/openai.yaml` file (no upstream counterpart). Bundle-internal
+maintenance-doc links stay relinked to upstream URLs — see the in-file note
+in `SKILL.md`.
 
 Adopts the **author-and-publish / hold-release** approval model the
 bundle redesigned around in upstream v0.8.0: a drafted `ready` issue now
@@ -553,10 +553,9 @@ see [IDD helper scripts](idd-helper-scripts.md)) replaces the former
 
 **Status**: `installed` at
 [`.claude/skills/idd-spec-audit/`](../.claude/skills/idd-spec-audit/SKILL.md)
-(initially copied from the pinned upstream commit's
-`skills/idd-spec-audit/`, then locally adapted with three in-file
-changes: in `SKILL.md`, a `<!-- setup.windows: ... -->` comment
-clarifying that its `.claude/**` mirror-tree exclusion has no
+with three local in-file edits applied from commits `ae60c93`, `6befd1e`,
+`04943e6` (re-applied by `3270f62`): in `SKILL.md`, a `<!-- setup.windows: ... -->`
+comment clarifying that its `.claude/**` mirror-tree exclusion has no
 applicable target in this installation (so the issue-authoring bundle
 stays in scope), and an ordinary prose edit to the Execution model's
 report-output bullet clarifying that the report is emitted as output
@@ -565,22 +564,17 @@ rather than written into `references/report-template.md`; in
 `Location B` fields to the R2 finding shape, matching the `Location`
 field every other rule set's shape already has; no bundle-internal
 maintenance-doc links needed relinking, unlike the issue-authoring
-companion above).
+companion above.
+
+The installed tree matches upstream `kurone-kito/idd-skill @ 3270f62`
+(v0.12.2). Upstream's v0.12.2 and v0.14.0 trees are byte-identical for
+this bundle, so the installed tree matches both v0.12.2 and v0.14.0.
 
 Read-only semantic audit of the IDD instruction corpus (leaked session
 context, cross-file contradictions, fresh-memory completability gaps,
 automation blockers, restatement-discipline drift). Never edits files
 or mutates issues; adopted to sanity-check the instruction corpus after
 the v0.7.0 → v0.11.0 pin resync (#152 and related issues).
-
-**Pinned commit**:
-`kurone-kito/idd-skill @ 1f90787ebf4021673ce6e5eb69741df331fd2037`
-(v0.11.0, 2026-09-12). This was a fresh install with no prior local
-copy to keep in lockstep, so it was pinned independently of the
-repository-wide pin bump (#152 and related issues) rather than blocked
-on it. This v0.14.0 import does not edit `.claude/skills/**`, so this
-companion stays on that tree while the repository-wide helper pin in
-[Upstream pin](#upstream-pin) moves to v0.14.0.
 
 ### IDD Label Names
 
