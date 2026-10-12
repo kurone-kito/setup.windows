@@ -382,7 +382,7 @@ claim ownership:
 
 ## §W7 — No PR, remote branch exists
 
-From the primary worktree (HEAD stays on `main`):
+From the primary worktree (HEAD stays on `master`):
 
 1. Fetch the remote tip with a fully-qualified destination refspec --
    unlike a bare `git fetch origin {branch}`, this does not depend on
