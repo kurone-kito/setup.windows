@@ -481,12 +481,12 @@ discovery. Revisit it if new evidence appears.
 **Status**: `installed` at
 [`.claude/skills/issue-authoring/`](../.claude/skills/issue-authoring/SKILL.md).
 The installed tree matches upstream
-`kurone-kito/idd-skill @ d0c69c2f0e6c9bb5c9c0e0b6f0e0b6f0e0b6f0e0` (v0.14.0),
-with local overlays: command-profile forms and qualified `kurone-kito/idd-skill#`
-reference edits (commits `b93d440` and `d173af5`), and the local-only
-`agents/openai.yaml` file (no upstream counterpart). Bundle-internal
-maintenance-doc links stay relinked to upstream URLs — see the in-file note
-in `SKILL.md`.
+`kurone-kito/idd-skill @ ae16f497434a5023dfaa28f965fc2af92ebf055d` (v0.14.0,
+imported by setup.windows commit `4aec5a9`), with local overlays: command-profile
+forms and qualified `kurone-kito/idd-skill#` reference edits (commits `b93d440`
+and `d173af5`), and the local-only `agents/openai.yaml` file (no upstream
+counterpart). Bundle-internal maintenance-doc links stay relinked to upstream
+URLs — see the in-file note in `SKILL.md`.
 
 Adopts the **author-and-publish / hold-release** approval model the
 bundle redesigned around in upstream v0.8.0: a drafted `ready` issue now
@@ -566,9 +566,10 @@ field every other rule set's shape already has; no bundle-internal
 maintenance-doc links needed relinking, unlike the issue-authoring
 companion above.
 
-The installed tree matches upstream `kurone-kito/idd-skill @ 3270f62`
-(v0.12.2). Upstream's v0.12.2 and v0.14.0 trees are byte-identical for
-this bundle, so the installed tree matches both v0.12.2 and v0.14.0.
+The installed tree matches upstream
+`kurone-kito/idd-skill @ c11c3642319b3283293e4e681861bf7899c32ed3` (v0.12.2
+tag). Upstream's v0.12.2 and v0.14.0 trees are byte-identical for this
+bundle, so the installed tree matches both v0.12.2 and v0.14.0.
 
 Read-only semantic audit of the IDD instruction corpus (leaked session
 context, cross-file contradictions, fresh-memory completability gaps,
