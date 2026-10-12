@@ -25,24 +25,24 @@ cleanup's own worktree removal -- behind the
 (see the [fan-out variant](../../docs/idd-workflow.md#orchestrator-fan-out-variant)
 for when this applies).
 
-1. Ensure the local `main` branch is up to date and has no local
-   commits. Run this from the primary worktree while on `main`:
+1. Ensure the local `master` branch is up to date and has no local
+   commits. Run this from the primary worktree while on `master`:
 
    ```sh
    git fetch origin
-   git log origin/main..main --oneline
+   git log origin/master..master --oneline
    ```
 
-   If the second command outputs any lines, local `main` has unpushed
-   commits — stop and report, do not force-reset `main`. Otherwise,
+   If the second command outputs any lines, local `master` has unpushed
+   commits — stop and report, do not force-reset `master`. Otherwise,
    fast-forward to origin:
 
    ```sh
-   git merge --ff-only origin/main
+   git merge --ff-only origin/master
    ```
 
-   After this `main` fast-forward, do **not** change the primary
-   worktree's HEAD off `main` for any reason during B1 — see
+   After this `master` fast-forward, do **not** change the primary
+   worktree's HEAD off `master` for any reason during B1 — see
    Anti-patterns below for the forbidden commands and the allowed
    HEAD-preserving exceptions (read-only inspection, and the
    HEAD-preserving branch/worktree commands used by Steps 2-3 below and
@@ -89,8 +89,8 @@ branch in the primary worktree:
   primary worktree — defeats the sibling-worktree invariant even though
   `git branch` alone does not move HEAD.
 
-The primary worktree's HEAD MUST remain on `main` throughout B1; if it
-ever leaves `main`, stop immediately and follow the B1 self-check
+The primary worktree's HEAD MUST remain on `master` throughout B1; if it
+ever leaves `master`, stop immediately and follow the B1 self-check
 repair path below.
 
 ### Worktree creation
@@ -226,7 +226,7 @@ retry the install exactly once before failing loudly — see the
 Before continuing to B2, verify all of the following:
 
 - `git -C <primary-worktree-root> rev-parse --abbrev-ref HEAD` returns
-  `main`.
+  `master`.
 - `git worktree list` includes the new sibling worktree path.
 - The agent's current working directory is the new sibling worktree
   path, not the primary worktree; a launch-workspace-bound file-tool
