@@ -480,13 +480,16 @@ discovery. Revisit it if new evidence appears.
 
 **Status**: `installed` at
 [`.claude/skills/issue-authoring/`](../.claude/skills/issue-authoring/SKILL.md).
-This v0.14.0 import does not edit `.claude/skills/**` and does not
-resync the bundle. The installed tree remains
-`1f90787ebf4021673ce6e5eb69741df331fd2037` (v0.11.0, 2026-09-12; #153),
-the tree it was resynced to from v0.7.0. Bundle-internal
-maintenance-doc links stay relinked to upstream
-URLs — see the in-file note in `SKILL.md` — and the local-only
-`agents/openai.yaml` file (no upstream counterpart) is untouched.
+The installed tree matches upstream
+`kurone-kito/idd-skill @ ae16f497434a5023dfaa28f965fc2af92ebf055d` (v0.14.0)
+apart from local overlays: command-profile forms and qualified
+`kurone-kito/idd-skill#` reference edits (commits `b93d440` and `d173af5`), the
+setup.windows doc-link relinks (see the in-file note in `SKILL.md`), and the
+local-only `agents/openai.yaml` file (no upstream counterpart). The bundle was
+brought to v0.14.0 by the setup.windows sync commit
+`d0c69c2467004080cd8b8883859742ea283ab053` (#211). Before that sync, the
+installed tree was `1f90787ebf4021673ce6e5eb69741df331fd2037` (v0.11.0,
+2026-09-12; #153), the tree it had been resynced to from v0.7.0.
 
 Adopts the **author-and-publish / hold-release** approval model the
 bundle redesigned around in upstream v0.8.0: a drafted `ready` issue now
@@ -553,10 +556,9 @@ see [IDD helper scripts](idd-helper-scripts.md)) replaces the former
 
 **Status**: `installed` at
 [`.claude/skills/idd-spec-audit/`](../.claude/skills/idd-spec-audit/SKILL.md)
-(initially copied from the pinned upstream commit's
-`skills/idd-spec-audit/`, then locally adapted with three in-file
-changes: in `SKILL.md`, a `<!-- setup.windows: ... -->` comment
-clarifying that its `.claude/**` mirror-tree exclusion has no
+with three local in-file edits applied from commits `ae60c93`, `6befd1e`,
+`04943e6` (re-applied by `3270f62`): in `SKILL.md`, a `<!-- setup.windows: ... -->`
+comment clarifying that its `.claude/**` mirror-tree exclusion has no
 applicable target in this installation (so the issue-authoring bundle
 stays in scope), and an ordinary prose edit to the Execution model's
 report-output bullet clarifying that the report is emitted as output
@@ -565,7 +567,15 @@ rather than written into `references/report-template.md`; in
 `Location B` fields to the R2 finding shape, matching the `Location`
 field every other rule set's shape already has; no bundle-internal
 maintenance-doc links needed relinking, unlike the issue-authoring
-companion above).
+companion above.
+
+The installed tree matches upstream
+`kurone-kito/idd-skill @ c11c3642319b3283293e4e681861bf7899c32ed3` (v0.12.2
+tag) and `kurone-kito/idd-skill @ ae16f497434a5023dfaa28f965fc2af92ebf055d`
+(v0.14.0). Those two trees are byte-identical for this bundle, so the installed
+tree matches both, apart from the three local in-file edits above. The bundle
+was last overwritten from upstream v0.12.2 by the setup.windows commit
+`3270f6251badfb7f544f7bfb29dbd0c2aa01356b`, which re-applied those local edits.
 
 Read-only semantic audit of the IDD instruction corpus (leaked session
 context, cross-file contradictions, fresh-memory completability gaps,
@@ -573,14 +583,13 @@ automation blockers, restatement-discipline drift). Never edits files
 or mutates issues; adopted to sanity-check the instruction corpus after
 the v0.7.0 → v0.11.0 pin resync (#152 and related issues).
 
-**Pinned commit**:
-`kurone-kito/idd-skill @ 1f90787ebf4021673ce6e5eb69741df331fd2037`
-(v0.11.0, 2026-09-12). This was a fresh install with no prior local
-copy to keep in lockstep, so it was pinned independently of the
-repository-wide pin bump (#152 and related issues) rather than blocked
-on it. This v0.14.0 import does not edit `.claude/skills/**`, so this
-companion stays on that tree while the repository-wide helper pin in
-[Upstream pin](#upstream-pin) moves to v0.14.0.
+**Pinned commit history**: the companion was first installed at
+`kurone-kito/idd-skill @ 1f90787ebf4021673ce6e5eb69741df331fd2037` (v0.11.0,
+2026-09-12). That was a fresh install with no prior local copy to keep in
+lockstep, so it was pinned independently of the repository-wide pin bump (#152
+and related issues) rather than blocked on it. The repository-wide helper pin in
+[Upstream pin](#upstream-pin) has since moved to v0.14.0; the tree described
+above is the one this companion now matches.
 
 ### IDD Label Names
 
