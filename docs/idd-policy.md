@@ -224,14 +224,14 @@ local `runningTimeout` of `PT10M` is retired.
   existing `idd-advisory-convergence` run for the current HEAD SHA. If
   that automatic rerun does not land (e.g. the companion is disabled, or
   the fallback is faster), re-run the check manually instead via
-  `gh run rerun <run-id>` on the existing `pull_request`-family run for
+  `gh run rerun <run-id>` on the existing `pull_request_target` run for
   the current HEAD SHA (found via `gh run list
   --workflow=idd-advisory-convergence.yml --json
   databaseId,headSha,event,url`). **Prefer this over `workflow_dispatch`**:
   a manually dispatched run is not reliably associated with the PR's own
   HEAD SHA / required-check rollup (GitHub can attribute it to the
   default branch instead), so even a successful dispatched run may not
-  actually clear the check. If no `pull_request`-family run exists yet
+  actually clear the check. If no `pull_request_target` run exists yet
   for this HEAD, trigger one first (a new push, or re-opening the PR)
   rather than falling back to `workflow_dispatch`.
 - **Post-merge cleanup**: `.github/workflows/post-merge-cleanup.yml`
@@ -283,7 +283,10 @@ correctly 404s — that is not a misconfiguration).
   (`idd-pre-merge.instructions.md`'s `clean`/`behind-no-conflict`
   routing) rather than requiring it, and a bare CI rerun after the base
   moves can replay a `pull_request`-triggered run's stale merge-ref
-  (`docs/idd-helper-scripts.md`'s `baseAdvancedSinceMergeBase` note).
+  (`docs/idd-helper-scripts.md`'s `baseAdvancedSinceMergeBase` note). The
+  advisory gate has no `pull_request` trigger since #241, so this replay
+  applies to the other `pull_request`-triggered required checks, such as
+  lint and pester.
   F2/F3 re-fetch the current HEAD's own status but do not themselves
   validate that HEAD against the latest `master`. Accepting that
   narrower, textual-conflict-freeness-only protection is the actual
@@ -820,13 +823,11 @@ workflow files as local forks, kept in sync manually on each pin bump.
 two advisory workflows keep their local event, permission, and
 safeguard constraints and now use this same helper commit:
 
-- `.github/workflows/idd-advisory-convergence.yml` — also adds the
-  `pull_request_target` trigger and the
-  `idd-advisory-convergence-self-waiver` job (`kurone-kito/idd-skill#2657`)
-  alongside the pre-existing `pull_request` trigger, per upstream's own
-  documented transitional dual-trigger migration; `pull_request` stays
-  active until `pull_request_target` has run cleanly on production PRs
-  for a period, matching upstream's own stance
+- `.github/workflows/idd-advisory-convergence.yml` — adds the
+  `idd-advisory-convergence-self-waiver` job (`kurone-kito/idd-skill#2657`).
+  Its only pull-request trigger is `pull_request_target`, which matches the v0.14.0
+  template. The transitional `pull_request` trigger was removed by #241,
+  after `pull_request_target` had run cleanly on PRs #237 and #238.
 - `.github/workflows/idd-advisory-convergence-comment.yml` — also adds
   the `issue_comment` trigger and the debounced rerun logic
   (`kurone-kito/idd-skill#1381`/`#2638`), and the `pull_request_review`
