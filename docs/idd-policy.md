@@ -491,13 +491,13 @@ discovery. Revisit it if new evidence appears.
 
 **Status**: `installed` at
 [`.claude/skills/issue-authoring/`](../.claude/skills/issue-authoring/SKILL.md).
-The installed tree matches upstream
-`kurone-kito/idd-skill @ ae16f497434a5023dfaa28f965fc2af92ebf055d` (v0.14.0)
-apart from local overlays: command-profile forms and qualified
-`kurone-kito/idd-skill#` reference edits (commits `b93d440` and `d173af5`), the
-setup.windows doc-link relinks (see the in-file note in `SKILL.md`), and the
-local-only `agents/openai.yaml` file (no upstream counterpart). The bundle was
-brought to v0.14.0 by the setup.windows sync commit
+The installed tree matches upstream `kurone-kito/idd-skill @
+ae16f497434a5023dfaa28f965fc2af92ebf055d` (v0.14.0) apart from local overlays:
+command-profile forms and qualified `kurone-kito/idd-skill#` reference edits
+(commits `b93d440` and `d173af5`), the setup.windows doc-link relinks (see the
+in-file note in `SKILL.md`). The local-only `agents/` directory, which held one
+file with no upstream counterpart, was removed by #234. The bundle was brought
+to v0.14.0 by the setup.windows sync commit
 `d0c69c2467004080cd8b8883859742ea283ab053` (#211). Before that sync, the
 installed tree was `1f90787ebf4021673ce6e5eb69741df331fd2037` (v0.11.0,
 2026-09-12; #153), the tree it had been resynced to from v0.7.0.
