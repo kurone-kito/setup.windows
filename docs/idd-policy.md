@@ -283,7 +283,10 @@ correctly 404s — that is not a misconfiguration).
   (`idd-pre-merge.instructions.md`'s `clean`/`behind-no-conflict`
   routing) rather than requiring it, and a bare CI rerun after the base
   moves can replay a `pull_request`-triggered run's stale merge-ref
-  (`docs/idd-helper-scripts.md`'s `baseAdvancedSinceMergeBase` note).
+  (`docs/idd-helper-scripts.md`'s `baseAdvancedSinceMergeBase` note). The
+  advisory gate has no `pull_request` trigger since #241, so this replay
+  applies to the other `pull_request`-triggered required checks, such as
+  lint and pester.
   F2/F3 re-fetch the current HEAD's own status but do not themselves
   validate that HEAD against the latest `master`. Accepting that
   narrower, textual-conflict-freeness-only protection is the actual
@@ -822,7 +825,7 @@ safeguard constraints and now use this same helper commit:
 
 - `.github/workflows/idd-advisory-convergence.yml` — adds the
   `idd-advisory-convergence-self-waiver` job (`kurone-kito/idd-skill#2657`).
-  Its only trigger is `pull_request_target`, which matches the v0.14.0
+  Its only pull-request trigger is `pull_request_target`, which matches the v0.14.0
   template. The transitional `pull_request` trigger was removed by #241,
   after `pull_request_target` had run cleanly on PRs #237 and #238.
 - `.github/workflows/idd-advisory-convergence-comment.yml` — also adds

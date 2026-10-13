@@ -3,7 +3,7 @@
 # (#61), so tampering matters more here than in an ordinary lint check.
 #
 # Trigger-migration finished state (kurone-kito/idd-skill#2657, #2764 Phase
-# 2): only `pull_request_target` is declared. GitHub always resolves this
+# 2): `pull_request_target` is the only pull-request trigger. GitHub always resolves this
 # file from the base branch's own YAML, so a same-repository PR cannot edit
 # its own copy to make its required check report green. The transitional
 # `pull_request` trigger was removed by #241, after `pull_request_target` had
@@ -68,7 +68,7 @@ concurrency:
   # workflow_dispatch so a manual re-check cannot cancel an in-flight
   # PR-linked run.
   #
-  # Only `pull_request_target` triggers this workflow now (#241), so a new push
+  # `pull_request_target` is the only pull-request trigger now (#241), so a new push
   # still correctly cancels a stale run for the same PR.
   #
   # cancel-in-progress stays true deliberately: a narrower group or
@@ -156,7 +156,7 @@ jobs:
   # -- this job's only role is to detect the trigger and post it; trust
   # is established entirely at consume time, not here.
   #
-  # `if: pull_request_target` only. The workflow declares no other trigger
+  # `if: pull_request_target` only. The workflow declares no other pull-request trigger
   # (#241), and this condition keeps the job from running under any other
   # trigger if one is added back. A same-repository PR editing this YAML
   # could otherwise run this job under an instance it fully controls. The
