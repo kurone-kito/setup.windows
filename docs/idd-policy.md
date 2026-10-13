@@ -335,6 +335,14 @@ exists. Do not add a rule that requires the branch head to already
 contain the latest base commits. Any session holding a valid claim may
 carry it through to merge.
 
+### Bootstrap Execution Mode
+
+**Confirmed mode**: issue-mediated bootstrap. The v0.14.0 onboarding hearing
+(roadmap #200) confirmed this mode. The template is imported through a
+reviewed issue-branch-PR cycle, not through a direct import on the default
+branch. The mode is described in the
+[Onboarding Reference — Issue-Mediated Bootstrap](onboarding/issue-mediated-bootstrap.md).
+
 ### Trusted Marker Actors
 
 **Current value** (`trustedMarkerActors` in
