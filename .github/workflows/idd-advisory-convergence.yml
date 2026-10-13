@@ -121,11 +121,17 @@ jobs:
     # inherited from the repository's own default). A job-level block
     # replaces the workflow-level one entirely rather than adding to it,
     # so every previously-granted scope is repeated here too.
+    # `checks: read` (kurone-kito/idd-skill#3253): the head-observed read
+    # (`fetchHeadObservedAt`, which calls `getChangeRequestHeadObservedAt`)
+    # reads `Commit.checkSuites` via GraphQL. That needs the Checks API
+    # scope in a private repository, the same way the REST call above
+    # needs `actions`. This repository is public, so the gap is latent.
     permissions:
       contents: read
       issues: read
       pull-requests: read
       actions: read
+      checks: read
     steps:
       - uses: actions/checkout@v7
         with:
