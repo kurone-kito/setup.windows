@@ -40,7 +40,6 @@
         { "PackageIdentifier": "dbrgn.tealdeer" },
         { "PackageIdentifier": "Microsoft.Edit" },
         { "PackageIdentifier": "Neovim.Neovim" },
-        { "PackageIdentifier": "vim.vim" },
         { "PackageIdentifier": "HTTPie.HTTPie" },
         { "PackageIdentifier": "GitHub.GitHubDesktop" },
         { "PackageIdentifier": "Obsidian.Obsidian" }
