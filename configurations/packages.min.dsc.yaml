@@ -357,13 +357,6 @@ properties:
       settings:
         id: Neovim.Neovim
         source: winget
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: vim
-      directives:
-        description: Vim
-      settings:
-        id: vim.vim
-        source: winget
 
     # =======================================================================
     # Install the GUI developer tools

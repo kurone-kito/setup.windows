@@ -681,17 +681,6 @@ properties:
         source: winget
 
     # ================================================================
-    # Text editors
-    # ================================================================
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: pkg.vim
-      directives:
-        description: Vim
-      settings:
-        id: vim.vim
-        source: winget
-
-    # ================================================================
     # CLI — Benchmark
     # ================================================================
     - resource: Microsoft.WinGet.DSC/WinGetPackage
