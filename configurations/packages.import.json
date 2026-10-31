@@ -62,7 +62,6 @@
         { "PackageIdentifier": "GitHub.GitLFS" },
         { "PackageIdentifier": "Slik.Subversion" },
         { "PackageIdentifier": "GnuPG.GnuPG" },
-        { "PackageIdentifier": "vim.vim" },
         { "PackageIdentifier": "Fastfetch-cli.Fastfetch" },
         { "PackageIdentifier": "Gyan.FFmpeg" },
         { "PackageIdentifier": "ImageMagick.ImageMagick" },
