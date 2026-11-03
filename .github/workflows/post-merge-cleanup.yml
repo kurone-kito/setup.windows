@@ -128,7 +128,7 @@ jobs:
     # evidence. The cleanup step timeout stays below this cap.
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # workflow_dispatch has no trustworthy default ref (see the
           # trust-model comment above), so pin it explicitly to this
